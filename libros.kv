@@ -1,0 +1,1195 @@
+#:kivy 2.3.0
+#:import dp kivy.metrics.dp
+#:import Role store.Role
+#:import Condition store.Condition
+#:import Delivery store.Delivery
+
+
+# ==========================================================================
+#  Componentes reutilizables
+# ==========================================================================
+
+<Heading@MDLabel>:
+    font_style: "Title"
+    role: "medium"
+    bold: True
+    adaptive_height: True
+
+<Muted@MDLabel>:
+    font_style: "Body"
+    role: "medium"
+    adaptive_height: True
+    theme_text_color: "Custom"
+    text_color: app.theme_cls.onSurfaceVariantColor
+
+<FieldLabel@MDLabel>:
+    font_style: "Label"
+    role: "large"
+    bold: True
+    adaptive_height: True
+    padding: 0, dp(6), 0, 0
+
+<WideButton>:
+    theme_width: "Custom"
+    size_hint_x: 1
+    height: dp(48)
+
+<PrimaryButton@WideButton>:
+    style: "filled"
+    height: dp(52)
+    radius: [dp(26)] * 4
+
+<Page@MDBoxLayout>:
+    orientation: "vertical"
+    adaptive_height: True
+    padding: dp(16), dp(12), dp(16), dp(32)
+    spacing: dp(12)
+
+<Panel@MDCard>:
+    style: "filled"
+    orientation: "vertical"
+    size_hint_y: None
+    height: self.minimum_height
+    padding: dp(16)
+    spacing: dp(10)
+    radius: [dp(18)] * 4
+    ripple_effect: False
+    md_bg_color: app.theme_cls.surfaceContainerLowColor
+
+<ListBox@MDBoxLayout>:
+    orientation: "vertical"
+    adaptive_height: True
+    spacing: dp(10)
+
+<BookCover>:
+    size_hint: None, None
+    size: dp(64), dp(92)
+    md_bg_color: app.theme_cls.secondaryContainerColor
+    radius: [dp(8)] * 4
+    MDIcon:
+        icon: "book-open-page-variant"
+        pos_hint: {"center_x": .5, "center_y": .5}
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.onSecondaryContainerColor
+    AsyncImage:
+        source: root.source
+        fit_mode: "cover"
+        opacity: 1 if root.loaded and root.source else 0
+        on_load: root.loaded = True
+        on_error: root.loaded = False
+
+<StatusChip>:
+    adaptive_size: True
+    padding: dp(10), dp(4)
+    radius: [dp(10)] * 4
+    md_bg_color: root.bg
+    pos_hint: {"center_y": .5}
+    MDLabel:
+        text: root.text or " "
+        adaptive_size: True
+        font_style: "Label"
+        role: "medium"
+        bold: True
+        theme_text_color: "Custom"
+        text_color: root.fg
+
+<RequestCard>:
+    style: "outlined"
+    orientation: "horizontal"
+    size_hint_y: None
+    height: max(dp(116), content.minimum_height + dp(24))
+    padding: dp(12)
+    spacing: dp(14)
+    radius: [dp(16)] * 4
+    on_release: root.callback(root) if root.callback else None
+    BookCover:
+        source: root.cover
+        pos_hint: {"top": 1}
+    MDBoxLayout:
+        id: content
+        orientation: "vertical"
+        adaptive_height: True
+        spacing: dp(4)
+        pos_hint: {"top": 1}
+        MDLabel:
+            text: root.title
+            font_style: "Title"
+            role: "small"
+            bold: True
+            adaptive_height: True
+        Muted:
+            text: root.subtitle
+            role: "small"
+        MDLabel:
+            text: root.meta
+            font_style: "Body"
+            role: "small"
+            adaptive_height: True
+        MDBoxLayout:
+            adaptive_height: True
+            spacing: dp(8)
+            padding: 0, dp(4), 0, 0
+            StatusChip:
+                status: root.status
+                kind: "request"
+            MDLabel:
+                text: root.badge or " "
+                font_style: "Label"
+                role: "medium"
+                bold: True
+                theme_text_color: "Custom"
+                text_color: app.theme_cls.primaryColor
+                pos_hint: {"center_y": .5}
+                adaptive_height: True
+
+<ItemCard>:
+    style: "outlined"
+    orientation: "vertical"
+    size_hint_y: None
+    height: self.minimum_height
+    padding: dp(14), dp(12)
+    spacing: dp(4)
+    radius: [dp(16)] * 4
+    ripple_effect: root.callback is not None
+    on_release: root.callback(root) if root.callback else None
+    MDBoxLayout:
+        adaptive_height: True
+        spacing: dp(8)
+        MDLabel:
+            text: root.title
+            font_style: "Title"
+            role: "small"
+            bold: True
+            adaptive_height: True
+            pos_hint: {"center_y": .5}
+        StatusChip:
+            status: root.status
+            kind: root.kind
+            opacity: 1 if root.status else 0
+    Muted:
+        text: root.subtitle
+        role: "small"
+    MDLabel:
+        text: root.meta
+        font_style: "Body"
+        role: "small"
+        adaptive_height: True
+    MDBoxLayout:
+        size_hint_y: None
+        height: dp(40) if root.action_text else 0
+        opacity: 1 if root.action_text else 0
+        disabled: not root.action_text
+        Widget:
+        MDButton:
+            style: "text"
+            on_release: root.action_callback(root) if root.action_callback else None
+            MDButtonText:
+                text: root.action_text
+                theme_text_color: "Custom"
+                text_color: app.theme_cls.errorColor if root.action_text.startswith(("Cancelar", "Suspender")) else app.theme_cls.primaryColor
+
+<BookResultCard>:
+    style: "outlined"
+    orientation: "horizontal"
+    size_hint_y: None
+    height: max(dp(116), content.minimum_height + dp(24))
+    padding: dp(12)
+    spacing: dp(14)
+    radius: [dp(16)] * 4
+    ripple_effect: False
+    BookCover:
+        source: root.cover
+        pos_hint: {"top": 1}
+    MDBoxLayout:
+        id: content
+        orientation: "vertical"
+        adaptive_height: True
+        spacing: dp(4)
+        pos_hint: {"top": 1}
+        MDLabel:
+            text: root.title
+            font_style: "Title"
+            role: "small"
+            bold: True
+            adaptive_height: True
+        Muted:
+            text: root.subtitle
+            role: "small"
+        MDLabel:
+            text: root.meta
+            font_style: "Body"
+            role: "small"
+            adaptive_height: True
+        MDBoxLayout:
+            adaptive_height: True
+            Widget:
+            MDButton:
+                style: "tonal"
+                on_release: app.select_book(root.book)
+                MDButtonIcon:
+                    icon: "check"
+                MDButtonText:
+                    text: "Seleccionar"
+
+<StatTile>:
+    style: "filled"
+    orientation: "vertical"
+    size_hint_y: None
+    height: dp(84)
+    padding: dp(14), dp(10)
+    radius: [dp(16)] * 4
+    ripple_effect: False
+    md_bg_color: app.theme_cls.primaryContainerColor
+    MDLabel:
+        text: root.value
+        font_style: "Headline"
+        role: "medium"
+        bold: True
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.onPrimaryContainerColor
+    MDLabel:
+        text: root.label
+        font_style: "Label"
+        role: "medium"
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.onPrimaryContainerColor
+
+<InfoRow>:
+    adaptive_height: True
+    spacing: dp(14)
+    padding: 0, dp(4)
+    MDIcon:
+        icon: root.icon
+        pos_hint: {"center_y": .5}
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.primaryColor
+    MDBoxLayout:
+        orientation: "vertical"
+        adaptive_height: True
+        pos_hint: {"center_y": .5}
+        Muted:
+            text: root.label
+            font_style: "Label"
+            role: "medium"
+        MDLabel:
+            text: root.value
+            font_style: "Body"
+            role: "large"
+            adaptive_height: True
+
+<EmptyState>:
+    orientation: "vertical"
+    adaptive_height: True
+    padding: dp(16), dp(28)
+    spacing: dp(8)
+    MDIcon:
+        icon: root.icon
+        pos_hint: {"center_x": .5}
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.outlineColor
+    Muted:
+        text: root.text
+        halign: "center"
+
+# Encabezado de libro reutilizado en detalles (ids: cover, book_title, book_meta, status)
+<BookHeader@Panel>:
+    orientation: "horizontal"
+    spacing: dp(14)
+
+# Barra superior con botón "atrás"
+<BackBar@MDTopAppBar>:
+    title: ""
+    type: "small"
+    MDTopAppBarLeadingButtonContainer:
+        MDActionTopAppBarButton:
+            icon: "arrow-left"
+            on_release: app.back()
+    MDTopAppBarTitle:
+        text: root.title
+    MDTopAppBarTrailingButtonContainer:
+
+
+# ==========================================================================
+#  Pantallas
+# ==========================================================================
+
+MDScreenManager:
+    LoginScreen:
+    RegisterScreen:
+    ReaderHomeScreen:
+    BookSearchScreen:
+    CreateRequestScreen:
+    RequestPublishedScreen:
+    ReaderRequestsScreen:
+    ReaderRequestDetailScreen:
+    OfferDetailScreen:
+    OfferAcceptedScreen:
+    SellerHomeScreen:
+    SellerRequestDetailScreen:
+    CreateOfferScreen:
+    SellerOffersScreen:
+    AdminHomeScreen:
+
+
+# ------------------------------------------------------------------ Login
+<LoginScreen>:
+    name: "login"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDScrollView:
+        Page:
+            padding: dp(24), dp(40), dp(24), dp(32)
+            spacing: dp(14)
+            MDIcon:
+                icon: "book-search"
+                font_size: "56sp"
+                pos_hint: {"center_x": .5}
+                theme_text_color: "Custom"
+                text_color: app.theme_cls.primaryColor
+            MDLabel:
+                text: "App de libros"
+                halign: "center"
+                font_style: "Headline"
+                role: "medium"
+                bold: True
+                adaptive_height: True
+            Muted:
+                text: "Publica el libro que buscas y recibe ofertas de vendedores."
+                halign: "center"
+            Widget:
+                size_hint_y: None
+                height: dp(8)
+            MDTextField:
+                id: email
+                mode: "outlined"
+                write_tab: False
+                MDTextFieldLeadingIcon:
+                    icon: "email-outline"
+                MDTextFieldHintText:
+                    text: "Correo"
+            MDTextField:
+                id: password
+                mode: "outlined"
+                password: True
+                write_tab: False
+                on_text_validate: root.do_login()
+                MDTextFieldLeadingIcon:
+                    icon: "lock-outline"
+                MDTextFieldHintText:
+                    text: "Contraseña"
+            PrimaryButton:
+                on_release: root.do_login()
+                MDButtonText:
+                    text: "Iniciar sesión"
+            MDBoxLayout:
+                adaptive_height: True
+                MDButton:
+                    style: "text"
+                    on_release: app.go("register")
+                    MDButtonText:
+                        text: "Crear cuenta"
+                Widget:
+                MDButton:
+                    style: "text"
+                    on_release: root.forgot_password()
+                    MDButtonText:
+                        text: "¿Olvidaste tu contraseña?"
+            Panel:
+                Heading:
+                    text: "Cuentas de demo"
+                    role: "small"
+                Muted:
+                    text: "Toca una para completar los datos."
+                    role: "small"
+                MDListItem:
+                    on_release: root.fill_demo("lector@demo.cl", "1234")
+                    MDListItemLeadingIcon:
+                        icon: "account-search-outline"
+                    MDListItemHeadlineText:
+                        text: "Lector · Juan Pérez"
+                    MDListItemSupportingText:
+                        text: "lector@demo.cl  /  1234"
+                MDListItem:
+                    on_release: root.fill_demo("vendedor@demo.cl", "1234")
+                    MDListItemLeadingIcon:
+                        icon: "storefront-outline"
+                    MDListItemHeadlineText:
+                        text: "Vendedor · Librería Los Andes"
+                    MDListItemSupportingText:
+                        text: "vendedor@demo.cl  /  1234"
+                MDListItem:
+                    on_release: root.fill_demo("admin@demo.cl", "admin")
+                    MDListItemLeadingIcon:
+                        icon: "shield-account-outline"
+                    MDListItemHeadlineText:
+                        text: "Administrador"
+                    MDListItemSupportingText:
+                        text: "admin@demo.cl  /  admin"
+
+
+# --------------------------------------------------------------- Registro
+<RegisterScreen>:
+    name: "register"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Crear cuenta"
+        MDScrollView:
+            Page:
+                padding: dp(24), dp(16), dp(24), dp(32)
+                MDTextField:
+                    id: name
+                    mode: "outlined"
+                    write_tab: False
+                    MDTextFieldLeadingIcon:
+                        icon: "account-outline"
+                    MDTextFieldHintText:
+                        text: "Nombre"
+                MDTextField:
+                    id: email
+                    mode: "outlined"
+                    write_tab: False
+                    MDTextFieldLeadingIcon:
+                        icon: "email-outline"
+                    MDTextFieldHintText:
+                        text: "Correo"
+                MDTextField:
+                    id: password
+                    mode: "outlined"
+                    password: True
+                    write_tab: False
+                    MDTextFieldLeadingIcon:
+                        icon: "lock-outline"
+                    MDTextFieldHintText:
+                        text: "Contraseña"
+                    MDTextFieldHelperText:
+                        text: "Mínimo 4 caracteres"
+                        mode: "persistent"
+                FieldLabel:
+                    text: "¿Cómo usarás la app?"
+                ChoiceRow:
+                    id: role
+                    options: [(Role.READER, "Busco libros (Lector)"), (Role.SELLER, "Vendo libros (Vendedor)")]
+                    value: Role.READER
+                Muted:
+                    text: "Las cuentas de administrador no se pueden crear desde aquí."
+                    role: "small"
+                PrimaryButton:
+                    on_release: root.do_register()
+                    MDButtonText:
+                        text: "Crear cuenta"
+
+
+# ========================================================================
+#  LECTOR
+# ========================================================================
+<ReaderHomeScreen>:
+    name: "reader_home"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            type: "small"
+            MDTopAppBarTitle:
+                text: "Hola, " + app.user_name
+            MDTopAppBarTrailingButtonContainer:
+                MDActionTopAppBarButton:
+                    icon: "format-list-bulleted"
+                    on_release: app.go("reader_requests")
+                MDActionTopAppBarButton:
+                    icon: "logout"
+                    on_release: app.logout()
+        MDScrollView:
+            Page:
+                Panel:
+                    md_bg_color: app.theme_cls.primaryContainerColor
+                    MDLabel:
+                        text: "¿Qué libro estás buscando?"
+                        font_style: "Headline"
+                        role: "small"
+                        bold: True
+                        adaptive_height: True
+                        theme_text_color: "Custom"
+                        text_color: app.theme_cls.onPrimaryContainerColor
+                    MDTextField:
+                        id: query
+                        mode: "filled"
+                        on_text_validate: root.search()
+                        MDTextFieldLeadingIcon:
+                            icon: "magnify"
+                        MDTextFieldHintText:
+                            text: "Título, autor o ISBN"
+                    ChoiceRow:
+                        id: mode
+                        options: [("titulo", "Título"), ("autor", "Autor"), ("isbn", "ISBN")]
+                        value: "titulo"
+                    PrimaryButton:
+                        on_release: root.search()
+                        MDButtonIcon:
+                            icon: "magnify"
+                        MDButtonText:
+                            text: "Buscar libro"
+                MDGridLayout:
+                    cols: 2
+                    spacing: dp(12)
+                    adaptive_height: True
+                    StatTile:
+                        id: stat_active
+                        label: "Solicitudes activas"
+                    StatTile:
+                        id: stat_offers
+                        label: "Ofertas por revisar"
+                MDBoxLayout:
+                    adaptive_height: True
+                    Heading:
+                        text: "Solicitudes recientes"
+                        pos_hint: {"center_y": .5}
+                    MDButton:
+                        style: "text"
+                        on_release: app.go("reader_requests")
+                        MDButtonText:
+                            text: "Ver todas"
+                ListBox:
+                    id: recent_list
+
+
+<BookSearchScreen>:
+    name: "book_search"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Buscar libro"
+        MDScrollView:
+            Page:
+                MDTextField:
+                    id: query
+                    mode: "outlined"
+                    on_text_validate: root.search()
+                    MDTextFieldLeadingIcon:
+                        icon: "magnify"
+                    MDTextFieldHintText:
+                        text: "Título, autor o ISBN"
+                ChoiceRow:
+                    id: mode
+                    options: [("titulo", "Título"), ("autor", "Autor"), ("isbn", "ISBN")]
+                    value: "titulo"
+                PrimaryButton:
+                    disabled: root.searching
+                    on_release: root.search()
+                    MDButtonText:
+                        text: "Buscando…" if root.searching else "Buscar"
+                Muted:
+                    text: root.status_text
+                    role: "small"
+                ListBox:
+                    id: results
+
+
+<CreateRequestScreen>:
+    name: "create_request"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Crear solicitud"
+        MDScrollView:
+            Page:
+                BookHeader:
+                    height: max(dp(124), header_content.minimum_height + dp(32))
+                    BookCover:
+                        id: cover
+                        pos_hint: {"top": 1}
+                    MDBoxLayout:
+                        id: header_content
+                        orientation: "vertical"
+                        adaptive_height: True
+                        spacing: dp(4)
+                        pos_hint: {"top": 1}
+                        Muted:
+                            text: "Libro seleccionado"
+                            font_style: "Label"
+                        Heading:
+                            id: book_title
+                        Muted:
+                            id: book_meta
+                            role: "small"
+                FieldLabel:
+                    text: "Precio máximo (opcional)"
+                MDTextField:
+                    id: max_price
+                    mode: "outlined"
+                    input_filter: "int"
+                    MDTextFieldLeadingIcon:
+                        icon: "currency-usd"
+                    MDTextFieldHintText:
+                        text: "Ej: 15000"
+                    MDTextFieldHelperText:
+                        text: "Déjalo vacío si no tienes un máximo"
+                        mode: "persistent"
+                FieldLabel:
+                    text: "¿En qué estado lo aceptas?"
+                ChoiceRow:
+                    id: condition
+                    options: [(Condition.ANY, "Cualquiera"), (Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
+                    value: Condition.ANY
+                FieldLabel:
+                    text: "Ubicación"
+                MDTextField:
+                    id: location
+                    mode: "outlined"
+                    MDTextFieldLeadingIcon:
+                        icon: "map-marker-outline"
+                    MDTextFieldHintText:
+                        text: "Ciudad o comuna"
+                FieldLabel:
+                    text: "Preferencia de entrega"
+                ChoiceRow:
+                    id: delivery
+                    options: [(Delivery.IN_PERSON, "Presencial"), (Delivery.SHIPPING, "Envío"), (Delivery.ANY, "Cualquiera")]
+                    value: Delivery.ANY
+                FieldLabel:
+                    text: "Notas (opcional)"
+                MDTextField:
+                    id: notes
+                    mode: "outlined"
+                    multiline: True
+                    max_height: dp(140)
+                    MDTextFieldHintText:
+                        text: "Edición, idioma, detalles…"
+                Widget:
+                    size_hint_y: None
+                    height: dp(4)
+                PrimaryButton:
+                    on_release: root.publish()
+                    MDButtonIcon:
+                        icon: "send"
+                    MDButtonText:
+                        text: "PUBLICAR SOLICITUD"
+
+
+<RequestPublishedScreen>:
+    name: "request_published"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDScrollView:
+        Page:
+            padding: dp(24), dp(80), dp(24), dp(32)
+            spacing: dp(16)
+            MDIcon:
+                icon: "check-circle"
+                font_size: "72sp"
+                pos_hint: {"center_x": .5}
+                theme_text_color: "Custom"
+                text_color: app.theme_cls.primaryColor
+            MDLabel:
+                text: "¡Solicitud publicada!"
+                halign: "center"
+                font_style: "Headline"
+                role: "medium"
+                bold: True
+                adaptive_height: True
+            MDLabel:
+                id: book_title
+                halign: "center"
+                font_style: "Title"
+                role: "medium"
+                adaptive_height: True
+            Muted:
+                id: request_id
+                halign: "center"
+            Muted:
+                text: "Los vendedores ya pueden verla y enviarte ofertas."
+                halign: "center"
+            Widget:
+                size_hint_y: None
+                height: dp(16)
+            PrimaryButton:
+                on_release: app.open_reader_request(app.current_request_id)
+                MDButtonText:
+                    text: "Ver solicitud"
+            WideButton:
+                style: "outlined"
+                height: dp(52)
+                on_release: app.go_home()
+                MDButtonText:
+                    text: "Volver al inicio"
+
+
+<ReaderRequestsScreen>:
+    name: "reader_requests"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Mis solicitudes"
+        MDScrollView:
+            Page:
+                ChoiceRow:
+                    id: filter
+                    options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
+                    value: "todas"
+                    on_value: root.refresh()
+                ListBox:
+                    id: list
+
+
+<ReaderRequestDetailScreen>:
+    name: "reader_request_detail"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Detalle de solicitud"
+        MDScrollView:
+            Page:
+                BookHeader:
+                    height: max(dp(124), header_content.minimum_height + dp(32))
+                    BookCover:
+                        id: cover
+                        pos_hint: {"top": 1}
+                    MDBoxLayout:
+                        id: header_content
+                        orientation: "vertical"
+                        adaptive_height: True
+                        spacing: dp(6)
+                        pos_hint: {"top": 1}
+                        Heading:
+                            id: book_title
+                        Muted:
+                            id: book_meta
+                            role: "small"
+                        StatusChip:
+                            id: status
+                            kind: "request"
+                Panel:
+                    spacing: dp(2)
+                    ListBox:
+                        id: info
+                        spacing: dp(2)
+                Heading:
+                    id: offers_title
+                ListBox:
+                    id: offers
+                WideButton:
+                    style: "outlined"
+                    height: dp(48) if root.can_cancel else 0
+                    opacity: 1 if root.can_cancel else 0
+                    disabled: not root.can_cancel
+                    on_release: root.cancel()
+                    MDButtonText:
+                        text: "Cancelar solicitud"
+                        theme_text_color: "Custom"
+                        text_color: app.theme_cls.errorColor
+
+
+<OfferDetailScreen>:
+    name: "offer_detail"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Detalle de oferta"
+        MDScrollView:
+            Page:
+                Panel:
+                    md_bg_color: app.theme_cls.primaryContainerColor
+                    Muted:
+                        id: book_title
+                        font_style: "Title"
+                        role: "small"
+                        text_color: app.theme_cls.onPrimaryContainerColor
+                    MDLabel:
+                        id: price
+                        font_style: "Display"
+                        role: "small"
+                        bold: True
+                        adaptive_height: True
+                        theme_text_color: "Custom"
+                        text_color: app.theme_cls.onPrimaryContainerColor
+                    StatusChip:
+                        id: status
+                        kind: "offer"
+                Panel:
+                    spacing: dp(2)
+                    ListBox:
+                        id: info
+                        spacing: dp(2)
+                Panel:
+                    md_bg_color: app.theme_cls.secondaryContainerColor
+                    opacity: 1 if root.can_accept else 0
+                    height: self.minimum_height if root.can_accept else 0
+                    MDBoxLayout:
+                        adaptive_height: True
+                        spacing: dp(12)
+                        MDIcon:
+                            icon: "shield-lock-outline"
+                            pos_hint: {"center_y": .5}
+                        MDLabel:
+                            text: "Los datos de contacto del vendedor se mostrarán cuando aceptes la oferta."
+                            font_style: "Body"
+                            role: "medium"
+                            adaptive_height: True
+                PrimaryButton:
+                    opacity: 1 if root.can_accept else 0
+                    disabled: not root.can_accept
+                    height: dp(52) if root.can_accept else 0
+                    on_release: root.accept()
+                    MDButtonIcon:
+                        icon: "handshake-outline"
+                    MDButtonText:
+                        text: "ACEPTAR OFERTA"
+                PrimaryButton:
+                    opacity: 1 if root.accepted else 0
+                    disabled: not root.accepted
+                    height: dp(52) if root.accepted else 0
+                    on_release: app.go("offer_accepted")
+                    MDButtonIcon:
+                        icon: "card-account-phone-outline"
+                    MDButtonText:
+                        text: "Ver datos de contacto"
+
+
+<OfferAcceptedScreen>:
+    name: "offer_accepted"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Oferta aceptada"
+        MDScrollView:
+            Page:
+                padding: dp(16), dp(24), dp(16), dp(32)
+                spacing: dp(14)
+                MDIcon:
+                    icon: "handshake"
+                    font_size: "64sp"
+                    pos_hint: {"center_x": .5}
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.primaryColor
+                MDLabel:
+                    text: "¡Oferta aceptada!"
+                    halign: "center"
+                    font_style: "Headline"
+                    role: "medium"
+                    bold: True
+                    adaptive_height: True
+                Muted:
+                    id: summary
+                    halign: "center"
+                Panel:
+                    Heading:
+                        text: "Contacto del vendedor"
+                        role: "small"
+                    ListBox:
+                        id: contact
+                        spacing: dp(2)
+                Panel:
+                    md_bg_color: app.theme_cls.tertiaryContainerColor
+                    MDBoxLayout:
+                        adaptive_height: True
+                        spacing: dp(12)
+                        MDIcon:
+                            icon: "information-outline"
+                            pos_hint: {"top": 1}
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.onTertiaryContainerColor
+                        MDLabel:
+                            text: "La compra y la entrega se coordinan directamente entre tú y el vendedor. La app no procesa pagos ni envíos."
+                            font_style: "Body"
+                            role: "medium"
+                            adaptive_height: True
+                            theme_text_color: "Custom"
+                            text_color: app.theme_cls.onTertiaryContainerColor
+                PrimaryButton:
+                    on_release: app.go_home()
+                    MDButtonText:
+                        text: "Volver al inicio"
+
+
+# ========================================================================
+#  VENDEDOR
+# ========================================================================
+<SellerHomeScreen>:
+    name: "seller_home"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            type: "small"
+            MDTopAppBarTitle:
+                text: "Solicitudes disponibles"
+            MDTopAppBarTrailingButtonContainer:
+                MDActionTopAppBarButton:
+                    icon: "tag-multiple-outline"
+                    on_release: app.go("seller_offers")
+                MDActionTopAppBarButton:
+                    icon: "logout"
+                    on_release: app.logout()
+        MDScrollView:
+            Page:
+                Muted:
+                    text: "Hola, " + app.user_name + ". Estas personas buscan libros que podrías ofrecer."
+                Panel:
+                    MDTextField:
+                        id: text
+                        mode: "outlined"
+                        on_text: root.refresh()
+                        MDTextFieldLeadingIcon:
+                            icon: "magnify"
+                        MDTextFieldHintText:
+                            text: "Buscar por título, autor o ISBN"
+                    MDBoxLayout:
+                        adaptive_height: True
+                        spacing: dp(10)
+                        MDTextField:
+                            id: location
+                            mode: "outlined"
+                            on_text: root.refresh()
+                            MDTextFieldLeadingIcon:
+                                icon: "map-marker-outline"
+                            MDTextFieldHintText:
+                                text: "Ubicación"
+                        MDTextField:
+                            id: budget
+                            mode: "outlined"
+                            input_filter: "int"
+                            on_text: root.refresh()
+                            MDTextFieldLeadingIcon:
+                                icon: "cash"
+                            MDTextFieldHintText:
+                                text: "Presup. mín."
+                    MDBoxLayout:
+                        adaptive_height: True
+                        spacing: dp(8)
+                        ChoiceRow:
+                            id: condition
+                            options: [("todas", "Todas"), (Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
+                            value: "todas"
+                            on_value: root.refresh()
+                        MDIconButton:
+                            icon: "filter-remove-outline"
+                            pos_hint: {"center_y": .5}
+                            on_release: root.clear_filters()
+                Muted:
+                    id: count
+                    role: "small"
+                ListBox:
+                    id: list
+
+
+<SellerRequestDetailScreen>:
+    name: "seller_request_detail"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Solicitud"
+        MDScrollView:
+            Page:
+                BookHeader:
+                    height: max(dp(124), header_content.minimum_height + dp(32))
+                    BookCover:
+                        id: cover
+                        pos_hint: {"top": 1}
+                    MDBoxLayout:
+                        id: header_content
+                        orientation: "vertical"
+                        adaptive_height: True
+                        spacing: dp(6)
+                        pos_hint: {"top": 1}
+                        Heading:
+                            id: book_title
+                        Muted:
+                            id: book_meta
+                            role: "small"
+                        StatusChip:
+                            id: status
+                            kind: "request"
+                Panel:
+                    spacing: dp(2)
+                    ListBox:
+                        id: info
+                        spacing: dp(2)
+                Panel:
+                    md_bg_color: app.theme_cls.secondaryContainerColor
+                    opacity: 1 if root.offer_note else 0
+                    height: self.minimum_height if root.offer_note else 0
+                    MDLabel:
+                        text: root.offer_note
+                        font_style: "Body"
+                        role: "medium"
+                        adaptive_height: True
+                PrimaryButton:
+                    opacity: 1 if root.can_offer else 0
+                    disabled: not root.can_offer
+                    height: dp(52) if root.can_offer else 0
+                    on_release: app.go("create_offer")
+                    MDButtonIcon:
+                        icon: "hand-extended-outline"
+                    MDButtonText:
+                        text: "PUEDO OFRECERLO"
+
+
+<CreateOfferScreen>:
+    name: "create_offer"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Crear oferta"
+        MDScrollView:
+            Page:
+                Panel:
+                    Heading:
+                        id: book_title
+                    Muted:
+                        id: book_meta
+                        role: "small"
+                FieldLabel:
+                    text: "Precio"
+                MDTextField:
+                    id: price
+                    mode: "outlined"
+                    input_filter: "int"
+                    MDTextFieldLeadingIcon:
+                        icon: "currency-usd"
+                    MDTextFieldHintText:
+                        text: "Ej: 12990"
+                FieldLabel:
+                    text: "Estado del libro"
+                ChoiceRow:
+                    id: condition
+                    options: [(Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
+                    value: Condition.USED
+                MDTextField:
+                    id: description
+                    mode: "outlined"
+                    MDTextFieldHintText:
+                        text: "Condición (ej: tapas en buen estado, sin subrayar)"
+                MDTextField:
+                    id: notes
+                    mode: "outlined"
+                    multiline: True
+                    max_height: dp(120)
+                    MDTextFieldHintText:
+                        text: "Información adicional (opcional)"
+                MDDivider:
+                FieldLabel:
+                    text: "Datos de contacto"
+                Muted:
+                    text: "Solo los verá el lector si acepta tu oferta. Completa al menos uno."
+                    role: "small"
+                MDTextField:
+                    id: phone
+                    mode: "outlined"
+                    MDTextFieldLeadingIcon:
+                        icon: "phone-outline"
+                    MDTextFieldHintText:
+                        text: "Teléfono"
+                MDTextField:
+                    id: email
+                    mode: "outlined"
+                    MDTextFieldLeadingIcon:
+                        icon: "email-outline"
+                    MDTextFieldHintText:
+                        text: "Correo"
+                MDTextField:
+                    id: address
+                    mode: "outlined"
+                    MDTextFieldLeadingIcon:
+                        icon: "map-marker-outline"
+                    MDTextFieldHintText:
+                        text: "Dirección o punto de entrega"
+                Widget:
+                    size_hint_y: None
+                    height: dp(4)
+                PrimaryButton:
+                    on_release: root.publish()
+                    MDButtonIcon:
+                        icon: "send"
+                    MDButtonText:
+                        text: "PUBLICAR OFERTA"
+
+
+<SellerOffersScreen>:
+    name: "seller_offers"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Mis ofertas"
+        MDScrollView:
+            Page:
+                ChoiceRow:
+                    id: filter
+                    options: [("todas", "Todas"), ("activas", "Activas"), ("aceptadas", "Aceptadas"), ("finalizadas", "Finalizadas")]
+                    value: "todas"
+                    on_value: root.refresh()
+                ListBox:
+                    id: list
+
+
+# ========================================================================
+#  ADMINISTRADOR
+# ========================================================================
+<AdminHomeScreen>:
+    name: "admin_home"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        MDTopAppBar:
+            type: "small"
+            MDTopAppBarTitle:
+                text: "Administración"
+            MDTopAppBarTrailingButtonContainer:
+                MDActionTopAppBarButton:
+                    icon: "refresh"
+                    on_release: root.refresh()
+                MDActionTopAppBarButton:
+                    icon: "logout"
+                    on_release: app.logout()
+        MDScrollView:
+            Page:
+                MDGridLayout:
+                    cols: 3
+                    spacing: dp(10)
+                    adaptive_height: True
+                    StatTile:
+                        id: st_usuarios
+                        label: "Usuarios"
+                    StatTile:
+                        id: st_lectores
+                        label: "Lectores"
+                    StatTile:
+                        id: st_vendedores
+                        label: "Vendedores"
+                    StatTile:
+                        id: st_solicitudes
+                        label: "Solicitudes"
+                    StatTile:
+                        id: st_activas
+                        label: "Activas"
+                    StatTile:
+                        id: st_con_ofertas
+                        label: "Con ofertas"
+                    StatTile:
+                        id: st_resueltas
+                        label: "Resueltas"
+                    StatTile:
+                        id: st_canceladas
+                        label: "Canceladas"
+                    StatTile:
+                        id: st_ofertas
+                        label: "Ofertas"
+                ChoiceRow:
+                    id: section
+                    options: [("solicitudes", "Solicitudes"), ("usuarios", "Usuarios"), ("ofertas", "Ofertas"), ("actividad", "Actividad")]
+                    value: "solicitudes"
+                    on_value: root.refresh()
+                ChoiceRow:
+                    id: req_filter
+                    options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
+                    value: "todas"
+                    on_value: root.refresh()
+                ListBox:
+                    id: list
