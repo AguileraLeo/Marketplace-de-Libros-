@@ -9,6 +9,8 @@ Buscar libro -> crear solicitud -> publicar -> vendedor encuentra solicitud
 
 Incluye además la experiencia de administrador (estadísticas, usuarios, solicitudes, ofertas, moderación y actividad).
 
+> **¿Recién clonas el repo?** Lee primero [`CONTEXTO.md`](CONTEXTO.md) (estado del proyecto y cómo trabajar en equipo) y [`AGENTS.md`](AGENTS.md) (visión y reglas del producto). Si usas IA, [`CLAUDE.md`](CLAUDE.md) tiene las instrucciones para el asistente.
+
 ## Requisitos
 
 - Python 3.10 o 3.11
