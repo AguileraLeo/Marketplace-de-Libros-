@@ -66,10 +66,15 @@ KV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libros.kv")
 STATUS_COLORS = {
     RequestStatus.PUBLISHED: ("#DCE8FF", "#123A7A"),
     RequestStatus.WITH_OFFERS: ("#FFE9C7", "#6B3F00"),
+    RequestStatus.IN_DEAL: ("#FFF0D4", "#8A5300"),
     RequestStatus.RESOLVED: ("#D6F5DF", "#11562A"),
     RequestStatus.CANCELLED: ("#FADBD8", "#7A1C14"),
+    OfferStatus.PUBLISHED: ("#E2EDF8", "#1E4976"),
+    OfferStatus.IN_DEAL: ("#D4E5FF", "#0C448C"),
+    OfferStatus.ON_HOLD: ("#EFEBE9", "#5D4037"),
     OfferStatus.ACCEPTED: ("#D6F5DF", "#11562A"),
     OfferStatus.REJECTED: ("#ECE6EE", "#4A4458"),
+    OfferStatus.CANCELLED: ("#FADBD8", "#7A1C14"),
     UserStatus.ACTIVE: ("#D6F5DF", "#11562A"),
     UserStatus.SUSPENDED: ("#FADBD8", "#7A1C14"),
 }
@@ -414,7 +419,14 @@ class ReaderRequestDetailScreen(BaseScreen):
         app.fill_book_header(self, book)
         self.ids.status.status = req.status
         self.ids.info.clear_widgets()
-        for icon, label, value in app.request_info_rows(req):
+        rows = app.request_info_rows(req)
+        if req.status == RequestStatus.CANCELLED:
+            who = "moderación administrativa" if req.canceled_by_role == Role.ADMIN else "el lector"
+            cancel_msg = f"Cancelada por {who}"
+            if req.cancellation_reason:
+                cancel_msg += f" · Motivo: {req.cancellation_reason}"
+            rows.append(("alert-circle-outline", "Moderación / Cancelación", cancel_msg))
+        for icon, label, value in rows:
             self.ids.info.add_widget(InfoRow(icon=icon, label=label, value=value))
         self.can_cancel = req.status in RequestStatus.OPEN
 
@@ -436,7 +448,7 @@ class ReaderRequestDetailScreen(BaseScreen):
         app = self.app
 
         def do_cancel():
-            if app.safe(app.store.cancel_request, app.user, app.current_request_id):
+            if app.safe(app.store.cancel_request, app.user, app.current_request_id, reason="Cancelada por el lector"):
                 app.notify("Solicitud cancelada.")
                 self.refresh()
 
@@ -449,7 +461,10 @@ class ReaderRequestDetailScreen(BaseScreen):
 
 class OfferDetailScreen(BaseScreen):
     can_accept = BooleanProperty(False)
+    in_deal = BooleanProperty(False)
     accepted = BooleanProperty(False)
+    on_hold = BooleanProperty(False)
+    is_reader = BooleanProperty(False)
 
     def refresh(self):
         app, store = self.app, self.app.store
@@ -462,6 +477,7 @@ class OfferDetailScreen(BaseScreen):
         self.ids.book_title.text = book.title
         self.ids.price.text = format_price(offer.price)
         self.ids.status.status = offer.status
+        self.is_reader = app.user.role == Role.READER and req.reader_id == app.user.id
         rows = [
             ("book-open-variant", "Estado del libro", Condition.LABELS[offer.book_condition]),
             ("text-box-outline", "Condición", offer.condition_description or "—"),
@@ -471,11 +487,20 @@ class OfferDetailScreen(BaseScreen):
         ]
         if req.max_price and offer.price > req.max_price:
             rows.append(("alert-outline", "Atención", f"Supera tu precio máximo ({format_price(req.max_price)})"))
+        if req.accepted_condition != Condition.ANY and req.accepted_condition != offer.book_condition:
+            rows.append((
+                "information-outline",
+                "Nota de condición",
+                f"Ofrecido como {Condition.LABELS[offer.book_condition].lower()} (solicitabas {Condition.LABELS[req.accepted_condition].lower()})",
+            ))
         self.ids.info.clear_widgets()
         for icon, label, value in rows:
             self.ids.info.add_widget(InfoRow(icon=icon, label=label, value=value))
-        self.can_accept = offer.status == OfferStatus.PUBLISHED and req.status in RequestStatus.OPEN
+        
+        self.can_accept = self.is_reader and offer.status == OfferStatus.PUBLISHED and req.status in RequestStatus.OPEN
+        self.in_deal = offer.status == OfferStatus.IN_DEAL
         self.accepted = offer.status == OfferStatus.ACCEPTED
+        self.on_hold = offer.status == OfferStatus.ON_HOLD
 
     def accept(self):
         app = self.app
@@ -486,9 +511,36 @@ class OfferDetailScreen(BaseScreen):
 
         app.confirm(
             "¿Aceptar esta oferta?",
-            "La solicitud quedará resuelta y las demás ofertas se rechazarán. "
-            "Verás los datos de contacto del vendedor.",
-            "Aceptar", do_accept,
+            "La oferta pasará a estado 'Por concretar' y verás los datos de contacto del vendedor para coordinar la entrega. Las demás ofertas quedarán en espera.",
+            "Aceptar para coordinar", do_accept,
+        )
+
+    def confirm_deal(self):
+        app = self.app
+
+        def do_confirm():
+            if app.safe(app.store.confirm_deal, app.user, app.current_offer_id):
+                app.notify("¡Trato concretado con éxito! La solicitud quedó resuelta.")
+                self.refresh()
+
+        app.confirm(
+            "¿Confirmar trato concretado?",
+            "Confirma que compraste/recibiste el libro. La solicitud quedará resuelta definitivamente y las demás ofertas se cerrarán.",
+            "Confirmar compra", do_confirm,
+        )
+
+    def cancel_deal(self):
+        app = self.app
+
+        def do_cancel():
+            if app.safe(app.store.cancel_deal, app.user, app.current_offer_id):
+                app.notify("Se canceló la coordinación. Las demás ofertas vuelven a estar activas.")
+                self.refresh()
+
+        app.confirm(
+            "¿Desistir de este trato?",
+            "Se cancelará la coordinación con este vendedor y las otras ofertas volverán a estar activas para que puedas elegir otra opción.",
+            "Desistir del trato", do_cancel,
         )
 
 
@@ -620,10 +672,14 @@ class SellerOffersScreen(BaseScreen):
         cards = []
         for o in offers:
             req = store.requests[o.request_id]
-            if o.status == OfferStatus.ACCEPTED:
-                meta = "¡Aceptada! El lector ya ve tus datos de contacto y te contactará."
+            if o.status == OfferStatus.IN_DEAL:
+                meta = "¡En coordinación! El lector está revisando tus datos de contacto para cerrar la compra."
+            elif o.status == OfferStatus.ON_HOLD:
+                meta = "En espera: el lector está coordinando con otra oferta. Si desiste, tu oferta volverá a activarse."
+            elif o.status == OfferStatus.ACCEPTED:
+                meta = "¡Trato concretado! Compra finalizada con éxito."
             elif o.status == OfferStatus.REJECTED:
-                meta = "El lector aceptó otra oferta."
+                meta = "El lector concretó otra oferta."
             else:
                 meta = f"Solicitud #{req.id} · {req.location} · máx. {format_price(req.max_price)}"
             cards.append(ItemCard(
@@ -631,7 +687,7 @@ class SellerOffersScreen(BaseScreen):
                 subtitle=f"{format_price(o.price)} · {Condition.LABELS[o.book_condition]}",
                 meta=meta,
                 status=o.status, kind="offer",
-                action_text="Cancelar oferta" if o.status == OfferStatus.PUBLISHED else "",
+                action_text="Cancelar oferta" if o.status in (OfferStatus.PUBLISHED, OfferStatus.ON_HOLD) else "",
                 action_callback=lambda _c, oid=o.id: self.cancel(oid),
                 callback=lambda _c, rid=req.id: app.open_seller_request(rid),
             ))
@@ -730,11 +786,11 @@ class AdminHomeScreen(BaseScreen):
         app = self.app
 
         def do_cancel():
-            if app.safe(app.store.cancel_request, app.user, request_id):
+            if app.safe(app.store.cancel_request, app.user, request_id, reason="Moderación administrativa"):
                 app.notify(f"Solicitud #{request_id} cancelada por moderación.")
                 self.refresh()
 
-        app.confirm("¿Cancelar solicitud?", "Acción de moderación: quedará registrada en la actividad.", "Cancelar", do_cancel)
+        app.confirm("¿Cancelar solicitud?", "Acción de moderación: quedará registrada en la actividad y el lector verá el motivo.", "Cancelar", do_cancel)
 
     def toggle_user(self, user_id):
         app = self.app
@@ -808,10 +864,10 @@ class DemoLibrosApp(MDApp):
         self.root.current = "login"
 
     # ----------------------------------------------------------- feedback
-    def safe(self, fn, *args):
+    def safe(self, fn, *args, **kwargs):
         """Ejecuta un caso de uso y muestra los errores de negocio al usuario."""
         try:
-            result = fn(*args)
+            result = fn(*args, **kwargs)
             return True if result is None else result
         except DomainError as exc:
             self.notify(str(exc))

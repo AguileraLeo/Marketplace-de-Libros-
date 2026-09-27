@@ -825,7 +825,37 @@ MDScreenManager:
                             icon: "shield-lock-outline"
                             pos_hint: {"center_y": .5}
                         MDLabel:
-                            text: "Los datos de contacto del vendedor se mostrarán cuando aceptes la oferta."
+                            text: "Los datos de contacto del vendedor se mostrarán cuando aceptes la oferta para coordinar."
+                            font_style: "Body"
+                            role: "medium"
+                            adaptive_height: True
+                Panel:
+                    md_bg_color: app.theme_cls.tertiaryContainerColor
+                    opacity: 1 if root.in_deal else 0
+                    height: self.minimum_height if root.in_deal else 0
+                    MDBoxLayout:
+                        adaptive_height: True
+                        spacing: dp(12)
+                        MDIcon:
+                            icon: "handshake-outline"
+                            pos_hint: {"center_y": .5}
+                        MDLabel:
+                            text: "Oferta en coordinación. Comunícate con el vendedor mediante sus datos de contacto."
+                            font_style: "Body"
+                            role: "medium"
+                            adaptive_height: True
+                Panel:
+                    md_bg_color: app.theme_cls.surfaceContainerHighColor
+                    opacity: 1 if root.on_hold else 0
+                    height: self.minimum_height if root.on_hold else 0
+                    MDBoxLayout:
+                        adaptive_height: True
+                        spacing: dp(12)
+                        MDIcon:
+                            icon: "clock-outline"
+                            pos_hint: {"center_y": .5}
+                        MDLabel:
+                            text: "Esta oferta está en espera mientras el lector coordina con otra oferta. Si no se concreta, se reactivará."
                             font_style: "Body"
                             role: "medium"
                             adaptive_height: True
@@ -837,16 +867,35 @@ MDScreenManager:
                     MDButtonIcon:
                         icon: "handshake-outline"
                     MDButtonText:
-                        text: "ACEPTAR OFERTA"
+                        text: "ACEPTAR PARA COORDINAR"
                 PrimaryButton:
-                    opacity: 1 if root.accepted else 0
-                    disabled: not root.accepted
-                    height: dp(52) if root.accepted else 0
+                    opacity: 1 if (root.in_deal or root.accepted) else 0
+                    disabled: not (root.in_deal or root.accepted)
+                    height: dp(52) if (root.in_deal or root.accepted) else 0
                     on_release: app.go("offer_accepted")
                     MDButtonIcon:
                         icon: "card-account-phone-outline"
                     MDButtonText:
                         text: "Ver datos de contacto"
+                PrimaryButton:
+                    opacity: 1 if (root.in_deal and root.is_reader) else 0
+                    disabled: not (root.in_deal and root.is_reader)
+                    height: dp(52) if (root.in_deal and root.is_reader) else 0
+                    on_release: root.confirm_deal()
+                    MDButtonIcon:
+                        icon: "check-circle-outline"
+                    MDButtonText:
+                        text: "CONFIRMAR COMPRA CONCRETADA"
+                WideButton:
+                    style: "outlined"
+                    opacity: 1 if (root.in_deal and root.is_reader) else 0
+                    disabled: not (root.in_deal and root.is_reader)
+                    height: dp(48) if (root.in_deal and root.is_reader) else 0
+                    on_release: root.cancel_deal()
+                    MDButtonText:
+                        text: "Desistir del trato"
+                        theme_text_color: "Custom"
+                        text_color: app.theme_cls.errorColor
 
 
 <OfferAcceptedScreen>:
