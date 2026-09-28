@@ -62,24 +62,28 @@ Regla: **toda regla de negocio y todo chequeo de permisos va en `store.py`**, y 
 ### Estados
 
 ```text
-Solicitud:  BORRADOR -> PUBLICADA -> CON_OFERTAS -> RESUELTA
-            PUBLICADA | CON_OFERTAS -> CANCELADA
+Solicitud:  BORRADOR -> PUBLICADA -> CON_OFERTAS -> EN_COORDINACION -> RESUELTA
+            PUBLICADA | CON_OFERTAS | EN_COORDINACION -> CANCELADA
 
-Oferta:     PUBLICADA -> ACEPTADA | RECHAZADA | CANCELADA
+Oferta:     PUBLICADA -> POR_CONCRETAR -> ACEPTADA
+            PUBLICADA -> EN_ESPERA -> RECHAZADA | PUBLICADA
+            PUBLICADA | POR_CONCRETAR | EN_ESPERA -> CANCELADA
 ```
 
 ## 4. Decisiones tomadas para el demo (todavía no son specs)
 
-Se tomaron para que el demo funcionara. **Hay que validarlas en equipo** y pasarlas a `docs/` (ver AGENTS.md §19):
+Se tomaron para que el demo funcionara y se actualizaron con la Fase 1 del plan de fixes:
 
-1. Al aceptar una oferta, la solicitud pasa a `RESUELTA` y las demás ofertas activas pasan a `RECHAZADA`. Cada solicitud acepta una sola oferta.
-2. El contacto del vendedor solo se ve después de la aceptación.
-3. Cancelar una solicitud cancela sus ofertas activas.
-4. Un vendedor tiene como máximo una oferta activa por solicitud, y la condición ofrecida (nuevo/usado) debe ser compatible con la que acepta el lector.
-5. Si un vendedor cancela su oferta, la solicitud sigue en `CON_OFERTAS`, porque la máquina de estados no define la vuelta a `PUBLICADA`.
-6. Cada cuenta tiene un solo rol. Un usuario suspendido no puede iniciar sesión ni operar.
-7. No hay base de datos: los usuarios de demo están hardcodeados y los datos se pierden al cerrar la app.
-8. Stack del demo: Python 3.10/3.11 + Kivy 2.3.1 + KivyMD 2.0.1.dev0 (desde la rama master de KivyMD).
+1. Al aceptar una oferta inicialmente para coordinar, la oferta pasa a `POR_CONCRETAR`, la solicitud a `EN_COORDINACION` y las demás ofertas activas quedan `EN_ESPERA`.
+2. Una vez coordinada y realizada la entrega/pago, el lector confirma el trato (`confirm_deal`), pasando la oferta a `ACEPTADA`, la solicitud a `RESUELTA` y rechazando definitivamente las ofertas `EN_ESPERA`.
+3. Si el lector o vendedor desiste de la coordinación (`cancel_deal`), la oferta en trato se rechaza/cancela y las ofertas `EN_ESPERA` vuelven a estar activas (`PUBLICADA`).
+4. El contacto del vendedor se revela cuando la oferta entra en coordinación (`POR_CONCRETAR`) o es aceptada (`ACEPTADA`).
+5. Cancelar una solicitud cancela sus ofertas activas y registra el rol (`ADMIN` / `READER`) y el motivo de moderación/cancelación.
+6. El vendedor puede ofertar cualquier condición (nuevo o usado) y método de entrega; el lector evalúa la oferta al revisarla.
+7. Un vendedor tiene como máximo una oferta activa por solicitud.
+8. Cada cuenta tiene un solo rol. Un usuario suspendido no puede iniciar sesión ni operar.
+9. No hay base de datos: los usuarios de demo están hardcodeados y los datos se pierden al cerrar la app.
+10. Stack del demo: Python 3.10/3.11 + Kivy 2.3.1 + KivyMD 2.0.1.dev0.
 
 ## 5. Próximos pasos sugeridos
 

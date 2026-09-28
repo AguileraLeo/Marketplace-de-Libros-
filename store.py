@@ -39,14 +39,17 @@ class RequestStatus:
     DRAFT = "BORRADOR"
     PUBLISHED = "PUBLICADA"
     WITH_OFFERS = "CON_OFERTAS"
+    IN_DEAL = "EN_COORDINACION"
     RESOLVED = "RESUELTA"
     CANCELLED = "CANCELADA"
 
-    OPEN = (PUBLISHED, WITH_OFFERS)  # visibles para vendedores
+    OPEN = (PUBLISHED, WITH_OFFERS)  # visibles para recibir nuevas ofertas
+    ACTIVE = (PUBLISHED, WITH_OFFERS, IN_DEAL)
     TRANSITIONS = {
         DRAFT: {PUBLISHED},
         PUBLISHED: {WITH_OFFERS, CANCELLED},
-        WITH_OFFERS: {RESOLVED, CANCELLED},
+        WITH_OFFERS: {IN_DEAL, RESOLVED, CANCELLED},
+        IN_DEAL: {RESOLVED, WITH_OFFERS, PUBLISHED, CANCELLED},
         RESOLVED: set(),
         CANCELLED: set(),
     }
@@ -54,6 +57,7 @@ class RequestStatus:
         DRAFT: "Borrador",
         PUBLISHED: "Publicada",
         WITH_OFFERS: "Con ofertas",
+        IN_DEAL: "En coordinación",
         RESOLVED: "Resuelta",
         CANCELLED: "Cancelada",
     }
@@ -61,19 +65,26 @@ class RequestStatus:
 
 class OfferStatus:
     PUBLISHED = "PUBLICADA"
+    IN_DEAL = "POR_CONCRETAR"
+    ON_HOLD = "EN_ESPERA"
     ACCEPTED = "ACEPTADA"
     REJECTED = "RECHAZADA"
     CANCELLED = "CANCELADA"
 
+    ACTIVE = (PUBLISHED, IN_DEAL, ON_HOLD)
     TRANSITIONS = {
-        PUBLISHED: {ACCEPTED, REJECTED, CANCELLED},
+        PUBLISHED: {IN_DEAL, ON_HOLD, REJECTED, CANCELLED},
+        IN_DEAL: {ACCEPTED, REJECTED, CANCELLED},
+        ON_HOLD: {PUBLISHED, REJECTED, CANCELLED},
         ACCEPTED: set(),
         REJECTED: set(),
         CANCELLED: set(),
     }
     LABELS = {
         PUBLISHED: "Activa",
-        ACCEPTED: "Aceptada",
+        IN_DEAL: "Por concretar",
+        ON_HOLD: "En espera",
+        ACCEPTED: "Concretada",
         REJECTED: "Rechazada",
         CANCELLED: "Cancelada",
     }
@@ -167,6 +178,8 @@ class BookRequest:
     delivery_preference: str
     notes: str
     status: str = RequestStatus.DRAFT
+    canceled_by_role: Optional[str] = None
+    cancellation_reason: str = ""
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
@@ -419,7 +432,7 @@ class Store:
         reader = self._require_role(actor, Role.READER)
         groups = {
             "todas": None,
-            "activas": RequestStatus.OPEN,
+            "activas": RequestStatus.ACTIVE,
             "resueltas": (RequestStatus.RESOLVED,),
             "canceladas": (RequestStatus.CANCELLED,),
         }
@@ -444,18 +457,22 @@ class Store:
             return req
         raise PermissionDenied("No puedes ver esta solicitud.")
 
-    def cancel_request(self, actor: User, request_id: int) -> BookRequest:
+    def cancel_request(self, actor: User, request_id: int, reason: str = "") -> BookRequest:
         user = self._require_role(actor, Role.READER, Role.ADMIN)
         req = self._get(self.requests, request_id, "Solicitud")
         if user.role == Role.READER and req.reader_id != user.id:
             raise PermissionDenied("Solo puedes cancelar tus propias solicitudes.")
         self._transition(req, RequestStatus.CANCELLED, RequestStatus.TRANSITIONS)
-        # Supuesto del demo: las ofertas activas de una solicitud cancelada se cancelan.
+        req.canceled_by_role = user.role
+        req.cancellation_reason = _clean(reason, 300)
         for offer in self._offers_of(req.id):
-            if offer.status == OfferStatus.PUBLISHED:
+            if offer.status in OfferStatus.ACTIVE:
                 self._transition(offer, OfferStatus.CANCELLED, OfferStatus.TRANSITIONS)
         who = "moderación" if user.role == Role.ADMIN else "lector"
-        self._log(user, "solicitud_cancelada", f"Solicitud #{req.id} cancelada ({who})")
+        detail = f"Solicitud #{req.id} cancelada ({who})"
+        if req.cancellation_reason:
+            detail += f": {req.cancellation_reason}"
+        self._log(user, "solicitud_cancelada", detail)
         return req
 
     # ------------------------------------------------------ seller: feed
@@ -495,7 +512,7 @@ class Store:
         seller = self._require_role(actor, Role.SELLER)
         return next(
             (o for o in self._offers_of(request_id)
-             if o.seller_id == seller.id and o.status == OfferStatus.PUBLISHED),
+             if o.seller_id == seller.id and o.status in OfferStatus.ACTIVE),
             None,
         )
 
@@ -524,11 +541,7 @@ class Store:
         amount = _parse_price(price, required=True, field_name="El precio")
         if book_condition not in Condition.OFFER_OPTIONS:
             raise ValidationError("Indica si el libro es nuevo o usado.")
-        if not condition_compatible(req.accepted_condition, book_condition):
-            raise ValidationError(
-                f"El lector solo acepta libros en estado "
-                f"{Condition.LABELS[req.accepted_condition].lower()}."
-            )
+        # El estado del libro ofrecido no bloquea la creación de la oferta (el lector decide aceptar o no).
         phone, email, address = _clean(phone, 30), _clean(email, 120), _clean(address, 200)
         if email and not EMAIL_RE.match(email):
             raise ValidationError("El correo de contacto no es válido.")
@@ -577,13 +590,14 @@ class Store:
         raise PermissionDenied("No puedes ver esta oferta.")
 
     def offer_contact(self, actor: User, offer_id: int) -> SellerContact:
-        """Los datos de contacto solo se revelan tras aceptar la oferta."""
+        """Los datos de contacto se revelan cuando la oferta entra en coordinación o es aceptada."""
         offer = self.get_offer(actor, offer_id)
-        if offer.status != OfferStatus.ACCEPTED and actor.role != Role.ADMIN:
-            raise PermissionDenied("El contacto se muestra al aceptar la oferta.")
+        if offer.status not in (OfferStatus.IN_DEAL, OfferStatus.ACCEPTED) and actor.role != Role.ADMIN:
+            raise PermissionDenied("El contacto se muestra al coordinar o aceptar la oferta.")
         return self.contacts.get(offer.seller_id, SellerContact(offer.seller_id))
 
     def accept_offer(self, actor: User, offer_id: int) -> Offer:
+        """El lector acepta preliminarmente la oferta para coordinar entrega/compra."""
         reader = self._require_role(actor, Role.READER)
         offer = self._get(self.offers, offer_id, "Oferta")
         req = self.requests[offer.request_id]
@@ -591,15 +605,66 @@ class Store:
             raise PermissionDenied("Solo puedes aceptar ofertas de tus solicitudes.")
         if offer.status != OfferStatus.PUBLISHED:
             raise InvalidTransition("Esta oferta ya no está disponible.")
-        # Supuesto del demo: una solicitud acepta una sola oferta y el resto se rechaza.
+        
+        self._transition(req, RequestStatus.IN_DEAL, RequestStatus.TRANSITIONS)
+        self._transition(offer, OfferStatus.IN_DEAL, OfferStatus.TRANSITIONS)
+        # Las demás ofertas activas pasan a estar en espera (no se rechazan aún)
+        for other in self._offers_of(req.id):
+            if other.id != offer.id and other.status == OfferStatus.PUBLISHED:
+                self._transition(other, OfferStatus.ON_HOLD, OfferStatus.TRANSITIONS)
+        self._log(
+            reader, "oferta_por_concretar",
+            f"Oferta #{offer.id} por concretar · solicitud #{req.id} en coordinación",
+        )
+        return offer
+
+    def confirm_deal(self, actor: User, offer_id: int) -> Offer:
+        """El lector confirma que el trato se cerró exitosamente."""
+        reader = self._require_role(actor, Role.READER)
+        offer = self._get(self.offers, offer_id, "Oferta")
+        req = self.requests[offer.request_id]
+        if req.reader_id != reader.id:
+            raise PermissionDenied("Solo puedes confirmar tratos de tus solicitudes.")
+        if offer.status != OfferStatus.IN_DEAL:
+            raise InvalidTransition("Solo puedes confirmar ofertas que estén en coordinación.")
+        
         self._transition(req, RequestStatus.RESOLVED, RequestStatus.TRANSITIONS)
         self._transition(offer, OfferStatus.ACCEPTED, OfferStatus.TRANSITIONS)
         for other in self._offers_of(req.id):
-            if other.id != offer.id and other.status == OfferStatus.PUBLISHED:
+            if other.id != offer.id and other.status == OfferStatus.ON_HOLD:
                 self._transition(other, OfferStatus.REJECTED, OfferStatus.TRANSITIONS)
         self._log(
-            reader, "oferta_aceptada",
-            f"Oferta #{offer.id} aceptada · solicitud #{req.id} resuelta",
+            reader, "trato_concretado",
+            f"Oferta #{offer.id} concretada · solicitud #{req.id} resuelta",
+        )
+        return offer
+
+    def cancel_deal(self, actor: User, offer_id: int, reason: str = "") -> Offer:
+        """El lector o vendedor desiste de la coordinación en curso."""
+        user = self._require_role(actor, Role.READER, Role.SELLER, Role.ADMIN)
+        offer = self._get(self.offers, offer_id, "Oferta")
+        req = self.requests[offer.request_id]
+        if user.role == Role.READER and req.reader_id != user.id:
+            raise PermissionDenied("No puedes desistir de este trato.")
+        if user.role == Role.SELLER and offer.seller_id != user.id:
+            raise PermissionDenied("No puedes desistir de este trato.")
+        if offer.status != OfferStatus.IN_DEAL:
+            raise InvalidTransition("Esta oferta no está en coordinación.")
+
+        new_offer_status = OfferStatus.CANCELLED if user.role == Role.SELLER else OfferStatus.REJECTED
+        self._transition(offer, new_offer_status, OfferStatus.TRANSITIONS)
+
+        # Reactivar las demás ofertas que estaban en espera
+        active_on_hold = [o for o in self._offers_of(req.id) if o.status == OfferStatus.ON_HOLD]
+        for other in active_on_hold:
+            self._transition(other, OfferStatus.PUBLISHED, OfferStatus.TRANSITIONS)
+
+        new_req_status = RequestStatus.WITH_OFFERS if active_on_hold else RequestStatus.PUBLISHED
+        self._transition(req, new_req_status, RequestStatus.TRANSITIONS)
+
+        self._log(
+            user, "trato_desistido",
+            f"Coordinación de oferta #{offer.id} cancelada · solicitud #{req.id} reactivada",
         )
         return offer
 
@@ -616,7 +681,7 @@ class Store:
         seller = self._require_role(actor, Role.SELLER)
         groups = {
             "todas": None,
-            "activas": (OfferStatus.PUBLISHED,),
+            "activas": (OfferStatus.PUBLISHED, OfferStatus.IN_DEAL, OfferStatus.ON_HOLD),
             "aceptadas": (OfferStatus.ACCEPTED,),
             "finalizadas": (OfferStatus.REJECTED, OfferStatus.CANCELLED),
         }
@@ -628,7 +693,7 @@ class Store:
         return sorted(items, key=lambda o: o.updated_at, reverse=True)
 
     def active_offer_count(self, request_id: int) -> int:
-        return sum(1 for o in self._offers_of(request_id) if o.status == OfferStatus.PUBLISHED)
+        return sum(1 for o in self._offers_of(request_id) if o.status in OfferStatus.ACTIVE)
 
     # ------------------------------------------------------------ admin
     def admin_stats(self, actor: User) -> dict[str, int]:
@@ -640,8 +705,8 @@ class Store:
             "lectores": sum(u.role == Role.READER for u in users),
             "vendedores": sum(u.role == Role.SELLER for u in users),
             "solicitudes": len(reqs),
-            "activas": sum(r.status in RequestStatus.OPEN for r in reqs),
-            "con_ofertas": sum(r.status == RequestStatus.WITH_OFFERS for r in reqs),
+            "activas": sum(r.status in RequestStatus.ACTIVE for r in reqs),
+            "con_ofertas": sum(r.status in (RequestStatus.WITH_OFFERS, RequestStatus.IN_DEAL) for r in reqs),
             "resueltas": sum(r.status == RequestStatus.RESOLVED for r in reqs),
             "canceladas": sum(r.status == RequestStatus.CANCELLED for r in reqs),
             "ofertas": len(self.offers),
@@ -655,7 +720,7 @@ class Store:
         self._require_role(actor, Role.ADMIN)
         groups = {
             "todas": None,
-            "activas": RequestStatus.OPEN,
+            "activas": RequestStatus.ACTIVE,
             "resueltas": (RequestStatus.RESOLVED,),
             "canceladas": (RequestStatus.CANCELLED,),
         }
