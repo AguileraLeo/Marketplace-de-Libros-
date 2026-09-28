@@ -71,12 +71,10 @@
         pos_hint: {"center_x": .5, "center_y": .5}
         theme_text_color: "Custom"
         text_color: app.theme_cls.onSecondaryContainerColor
-    AsyncImage:
-        source: root.source
+    Image:
+        source: root.local_source
         fit_mode: "cover"
-        opacity: 1 if root.loaded and root.source else 0
-        on_load: root.loaded = True
-        on_error: root.loaded = False
+        opacity: 1 if root.loaded and root.local_source else 0
 
 <StatusChip>:
     adaptive_size: True
@@ -239,20 +237,20 @@
     padding: dp(14), dp(10)
     radius: [dp(16)] * 4
     ripple_effect: False
-    md_bg_color: app.theme_cls.primaryContainerColor
+    md_bg_color: root.bg
     MDLabel:
         text: root.value
         font_style: "Headline"
         role: "medium"
         bold: True
         theme_text_color: "Custom"
-        text_color: app.theme_cls.onPrimaryContainerColor
+        text_color: root.fg
     MDLabel:
         text: root.label
         font_style: "Label"
         role: "medium"
         theme_text_color: "Custom"
-        text_color: app.theme_cls.onPrimaryContainerColor
+        text_color: root.fg
 
 <InfoRow>:
     adaptive_height: True
@@ -329,6 +327,10 @@ MDScreenManager:
     CreateOfferScreen:
     SellerOffersScreen:
     AdminHomeScreen:
+    AdminRequestsScreen:
+    AdminUsersScreen:
+    AdminOffersScreen:
+    AdminActivityScreen:
 
 
 # ------------------------------------------------------------------ Login
@@ -560,28 +562,31 @@ MDScreenManager:
         orientation: "vertical"
         BackBar:
             title: "Buscar libro"
+        Page:
+            padding: dp(16), dp(12), dp(16), dp(4)
+            MDTextField:
+                id: query
+                mode: "outlined"
+                on_text_validate: root.search()
+                MDTextFieldLeadingIcon:
+                    icon: "magnify"
+                MDTextFieldHintText:
+                    text: "Título, autor o ISBN"
+            ChoiceRow:
+                id: mode
+                options: [("titulo", "Título"), ("autor", "Autor"), ("isbn", "ISBN")]
+                value: "titulo"
+            PrimaryButton:
+                disabled: root.searching
+                on_release: root.search()
+                MDButtonText:
+                    text: "Buscando…" if root.searching else "Buscar"
+            Muted:
+                text: root.status_text
+                role: "small"
         MDScrollView:
             Page:
-                MDTextField:
-                    id: query
-                    mode: "outlined"
-                    on_text_validate: root.search()
-                    MDTextFieldLeadingIcon:
-                        icon: "magnify"
-                    MDTextFieldHintText:
-                        text: "Título, autor o ISBN"
-                ChoiceRow:
-                    id: mode
-                    options: [("titulo", "Título"), ("autor", "Autor"), ("isbn", "ISBN")]
-                    value: "titulo"
-                PrimaryButton:
-                    disabled: root.searching
-                    on_release: root.search()
-                    MDButtonText:
-                        text: "Buscando…" if root.searching else "Buscar"
-                Muted:
-                    text: root.status_text
-                    role: "small"
+                padding: dp(16), dp(4), dp(16), dp(32)
                 ListBox:
                     id: results
 
@@ -634,14 +639,50 @@ MDScreenManager:
                     options: [(Condition.ANY, "Cualquiera"), (Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
                     value: Condition.ANY
                 FieldLabel:
-                    text: "Ubicación"
+                    text: "Ubicación (Ciudad o Comuna)"
                 MDTextField:
                     id: location
                     mode: "outlined"
+                    on_text: root.on_location_text(self.text)
                     MDTextFieldLeadingIcon:
                         icon: "map-marker-outline"
                     MDTextFieldHintText:
-                        text: "Ciudad o comuna"
+                        text: "Ej: Concepción, Santiago, Valparaíso…"
+                    MDTextFieldHelperText:
+                        text: "Escribe para buscar tu comuna o ciudad"
+                        mode: "persistent"
+                ListBox:
+                    id: suggestions_box
+                MDBoxLayout:
+                    adaptive_height: True
+                    spacing: dp(6)
+                    padding: 0, dp(4), 0, 0
+                    Muted:
+                        text: "Rápido:"
+                        font_style: "Label"
+                        role: "small"
+                        pos_hint: {"center_y": .5}
+                    MDButton:
+                        style: "outlined"
+                        size_hint_y: None
+                        height: dp(32)
+                        on_release: root.select_location("Concepción (Biobío)")
+                        MDButtonText:
+                            text: "Concepción"
+                    MDButton:
+                        style: "outlined"
+                        size_hint_y: None
+                        height: dp(32)
+                        on_release: root.select_location("Santiago (Metropolitana)")
+                        MDButtonText:
+                            text: "Santiago"
+                    MDButton:
+                        style: "outlined"
+                        size_hint_y: None
+                        height: dp(32)
+                        on_release: root.select_location("Valparaíso (Valparaíso)")
+                        MDButtonText:
+                            text: "Valparaíso"
                 FieldLabel:
                     text: "Preferencia de entrega"
                 ChoiceRow:
@@ -722,13 +763,16 @@ MDScreenManager:
         orientation: "vertical"
         BackBar:
             title: "Mis solicitudes"
+        Page:
+            padding: dp(16), dp(12), dp(16), dp(4)
+            ChoiceRow:
+                id: filter
+                options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
+                value: "todas"
+                on_value: root.refresh()
         MDScrollView:
             Page:
-                ChoiceRow:
-                    id: filter
-                    options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
-                    value: "todas"
-                    on_value: root.refresh()
+                padding: dp(16), dp(4), dp(16), dp(32)
                 ListBox:
                     id: list
 
@@ -974,54 +1018,57 @@ MDScreenManager:
                 MDActionTopAppBarButton:
                     icon: "logout"
                     on_release: app.logout()
-        MDScrollView:
-            Page:
-                Muted:
-                    text: "Hola, " + app.user_name + ". Estas personas buscan libros que podrías ofrecer."
-                Panel:
+        Page:
+            padding: dp(16), dp(12), dp(16), dp(4)
+            Muted:
+                text: "Hola, " + app.user_name + ". Estas personas buscan libros que podrías ofrecer."
+            Panel:
+                MDTextField:
+                    id: text
+                    mode: "outlined"
+                    on_text: root.refresh()
+                    MDTextFieldLeadingIcon:
+                        icon: "magnify"
+                    MDTextFieldHintText:
+                        text: "Buscar por título, autor o ISBN"
+                MDBoxLayout:
+                    adaptive_height: True
+                    spacing: dp(10)
                     MDTextField:
-                        id: text
+                        id: location
                         mode: "outlined"
                         on_text: root.refresh()
                         MDTextFieldLeadingIcon:
-                            icon: "magnify"
+                            icon: "map-marker-outline"
                         MDTextFieldHintText:
-                            text: "Buscar por título, autor o ISBN"
-                    MDBoxLayout:
-                        adaptive_height: True
-                        spacing: dp(10)
-                        MDTextField:
-                            id: location
-                            mode: "outlined"
-                            on_text: root.refresh()
-                            MDTextFieldLeadingIcon:
-                                icon: "map-marker-outline"
-                            MDTextFieldHintText:
-                                text: "Ubicación"
-                        MDTextField:
-                            id: budget
-                            mode: "outlined"
-                            input_filter: "int"
-                            on_text: root.refresh()
-                            MDTextFieldLeadingIcon:
-                                icon: "cash"
-                            MDTextFieldHintText:
-                                text: "Presup. mín."
-                    MDBoxLayout:
-                        adaptive_height: True
-                        spacing: dp(8)
-                        ChoiceRow:
-                            id: condition
-                            options: [("todas", "Todas"), (Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
-                            value: "todas"
-                            on_value: root.refresh()
-                        MDIconButton:
-                            icon: "filter-remove-outline"
-                            pos_hint: {"center_y": .5}
-                            on_release: root.clear_filters()
-                Muted:
-                    id: count
-                    role: "small"
+                            text: "Ubicación"
+                    MDTextField:
+                        id: budget
+                        mode: "outlined"
+                        input_filter: "int"
+                        on_text: root.refresh()
+                        MDTextFieldLeadingIcon:
+                            icon: "cash"
+                        MDTextFieldHintText:
+                            text: "Presup. mín."
+                MDBoxLayout:
+                    adaptive_height: True
+                    spacing: dp(8)
+                    ChoiceRow:
+                        id: condition
+                        options: [("todas", "Todas"), (Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
+                        value: "todas"
+                        on_value: root.refresh()
+                    MDIconButton:
+                        icon: "filter-remove-outline"
+                        pos_hint: {"center_y": .5}
+                        on_release: root.clear_filters()
+            Muted:
+                id: count
+                role: "small"
+        MDScrollView:
+            Page:
+                padding: dp(16), dp(4), dp(16), dp(32)
                 ListBox:
                     id: list
 
@@ -1167,13 +1214,16 @@ MDScreenManager:
         orientation: "vertical"
         BackBar:
             title: "Mis ofertas"
+        Page:
+            padding: dp(16), dp(12), dp(16), dp(4)
+            ChoiceRow:
+                id: filter
+                options: [("todas", "Todas"), ("activas", "Activas"), ("aceptadas", "Aceptadas"), ("finalizadas", "Finalizadas")]
+                value: "todas"
+                on_value: root.refresh()
         MDScrollView:
             Page:
-                ChoiceRow:
-                    id: filter
-                    options: [("todas", "Todas"), ("activas", "Activas"), ("aceptadas", "Aceptadas"), ("finalizadas", "Finalizadas")]
-                    value: "todas"
-                    on_value: root.refresh()
+                padding: dp(16), dp(4), dp(16), dp(32)
                 ListBox:
                     id: list
 
@@ -1206,39 +1256,152 @@ MDScreenManager:
                     StatTile:
                         id: st_usuarios
                         label: "Usuarios"
+                        tone: "blue"
                     StatTile:
                         id: st_lectores
                         label: "Lectores"
+                        tone: "teal"
                     StatTile:
                         id: st_vendedores
                         label: "Vendedores"
+                        tone: "purple"
                     StatTile:
                         id: st_solicitudes
                         label: "Solicitudes"
+                        tone: "gray"
                     StatTile:
                         id: st_activas
                         label: "Activas"
+                        tone: "orange"
                     StatTile:
                         id: st_con_ofertas
                         label: "Con ofertas"
+                        tone: "orange"
                     StatTile:
                         id: st_resueltas
                         label: "Resueltas"
+                        tone: "green"
                     StatTile:
                         id: st_canceladas
                         label: "Canceladas"
+                        tone: "red"
                     StatTile:
                         id: st_ofertas
                         label: "Ofertas"
-                ChoiceRow:
-                    id: section
-                    options: [("solicitudes", "Solicitudes"), ("usuarios", "Usuarios"), ("ofertas", "Ofertas"), ("actividad", "Actividad")]
-                    value: "solicitudes"
-                    on_value: root.refresh()
-                ChoiceRow:
-                    id: req_filter
-                    options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
-                    value: "todas"
-                    on_value: root.refresh()
+                        tone: "blue"
+                Heading:
+                    text: "Gestión"
+                    role: "small"
+                Panel:
+                    spacing: dp(2)
+                    MDListItem:
+                        on_release: app.go("admin_requests")
+                        MDListItemLeadingIcon:
+                            icon: "clipboard-text-outline"
+                        MDListItemHeadlineText:
+                            text: "Solicitudes"
+                        MDListItemSupportingText:
+                            text: "Ver, filtrar y moderar solicitudes"
+                    MDListItem:
+                        on_release: app.go("admin_users")
+                        MDListItemLeadingIcon:
+                            icon: "account-multiple-outline"
+                        MDListItemHeadlineText:
+                            text: "Usuarios"
+                        MDListItemSupportingText:
+                            text: "Consultar y suspender usuarios"
+                    MDListItem:
+                        on_release: app.go("admin_offers")
+                        MDListItemLeadingIcon:
+                            icon: "tag-multiple-outline"
+                        MDListItemHeadlineText:
+                            text: "Ofertas"
+                        MDListItemSupportingText:
+                            text: "Historial de ofertas de la plataforma"
+                    MDListItem:
+                        on_release: app.go("admin_activity")
+                        MDListItemLeadingIcon:
+                            icon: "history"
+                        MDListItemHeadlineText:
+                            text: "Auditoría / Actividad"
+                        MDListItemSupportingText:
+                            text: "Buscar y exportar logs de actividad"
+
+
+<AdminRequestsScreen>:
+    name: "admin_requests"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Solicitudes"
+        Page:
+            padding: dp(16), dp(12), dp(16), dp(4)
+            ChoiceRow:
+                id: filter
+                options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
+                value: "todas"
+                on_value: root.refresh()
+        MDScrollView:
+            Page:
+                padding: dp(16), dp(4), dp(16), dp(32)
+                ListBox:
+                    id: list
+
+
+<AdminUsersScreen>:
+    name: "admin_users"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Usuarios"
+        MDScrollView:
+            Page:
+                padding: dp(16), dp(12), dp(16), dp(32)
+                ListBox:
+                    id: list
+
+
+<AdminOffersScreen>:
+    name: "admin_offers"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Ofertas"
+        MDScrollView:
+            Page:
+                padding: dp(16), dp(12), dp(16), dp(32)
+                ListBox:
+                    id: list
+
+
+<AdminActivityScreen>:
+    name: "admin_activity"
+    md_bg_color: app.theme_cls.backgroundColor
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: "Auditoría / Actividad"
+        Page:
+            padding: dp(16), dp(12), dp(16), dp(4)
+            MDTextField:
+                id: search
+                mode: "outlined"
+                on_text: root.refresh()
+                MDTextFieldLeadingIcon:
+                    icon: "magnify"
+                MDTextFieldHintText:
+                    text: "Buscar por acción, detalle o actor"
+            PrimaryButton:
+                on_release: root.export_logs()
+                MDButtonIcon:
+                    icon: "download"
+                MDButtonText:
+                    text: "EXPORTAR LOGS DE ACTIVIDAD"
+        MDScrollView:
+            Page:
+                padding: dp(16), dp(4), dp(16), dp(32)
                 ListBox:
                     id: list

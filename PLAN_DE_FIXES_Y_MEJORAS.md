@@ -57,81 +57,81 @@ El trabajo está estructurado en **4 fases lógicas** para respetar el principio
 
 ### 🔹 Fase 2: Servicios, Búsqueda y Caché
 
-#### [ ] Tarea 4: Caché local persistente para miniaturas y portadas de libros
+#### [x] Tarea 4: Caché local persistente para miniaturas y portadas de libros
 
 - **Observación original:** Las miniaturas de los libros se pierden en "Crear solicitud" y en el dashboard principal (a veces cargan y a veces no).
 - **Alcance & Archivos:** [books_api.py](file:///c:/Proyectos/Marketplace-de-Libros-/books_api.py), [main.py](file:///c:/Proyectos/Marketplace-de-Libros-/main.py), [libros.kv](file:///c:/Proyectos/Marketplace-de-Libros-/libros.kv)
 - **Criterios de Aceptación:**
-  - [ ] Implementar un manejador de descarga y caché local en disco (carpeta `.cache/covers/` o similar) para las URLs de portadas.
-  - [ ] Si la descarga falla o el libro no tiene imagen, mostrar una portada por defecto / placeholder estilizado.
-  - [ ] Garantizar que al seleccionar un libro en "Buscar libro", la referencia de la portada persista correctamente al navegar a "Crear solicitud" y al listarse en el Dashboard.
+  - [x] Implementar un manejador de descarga y caché local en disco (carpeta `.cache/covers/` o similar) para las URLs de portadas.
+  - [x] Si la descarga falla o el libro no tiene imagen, mostrar una portada por defecto / placeholder estilizado.
+  - [x] Garantizar que al seleccionar un libro en "Buscar libro", la referencia de la portada persista correctamente al navegar a "Crear solicitud" y al listarse en el Dashboard.
 
 ---
 
-#### [ ] Tarea 5: Normalización de ubicaciones (Selector de Ciudad / Comuna)
+#### [x] Tarea 5: Normalización de ubicaciones (Selector de Ciudad / Comuna)
 
 - **Observación original:** La ubicación en "Crear solicitud" debe permitir seleccionar ciudades/comunas normalizadas (vía API), en lugar de texto libre con direcciones concretas.
-- **Alcance & Archivos:** [store.py](file:///c:/Proyectos/Marketplace-de-Libros-/store.py), [main.py](file:///c:/Proyectos/Marketplace-de-Libros-/main.py), [libros.kv](file:///c:/Proyectos/Marketplace-de-Libros-/libros.kv)
+- **Alcance & Archivos:** [store.py](file:///c:/Proyectos/Marketplace-de-Libros-/store.py), [locations.py](file:///c:/Proyectos/Marketplace-de-Libros-/locations.py), [main.py](file:///c:/Proyectos/Marketplace-de-Libros-/main.py), [libros.kv](file:///c:/Proyectos/Marketplace-de-Libros-/libros.kv)
 - **Criterios de Aceptación:**
-  - [ ] integración con API geográfica liviana catálogo/servicio de regiones y comunas/ciudades principales .
-  - [ ] Reemplazar el campo de texto en "Crear solicitud" por un selector/buscador autocompletable de Comuna/Ciudad.
-  - [ ] Asegurar que el filtro por ubicación del vendedor coincida exactamente con las ciudades/comunas normalizadas.
+  - [x] Integración con catálogo/servicio de regiones y comunas/ciudades principales ([locations.py](file:///c:/Proyectos/Marketplace-de-Libros-/locations.py)).
+  - [x] Reemplazar el campo de texto en "Crear solicitud" por un selector/buscador autocompletable de Comuna/Ciudad.
+  - [x] Asegurar que el filtro por ubicación del vendedor coincida exactamente con las ciudades/comunas normalizadas.
 
 ---
 
 ### 🔹 Fase 3: Experiencia de Usuario y Vistas (Lector y Vendedor)
 
-#### [ ] Tarea 6: Filtrar solicitudes ya ofertadas en el Dashboard del Vendedor
+#### [x] Tarea 6: Filtrar solicitudes ya ofertadas en el Dashboard del Vendedor
 
 - **Observación original:** En el dashboard del vendedor, los libros/solicitudes donde el vendedor ya envió una oferta deben desaparecer del feed principal.
 - **Alcance & Archivos:** [store.py](file:///c:/Proyectos/Marketplace-de-Libros-/store.py), [main.py](file:///c:/Proyectos/Marketplace-de-Libros-/main.py)
 - **Criterios de Aceptación:**
-  - [ ] En la consulta de solicitudes para el feed del vendedor, excluir aquellas en las que el usuario actual ya posea una oferta activa.
-  - [ ] Dichas solicitudes deben ser accesibles y gestionables exclusivamente desde la pantalla **"Mis Ofertas"**.
+  - [x] En la consulta de solicitudes para el feed del vendedor, excluir aquellas en las que el usuario actual ya posea una oferta activa.
+  - [x] Dichas solicitudes deben ser accesibles y gestionables exclusivamente desde la pantalla **"Mis Ofertas"**.
 
 ---
 
-#### [ ] Tarea 7: Fijar cabecera de búsqueda y filtros (Layout Scrollable)
+#### [x] Tarea 7: Fijar cabecera de búsqueda y filtros (Layout Scrollable)
 
 - **Observación original:** Al aplicar filtros, la pantalla se centra y desplaza el buscador y los controles. El buscador y filtros deben permanecer fijos arriba y solo la lista de tarjetas debe desplazarse.
 - **Alcance & Archivos:** [libros.kv](file:///c:/Proyectos/Marketplace-de-Libros-/libros.kv), [main.py](file:///c:/Proyectos/Marketplace-de-Libros-/main.py)
 - **Criterios de Aceptación:**
-  - [ ] Reestructurar el layout KV: contenedor superior con tamaño fijo (`size_hint_y: None`) para buscador y filtros.
-  - [ ] Contenedor inferior con `ScrollView` independiente para el listado de resultados.
-  - [ ] Prevenir recentrados bruscos al refrescar o filtrar datos.
+  - [x] Reestructurar el layout KV: contenedor superior con tamaño fijo (`size_hint_y: None`) para buscador y filtros.
+  - [x] Contenedor inferior con `ScrollView` independiente para el listado de resultados.
+  - [x] Prevenir recentrados bruscos al refrescar o filtrar datos.
 
 ---
 
 ### 🔹 Fase 4: Rediseño y Gestión del Panel de Administración
 
-#### [ ] Tarea 8: Diferenciación visual de tarjetas de métricas en Admin
+#### [x] Tarea 8: Diferenciación visual de tarjetas de métricas en Admin
 
 - **Observación original:** Los resúmenes/métricas superiores en el panel de administración son difíciles de distinguir entre sí.
 - **Alcance & Archivos:** [libros.kv](file:///c:/Proyectos/Marketplace-de-Libros-/libros.kv)
 - **Criterios de Aceptación:**
-  - [ ] Aplicar estilos diferenciados por color/chips (ej. azul para usuarios, verde para solicitudes resueltas, naranja para ofertas activas, etc.).
-  - [ ] Mejorar la jerarquía visual de números y etiquetas.
+  - [x] Aplicar estilos diferenciados por color/chips (ej. azul para usuarios, verde para solicitudes resueltas, naranja para ofertas activas, etc.).
+  - [x] Mejorar la jerarquía visual de números y etiquetas.
 
 ---
 
-#### [ ] Tarea 9: Navegación limpia en Admin (Menú / Tabs / Drawer)
+#### [x] Tarea 9: Navegación limpia en Admin (Menú / Tabs / Drawer)
 
 - **Observación original:** Las secciones (Solicitudes, Usuarios, Ofertas, Actividad) sobrecargan la pantalla al estar todo junto.
 - **Alcance & Archivos:** [main.py](file:///c:/Proyectos/Marketplace-de-Libros-/main.py), [libros.kv](file:///c:/Proyectos/Marketplace-de-Libros-/libros.kv)
 - **Criterios de Aceptación:**
-  - [ ] Implementar navegación por pestañas (`MDTabs`), menú desplegable (`MDDropdownMenu`) o barra lateral de navegación para separar cada entidad en su propia subvista.
-  - [ ] Descongestionar la pantalla de inicio del Admin dejando únicamente métricas generales y accesos rápidos.
+  - [x] Implementar navegación por pestañas (`MDTabs`), menú desplegable (`MDDropdownMenu`) o barra lateral de navegación para separar cada entidad en su propia subvista.
+  - [x] Descongestionar la pantalla de inicio del Admin dejando únicamente métricas generales y accesos rápidos.
 
 ---
 
-#### [ ] Tarea 10: Gestión de logs de actividad y exportación/descarga
+#### [x] Tarea 10: Gestión de logs de actividad y exportación/descarga
 
 - **Observación original:** El registro de actividad satura la interfaz visual; debería registrarse en segundo plano y permitir consulta/descarga bajo demanda.
 - **Alcance & Archivos:** [store.py](file:///c:/Proyectos/Marketplace-de-Libros-/store.py), [main.py](file:///c:/Proyectos/Marketplace-de-Libros-/main.py), [libros.kv](file:///c:/Proyectos/Marketplace-de-Libros-/libros.kv)
 - **Criterios de Aceptación:**
-  - [ ] Remover el bloque de actividad permanente de la vista principal del Admin.
-  - [ ] Crear un botón/acción "Exportar Logs de Actividad" (generando archivo `.log` o `.csv`/`.json`).
-  - [ ] Vista dedicada de auditoría con paginación/búsqueda si se desea consultar en pantalla.
+  - [x] Remover el bloque de actividad permanente de la vista principal del Admin.
+  - [x] Crear un botón/acción "Exportar Logs de Actividad" (generando archivo `.log` o `.csv`/`.json`).
+  - [x] Vista dedicada de auditoría con paginación/búsqueda si se desea consultar en pantalla.
 
 ---
 

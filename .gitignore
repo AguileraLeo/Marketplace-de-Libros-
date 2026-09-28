@@ -5,3 +5,5 @@ __pycache__/
 .vscode/
 .idea/
 .claude/settings.local.json
+.cache/
+registro_actividad*.log

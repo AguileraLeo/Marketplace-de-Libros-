@@ -26,14 +26,15 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Área | Estado |
 |------|--------|
 | Login, registro (lector/vendedor), recuperar contraseña (simulado) | Hecho |
-| Búsqueda de libros (Google Books → Open Library → catálogo local) | Hecho |
-| Lector: crear, ver y cancelar solicitudes; ver y aceptar ofertas | Hecho |
-| Vendedor: feed con filtros, detalle, crear/cancelar oferta, mis ofertas | Hecho |
-| Admin: estadísticas, usuarios (suspender), solicitudes, ofertas, actividad | Hecho (básico) |
-| Máquinas de estado de solicitud y oferta | Hecho, en `store.py` |
+| Búsqueda de libros (Google Books → Open Library → catálogo local) con caché de portadas en disco | Hecho |
+| Lector: crear, ver y cancelar solicitudes; selector de comuna/ciudad; ver, coordinar y aceptar ofertas | Hecho |
+| Vendedor: feed con filtros (excluye solicitudes ya ofertadas), detalle, crear/cancelar oferta, mis ofertas | Hecho |
+| Admin: panel de métricas con accesos rápidos y subpantallas de solicitudes, usuarios, ofertas y auditoría | Hecho |
+| Admin: búsqueda y exportación de logs de actividad a `.log` | Hecho |
+| Máquinas de estado de solicitud y oferta (estados intermedios) | Hecho, en `store.py` |
 | Permisos por rol en la capa de dominio (no solo en la UI) | Hecho |
-| Pruebas del flujo crítico y permisos (13 tests) | Pasan |
-| Persistencia (base de datos o archivo) | **No existe**: todo vive en memoria |
+| Pruebas automatizadas (25 tests) | Pasan |
+| Persistencia (base de datos o archivo) | **No existe**: todo vive en memoria (excepto caché de portadas en `.cache/covers/`) |
 | Documentación SDD en `docs/` (specs, casos de uso, ADR) | **Pendiente** |
 | Reportes, auditoría formal, notificaciones | Fuera del demo |
 
@@ -42,7 +43,7 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 - **Comunes:** Login, Registro.
 - **Lector:** Inicio, Buscar libro, Crear solicitud, Solicitud publicada, Mis solicitudes, Detalle de solicitud, Detalle de oferta, Oferta aceptada.
 - **Vendedor:** Inicio (solicitudes disponibles y filtros), Detalle de solicitud, Crear oferta, Mis ofertas.
-- **Admin:** Panel con estadísticas, usuarios, solicitudes, ofertas y actividad.
+- **Admin:** Inicio con métricas y accesos rápidos; subpantallas de Solicitudes (moderación), Usuarios (suspender), Ofertas y Auditoría/Actividad (búsqueda y exportación de logs).
 
 ## 3. Arquitectura del demo
 
@@ -54,7 +55,8 @@ main.py        Pantallas y navegación. No contiene reglas de negocio.
 store.py       Dominio: entidades, estados, validaciones, permisos.
    │           Repositorio en memoria + datos de ejemplo (build_demo_store).
    │
-books_api.py   Proveedores externos de libros con fallback.
+books_api.py   Proveedores externos de libros con fallback y caché en disco.
+locations.py   Catálogo y normalizador de comunas/ciudades.
 ```
 
 Regla: **toda regla de negocio y todo chequeo de permisos va en `store.py`**, y la UI solo llama a sus métodos. Así se puede probar sin interfaz y cambiar la UI o la persistencia sin romper el dominio.
@@ -72,7 +74,7 @@ Oferta:     PUBLICADA -> POR_CONCRETAR -> ACEPTADA
 
 ## 4. Decisiones tomadas para el demo (todavía no son specs)
 
-Se tomaron para que el demo funcionara y se actualizaron con la Fase 1 del plan de fixes:
+Se tomaron para que el demo funcionara y se actualizaron con las Fases 1 a 4 del plan de fixes:
 
 1. Al aceptar una oferta inicialmente para coordinar, la oferta pasa a `POR_CONCRETAR`, la solicitud a `EN_COORDINACION` y las demás ofertas activas quedan `EN_ESPERA`.
 2. Una vez coordinada y realizada la entrega/pago, el lector confirma el trato (`confirm_deal`), pasando la oferta a `ACEPTADA`, la solicitud a `RESUELTA` y rechazando definitivamente las ofertas `EN_ESPERA`.
@@ -84,6 +86,8 @@ Se tomaron para que el demo funcionara y se actualizaron con la Fase 1 del plan 
 8. Cada cuenta tiene un solo rol. Un usuario suspendido no puede iniciar sesión ni operar.
 9. No hay base de datos: los usuarios de demo están hardcodeados y los datos se pierden al cerrar la app.
 10. Stack del demo: Python 3.10/3.11 + Kivy 2.3.1 + KivyMD 2.0.1.dev0.
+11. El feed del vendedor excluye las solicitudes donde ya tiene una oferta activa; esas se gestionan desde "Mis ofertas".
+12. El admin consulta la actividad en una subpantalla dedicada (con búsqueda) y puede exportarla a un archivo `.log`.
 
 ## 5. Próximos pasos sugeridos
 

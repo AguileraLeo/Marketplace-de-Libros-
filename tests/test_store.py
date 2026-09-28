@@ -5,6 +5,7 @@ Ejecutar desde la raíz:  python -m unittest discover -s tests -v
 
 import os
 import sys
+import tempfile
 import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -76,6 +77,22 @@ class HappyPathTest(StoreTestCase):
         self.assertEqual(other.status, OfferStatus.REJECTED)
         self.assertEqual(req.status, RequestStatus.RESOLVED)
         self.assertNotIn(req, self.store.open_requests(self.seller))
+
+    def test_seller_feed_excludes_already_offered(self):
+        req = self.new_request()
+        self.assertIn(req, self.store.open_requests(self.seller))
+
+        offer = self.store.create_offer(
+            self.seller, req.id, "1000", Condition.NEW, "", "", "1", "", ""
+        )
+        # El vendedor que ya ofertó deja de verla en el feed...
+        self.assertNotIn(req, self.store.open_requests(self.seller))
+        # ...pero otro vendedor sí la sigue viendo.
+        self.assertIn(req, self.store.open_requests(self.seller2))
+
+        # Si cancela su oferta, la solicitud vuelve a aparecer en su feed.
+        self.store.cancel_offer(self.seller, offer.id)
+        self.assertIn(req, self.store.open_requests(self.seller))
 
 
 class ValidationTest(StoreTestCase):
@@ -203,6 +220,30 @@ class StateMachineTest(StoreTestCase):
         self.assertEqual(req.canceled_by_role, Role.ADMIN)
         self.assertEqual(req.cancellation_reason, "Contenido inapropiado")
         self.assertTrue(any(e.action == "solicitud_cancelada" for e in self.store.admin_activity(self.admin)))
+
+
+class AdminAuditTest(StoreTestCase):
+    def test_activity_search_filters_entries(self):
+        self.new_request()
+        found = self.store.admin_activity(self.admin, text="solicitud_publicada")
+        self.assertTrue(found)
+        self.assertTrue(all("solicitud_publicada" in e.action for e in found))
+        self.assertEqual(self.store.admin_activity(self.admin, text="no-existe-xyz"), [])
+
+    def test_export_activity_log_writes_file(self):
+        self.new_request()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "registro.log")
+            result = self.store.export_activity_log(self.admin, path)
+            self.assertTrue(os.path.exists(result))
+            with open(result, encoding="utf-8") as handle:
+                content = handle.read()
+            self.assertIn("REGISTRO DE ACTIVIDAD", content)
+            self.assertIn("SOLICITUD_PUBLICADA", content)
+
+    def test_only_admin_can_export_activity(self):
+        with self.assertRaises(PermissionDenied):
+            self.store.export_activity_log(self.reader, "registro.log")
 
 
 if __name__ == "__main__":

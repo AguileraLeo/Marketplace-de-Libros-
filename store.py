@@ -12,6 +12,7 @@ Los datos viven únicamente mientras la app está abierta.
 from __future__ import annotations
 
 import itertools
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -491,6 +492,9 @@ class Store:
         for req in self.requests.values():
             if req.status not in RequestStatus.OPEN:
                 continue
+            # Excluir solicitudes donde el vendedor actual ya tenga una oferta activa
+            if self.seller_active_offer(actor, req.id) is not None:
+                continue
             book = self.book(req.book_id)
             haystack = " ".join([book.title, book.authors_text, book.isbn]).lower()
             if text and text not in haystack:
@@ -732,9 +736,23 @@ class Store:
         self._require_role(actor, Role.ADMIN)
         return sorted(self.offers.values(), key=lambda o: o.updated_at, reverse=True)
 
-    def admin_activity(self, actor: User, limit: int = 50) -> list[ActivityEntry]:
+    def admin_activity(self, actor: User, limit: int = 50, text: str = "") -> list[ActivityEntry]:
         self._require_role(actor, Role.ADMIN)
-        return list(reversed(self.activity))[:limit]
+        entries = list(reversed(self.activity))
+        query = _clean(text, 120).lower()
+        if query:
+            def matches(entry: ActivityEntry) -> bool:
+                actor_user = self.users.get(entry.actor_id) if entry.actor_id else None
+                haystack = " ".join([
+                    entry.action,
+                    entry.detail,
+                    actor_user.name if actor_user else "",
+                    actor_user.email if actor_user else "",
+                ]).lower()
+                return query in haystack
+
+            entries = [e for e in entries if matches(e)]
+        return entries[:limit]
 
     def set_user_status(self, actor: User, user_id: int, status: str) -> User:
         admin = self._require_role(actor, Role.ADMIN)
@@ -747,6 +765,33 @@ class Store:
         verb = "suspendido" if status == UserStatus.SUSPENDED else "reactivado"
         self._log(admin, "usuario_" + verb, f"{target.email} {verb}")
         return target
+
+    def export_activity_log(self, actor: User, file_path: str = "registro_actividad.txt") -> str:
+        """Exporta el historial de actividad y auditoría a un archivo de texto/log."""
+        self._require_role(actor, Role.ADMIN)
+        lines = [
+            "============================================================",
+            "   REGISTRO DE ACTIVIDAD Y AUDITORÍA - APP DE LIBROS",
+            f"   Exportado el: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}",
+            f"   Por administrador: {actor.name} ({actor.email})",
+            "============================================================",
+            "",
+        ]
+        if not self.activity:
+            lines.append("No hay eventos registrados.")
+        else:
+            for idx, entry in enumerate(reversed(self.activity), 1):
+                actor_user = self.users.get(entry.actor_id) if entry.actor_id else None
+                actor_str = f"{actor_user.name} ({actor_user.email})" if actor_user else "Sistema"
+                dt_str = entry.at.strftime("%d/%m/%Y %H:%M:%S")
+                lines.append(f"{idx:03d}. [{dt_str}] [{entry.action.upper()}]")
+                lines.append(f"     Actor:  {actor_str}")
+                lines.append(f"     Detalle: {entry.detail}")
+                lines.append("-" * 60)
+        content = "\n".join(lines)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return os.path.abspath(file_path)
 
 
 # --------------------------------------------------------------------------
