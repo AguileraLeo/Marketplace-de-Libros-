@@ -10,10 +10,13 @@ Google Books -> Open Library -> catálogo local de ejemplo.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import threading
 import urllib.parse
 import urllib.request
+from typing import Callable, Optional
 
 GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes"
 OPEN_LIBRARY_URL = "https://openlibrary.org/search.json"
@@ -27,6 +30,76 @@ SEARCH_MODES = {
     "autor": "inauthor:",
     "isbn": "isbn:",
 }
+
+# Directorio de caché local persistente para portadas
+CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache", "covers")
+os.makedirs(CACHE_DIR, exist_ok=True)
+
+
+def get_cover_cache_path(url: str) -> Optional[str]:
+    """Retorna la ruta local en disco para la URL dada si es válida."""
+    if not url or not url.strip():
+        return None
+    url_hash = hashlib.md5(url.strip().encode("utf-8")).hexdigest()
+    ext = ".png" if ".png" in url.lower() else ".jpg"
+    return os.path.join(CACHE_DIR, f"{url_hash}{ext}")
+
+
+def is_cover_cached(url: str) -> bool:
+    """Indica si la portada ya está descargada localmente en disco."""
+    path = get_cover_cache_path(url)
+    return bool(path and os.path.exists(path) and os.path.getsize(path) > 100)
+
+
+def download_and_cache_cover(
+    url: str,
+    on_complete: Optional[Callable[[str, str], None]] = None,
+) -> Optional[str]:
+    """
+    Obtiene la ruta local de la portada. Si ya existe, la retorna de inmediato.
+    Si no, inicia la descarga en segundo plano y llama a on_complete(url, local_path).
+    """
+    if not url or not url.startswith(("http://", "https://")):
+        return None
+    cache_path = get_cover_cache_path(url)
+    if not cache_path:
+        return None
+
+    if os.path.exists(cache_path) and os.path.getsize(cache_path) > 100:
+        if on_complete:
+            on_complete(url, cache_path)
+        return cache_path
+
+    def _worker():
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
+            )
+            with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+                data = resp.read()
+                if data and len(data) > 100:
+                    with open(cache_path, "wb") as f:
+                        f.write(data)
+                    if on_complete:
+                        try:
+                            from kivy.clock import Clock
+                            Clock.schedule_once(lambda *_: on_complete(url, cache_path))
+                        except Exception:
+                            on_complete(url, cache_path)
+        except Exception:
+            pass
+
+    threading.Thread(target=_worker, daemon=True).start()
+    return cache_path if os.path.exists(cache_path) else None
+
+
+def prefetch_covers(books: list[dict]) -> None:
+    """Inicia la descarga en caché en segundo plano para una lista de libros."""
+    for b in books:
+        cover = b.get("cover_url")
+        if cover:
+            download_and_cache_cover(cover)
 
 
 def _ol_cover(isbn: str) -> str:
@@ -227,7 +300,12 @@ def search_books(query: str, mode: str = "titulo") -> tuple[list[dict], str]:
         raise ValueError("Escribe al menos 2 caracteres para buscar.")
     for name, provider in PROVIDERS:
         try:
-            return provider(query, mode), name
+            results = provider(query, mode)
+            if results:
+                prefetch_covers(results)
+                return results, name
         except Exception:
             continue
-    return _search_local(query, mode), "local"
+    local_res = _search_local(query, mode)
+    prefetch_covers(local_res)
+    return local_res, "local"

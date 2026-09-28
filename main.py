@@ -18,6 +18,7 @@ if platform not in ("android", "ios"):
 
 import os
 import threading
+from datetime import datetime
 
 from kivy.clock import Clock, mainthread
 from kivy.core.window import Window
@@ -47,7 +48,14 @@ from kivymd.uix.screen import MDScreen
 from kivymd.uix.snackbar import MDSnackbar, MDSnackbarText
 from kivymd.uix.stacklayout import MDStackLayout
 
-from books_api import catalog_lookup, search_books
+from books_api import (
+    catalog_lookup,
+    download_and_cache_cover,
+    get_cover_cache_path,
+    is_cover_cached,
+    search_books,
+)
+from locations import normalize_location_name, search_locations
 from store import (
     Condition,
     Delivery,
@@ -84,6 +92,18 @@ STATUS_LABELS = {
     "user": {UserStatus.ACTIVE: "Activo", UserStatus.SUSPENDED: "Suspendido"},
 }
 
+# (fondo, texto) para diferenciar visualmente las tarjetas de métricas del admin.
+STAT_TONES = {
+    "blue": ("#DCE8FF", "#123A7A"),
+    "green": ("#D6F5DF", "#11562A"),
+    "orange": ("#FFE9C7", "#6B3F00"),
+    "purple": ("#EADDFF", "#4F378B"),
+    "red": ("#FADBD8", "#7A1C14"),
+    "teal": ("#CCE8E2", "#0B4F4A"),
+    "gray": ("#ECE6EE", "#4A4458"),
+    "default": ("#DCE8FF", "#123A7A"),
+}
+
 
 def fmt_date(value) -> str:
     return value.strftime("%d/%m/%Y %H:%M")
@@ -94,10 +114,30 @@ def fmt_date(value) -> str:
 # ==========================================================================
 class BookCover(MDRelativeLayout):
     source = StringProperty("")
+    local_source = StringProperty("")
     loaded = BooleanProperty(False)
 
-    def on_source(self, *_):
+    def on_source(self, _instance, value):
         self.loaded = False
+        if not value:
+            self.local_source = ""
+            return
+        if os.path.exists(value):
+            self.local_source = value
+            self.loaded = True
+            return
+        cache_path = get_cover_cache_path(value)
+        if cache_path and os.path.exists(cache_path) and os.path.getsize(cache_path) > 100:
+            self.local_source = cache_path
+            self.loaded = True
+            return
+        self.local_source = ""
+        download_and_cache_cover(value, self._on_download_complete)
+
+    def _on_download_complete(self, url, local_path):
+        if self.source == url and os.path.exists(local_path):
+            self.local_source = local_path
+            self.loaded = True
 
 
 class StatusChip(MDBoxLayout):
@@ -196,6 +236,15 @@ class BookResultCard(MDCard):
 class StatTile(MDCard):
     value = StringProperty("0")
     label = StringProperty()
+    tone = StringProperty("default")
+    bg = ColorProperty([0.863, 0.910, 1.0, 1.0])
+    fg = ColorProperty([0.071, 0.227, 0.478, 1.0])
+
+    def on_tone(self, *_):
+        from kivy.utils import get_color_from_hex as c
+
+        bg, fg = STAT_TONES.get(self.tone, STAT_TONES["default"])
+        self.bg, self.fg = c(bg), c(fg)
 
 
 class InfoRow(MDBoxLayout):
@@ -362,6 +411,8 @@ class CreateRequestScreen(BaseScreen):
         self.ids.cover.source = book.cover_url
         self.ids.book_title.text = book.title
         self.ids.book_meta.text = f"{book.authors_text}\n{book.publisher}  ·  ISBN {book.isbn or '—'}"
+        if hasattr(self.ids, "suggestions_box"):
+            self.ids.suggestions_box.clear_widgets()
 
     def reset_form(self):
         self.ids.max_price.text = ""
@@ -369,16 +420,42 @@ class CreateRequestScreen(BaseScreen):
         self.ids.notes.text = ""
         self.ids.condition.value = Condition.ANY
         self.ids.delivery.value = Delivery.ANY
+        if hasattr(self.ids, "suggestions_box"):
+            self.ids.suggestions_box.clear_widgets()
+
+    def on_location_text(self, text):
+        if not hasattr(self.ids, "suggestions_box"):
+            return
+        self.ids.suggestions_box.clear_widgets()
+        query = (text or "").strip()
+        if len(query) < 2:
+            return
+        matches = search_locations(query, limit=4)
+        for loc in matches:
+            btn = MDButton(
+                MDButtonText(text=loc),
+                style="text",
+                size_hint_x=1,
+                height=dp(36),
+            )
+            btn.bind(on_release=lambda _b, l=loc: self.select_location(l))
+            self.ids.suggestions_box.add_widget(btn)
+
+    def select_location(self, loc):
+        self.ids.location.text = loc
+        if hasattr(self.ids, "suggestions_box"):
+            self.ids.suggestions_box.clear_widgets()
 
     def publish(self):
         app = self.app
+        loc = normalize_location_name(self.ids.location.text)
         req = app.safe(
             app.store.create_request,
             app.user,
             app.selected_book.id if app.selected_book else None,
             self.ids.max_price.text,
             self.ids.condition.value,
-            self.ids.location.text,
+            loc,
             self.ids.delivery.value,
             self.ids.notes.text,
         )
@@ -583,10 +660,10 @@ class SellerHomeScreen(BaseScreen):
         if items is None:
             return
         self.ids.count.text = f"{len(items)} solicitud(es) abiertas"
-        cards = []
-        for r in items:
-            badge = "Ya ofertaste" if store.seller_active_offer(app.user, r.id) else ""
-            cards.append(app.request_card(r, app.open_seller_request, badge=badge, for_seller=True))
+        cards = [
+            app.request_card(r, app.open_seller_request, for_seller=True)
+            for r in items
+        ]
         self.fill(self.ids.list, cards, "No hay solicitudes que coincidan con los filtros.")
 
     def clear_filters(self):
@@ -706,28 +783,19 @@ class SellerOffersScreen(BaseScreen):
 
 # ---------------------------------------------------------------- admin
 class AdminHomeScreen(BaseScreen):
+    """Inicio del admin: solo métricas generales y accesos rápidos."""
+
     def refresh(self):
-        app, store = self.app, self.app.store
-        stats = store.admin_stats(app.user)
+        stats = self.app.store.admin_stats(self.app.user)
         for key, value in stats.items():
             self.ids["st_" + key].value = str(value)
 
-        section = self.ids.section.value
-        # El filtro de estado solo aplica a la sección "Solicitudes".
-        if not hasattr(self, "_req_filter"):  # ref. fuerte: ids son weakrefs
-            self._req_filter = self.ids.req_filter
-        req_filter, page = self._req_filter, self.ids.list.parent
-        if section == "solicitudes" and req_filter.parent is None:
-            page.add_widget(req_filter, index=1)
-        elif section != "solicitudes" and req_filter.parent is not None:
-            page.remove_widget(req_filter)
-        builder = getattr(self, "_cards_" + section)
-        self.fill(self.ids.list, builder(), "Sin registros.", "database-off-outline")
 
-    def _cards_solicitudes(self):
+class AdminRequestsScreen(BaseScreen):
+    def refresh(self):
         app, store = self.app, self.app.store
         cards = []
-        for r in store.admin_requests(app.user, self.ids.req_filter.value):
+        for r in store.admin_requests(app.user, self.ids.filter.value):
             book = store.book(r.book_id)
             reader = store.user(r.reader_id)
             cards.append(ItemCard(
@@ -736,11 +804,23 @@ class AdminHomeScreen(BaseScreen):
                 meta=f"{len(store.offers_for_request(app.user, r.id))} oferta(s) · actualizada {fmt_date(r.updated_at)}",
                 status=r.status, kind="request",
                 action_text="Cancelar (moderar)" if r.status in RequestStatus.OPEN else "",
-                action_callback=lambda _c, rid=r.id: self.moderate_request(rid),
+                action_callback=lambda _c, rid=r.id: self.moderate(rid),
             ))
-        return cards
+        self.fill(self.ids.list, cards, "Sin registros.", "database-off-outline")
 
-    def _cards_usuarios(self):
+    def moderate(self, request_id):
+        app = self.app
+
+        def do_cancel():
+            if app.safe(app.store.cancel_request, app.user, request_id, reason="Moderación administrativa"):
+                app.notify(f"Solicitud #{request_id} cancelada por moderación.")
+                self.refresh()
+
+        app.confirm("¿Cancelar solicitud?", "Acción de moderación: quedará registrada en la actividad y el lector verá el motivo.", "Cancelar", do_cancel)
+
+
+class AdminUsersScreen(BaseScreen):
+    def refresh(self):
         app, store = self.app, self.app.store
         cards = []
         for u in store.admin_users(app.user):
@@ -753,11 +833,21 @@ class AdminHomeScreen(BaseScreen):
                 meta=f"Alta: {fmt_date(u.created_at)}",
                 status=u.status, kind="user",
                 action_text=action,
-                action_callback=lambda _c, uid=u.id: self.toggle_user(uid),
+                action_callback=lambda _c, uid=u.id: self.toggle(uid),
             ))
-        return cards
+        self.fill(self.ids.list, cards, "Sin registros.", "database-off-outline")
 
-    def _cards_ofertas(self):
+    def toggle(self, user_id):
+        app = self.app
+        target = app.store.user(user_id)
+        new_status = UserStatus.SUSPENDED if target.status == UserStatus.ACTIVE else UserStatus.ACTIVE
+        if app.safe(app.store.set_user_status, app.user, user_id, new_status):
+            app.notify(f"{target.name}: {STATUS_LABELS['user'][new_status].lower()}.")
+            self.refresh()
+
+
+class AdminOffersScreen(BaseScreen):
+    def refresh(self):
         app, store = self.app, self.app.store
         cards = []
         for o in store.admin_offers(app.user):
@@ -768,37 +858,48 @@ class AdminHomeScreen(BaseScreen):
                 meta=f"Solicitud #{req.id} · {fmt_date(o.updated_at)}",
                 status=o.status, kind="offer",
             ))
-        return cards
+        self.fill(self.ids.list, cards, "Sin registros.", "database-off-outline")
 
-    def _cards_actividad(self):
+
+class AdminActivityScreen(BaseScreen):
+    """Auditoría: consulta y exportación de logs de actividad."""
+
+    limit = NumericProperty(50)
+
+    def refresh(self):
         app, store = self.app, self.app.store
+        if app.user is None or "search" not in self.ids:
+            return
+        entries = store.admin_activity(app.user, limit=self.limit, text=self.ids.search.text)
         cards = []
-        for entry in store.admin_activity(app.user):
+        for entry in entries:
             actor = store.users.get(entry.actor_id)
             cards.append(ItemCard(
                 title=entry.detail,
                 subtitle=f"{fmt_date(entry.at)} · {actor.name if actor else 'sistema'}",
                 meta=entry.action,
             ))
-        return cards
+        self.fill(self.ids.list, cards, "Sin registros de actividad.", "text-box-search-outline")
 
-    def moderate_request(self, request_id):
+    def export_logs(self):
         app = self.app
-
-        def do_cancel():
-            if app.safe(app.store.cancel_request, app.user, request_id, reason="Moderación administrativa"):
-                app.notify(f"Solicitud #{request_id} cancelada por moderación.")
-                self.refresh()
-
-        app.confirm("¿Cancelar solicitud?", "Acción de moderación: quedará registrada en la actividad y el lector verá el motivo.", "Cancelar", do_cancel)
-
-    def toggle_user(self, user_id):
-        app = self.app
-        target = app.store.user(user_id)
-        new_status = UserStatus.SUSPENDED if target.status == UserStatus.ACTIVE else UserStatus.ACTIVE
-        if app.safe(app.store.set_user_status, app.user, user_id, new_status):
-            app.notify(f"{target.name}: {STATUS_LABELS['user'][new_status].lower()}.")
-            self.refresh()
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"registro_actividad_{stamp}.log"
+        candidates = [
+            os.path.join(os.path.expanduser("~"), filename),
+            os.path.join(os.path.dirname(KV_FILE), filename),
+        ]
+        for candidate in candidates:
+            try:
+                path = app.store.export_activity_log(app.user, candidate)
+            except OSError:
+                continue
+            app.info_dialog(
+                "Logs exportados",
+                f"Se guardó el registro de actividad en:\n\n{path}",
+            )
+            return
+        app.notify("No se pudo exportar el registro de actividad.")
 
 
 # ==========================================================================
