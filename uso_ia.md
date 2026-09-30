@@ -8,21 +8,18 @@
 
 ## Prompts / instrucciones usados (resumen cronológico)
 
-1. Consulta sobre cómo sincronizar la rama `develop` del repositorio (comandos git).
-2. Pedido de auditoría inicial del proyecto y del material del ramo, para construir un MVP de compra/venta de libros de forma iterativa.
-3. "¿Ponytail está funcionando?" — verificación de que el modo de trabajo minimalista estaba activo.
-4. "Hagamos todos los rápidos [arreglos], para el nombre tengo ideas... cacería, cazadores, buscadores de tesoros..." — pedido de nombres para la app siguiendo un concepto de "búsqueda/hallazgo".
-5. "¿'BookWho?' qué te parece como nombre?" y confirmación de ese nombre.
-6. "Pulamos el código, el estilo de la app, las funciones y la experiencia de usuario, hagamos algo espectacular."
-7. "Ábrela para que la vea" (ejecución real de la app en pantalla para revisar visualmente cada cambio).
-8. Pedido de cambiar el subtítulo del login a "Ofrece, busca, vende e intercambia".
-9. "Usemos íconos de Kivy para darle otro estilo a la app, una tipografía distinta y que no se vea tan IA."
-10. "¿Cómo agrego un libro siendo vendedor y siendo comprador? No veo una opción solo para buscar" — duda sobre el modelo de negocio (solicitud vs. catálogo).
-11. "¿Podemos agregar la ubicación real [al buscar], para que el vendedor sepa qué tan lejos está el lector? El lector no necesita dar su ubicación exacta, puede ser un punto de referencia."
-12. "En el mapa no puedo poner Temuco, Padre Las Casas no me da esa opción, ¿podemos tener todas las opciones o no?"
-13. "Volvamos a cómo estábamos" (reversión puntual de un cambio de UI que no convenció).
-14. "¿Cuánto de uso [de contexto] te queda?"
-15. "¿Cuánto de la rúbrica cubrimos?"
+1. "Antes de escribir código, haz una auditoría completa del repositorio y del material del ramo. Quiero entender qué está hecho, qué falta y qué tecnología corresponde usar antes de definir los próximos pasos del MVP."
+2. "Quiero definirle un nombre a la aplicación. Dame opciones que combinen la idea de búsqueda, hallazgo o cacería de un libro, algo original y con identidad propia."
+3. "Evalúa 'BookWho?' como nombre para la app: ventajas, riesgos y si calza con el modelo de negocio. Si te convence, lo dejamos como definitivo."
+4. "Quiero una pasada de pulido general: revisa el código, el estilo visual, las funcionalidades y la experiencia de usuario, y sugiere mejoras concretas antes de aplicarlas."
+5. "Ejecuta la aplicación real en pantalla en cada cambio importante, para que yo pueda revisar visualmente el resultado antes de aprobarlo."
+6. "Actualiza el subtítulo de la pantalla de inicio de sesión para que comunique mejor la propuesta de valor de la app."
+7. "Renueva la identidad visual de la app (iconografía y tipografía) para que se vea menos genérica y menos parecida a una plantilla estándar."
+8. "Explícame cómo funciona el flujo de publicación de libros desde ambos roles, lector y vendedor. No encuentro una opción para publicar un libro como vendedor y quiero entender si es una omisión o una decisión de diseño."
+9. "Propón una forma de mostrarle al vendedor qué tan cerca está del lector, sin pedirle a este último su dirección real; puede ser un punto de referencia o zona aproximada."
+10. "El selector de ubicación no me muestra todas las comunas que esperaba (por ejemplo Temuco). Revisa si el catálogo está incompleto o si es un problema de la interfaz."
+11. "El último cambio de interfaz no me convenció. Revierte específicamente esa parte y deja el resto del trabajo tal como estaba."
+12. "Haz un balance honesto de qué porcentaje de la rúbrica de evaluación estamos cubriendo hasta este punto, y qué falta para completarla."
 
 ## Outputs relevantes generados con IA
 
