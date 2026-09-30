@@ -124,12 +124,20 @@ class ValidationTest(StoreTestCase):
             self.store.create_offer(self.seller, req.id, "900", Condition.NEW, "", "", "1", "", "")
 
     def test_register_rules(self):
-        user = self.store.register("Ana", "ana@demo.cl", "abcd", Role.SELLER)
+        user = self.store.register("Ana", "ana@demo.cl", "abcd", Role.SELLER, "Concepción")
         self.assertEqual(user.role, Role.SELLER)
         with self.assertRaises(ValidationError):
             self.store.register("Ana", "ana@demo.cl", "abcd", Role.READER)
         with self.assertRaises(PermissionDenied):
             self.store.register("Eva", "eva@demo.cl", "abcd", Role.ADMIN)
+
+    def test_seller_register_requires_location_reader_does_not(self):
+        with self.assertRaises(ValidationError):
+            self.store.register("Beto", "beto@demo.cl", "abcd", Role.SELLER)
+        seller = self.store.register("Beto", "beto@demo.cl", "abcd", Role.SELLER, "Talcahuano")
+        self.assertEqual(seller.location, "Talcahuano")
+        reader = self.store.register("Cata", "cata@demo.cl", "abcd", Role.READER)
+        self.assertEqual(reader.location, "")
 
 
 class PermissionTest(StoreTestCase):

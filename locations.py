@@ -204,3 +204,34 @@ def normalize_location_name(text: str) -> str:
         if q == c_norm or q == disp_norm:
             return format_location_display(item)
     return raw
+
+
+_REGION_BY_COMUNA: dict[str, str] = {
+    _normalize_text(item["comuna"]): item["region"] for item in CHILE_LOCATIONS
+}
+
+
+def _comuna_key(location_text: str) -> str:
+    """Extrae la comuna de 'Comuna (Región)' o de un texto plano ya normalizado."""
+    return _normalize_text((location_text or "").split(" (")[0])
+
+
+def proximity_label(seller_location: str, request_location: str) -> str:
+    """
+    Cercanía aproximada entre la comuna del vendedor y la de la solicitud,
+    usando solo el catálogo de comunas/regiones (sin coordenadas exactas,
+    para no exponer la ubicación real de nadie).
+    """
+    seller_key = _comuna_key(seller_location)
+    request_key = _comuna_key(request_location)
+    if not seller_key or not request_key:
+        return ""
+    if seller_key == request_key:
+        return "Misma comuna"
+    seller_region = _REGION_BY_COMUNA.get(seller_key)
+    request_region = _REGION_BY_COMUNA.get(request_key)
+    if seller_region and seller_region == request_region:
+        return "Misma región"
+    if request_region:
+        return f"Otra región ({request_region})"
+    return ""

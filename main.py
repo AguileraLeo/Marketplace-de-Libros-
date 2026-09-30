@@ -1,5 +1,5 @@
 """
-App de libros — demo MVP en KivyMD 2.0.x
+BookWho? — demo MVP en KivyMD 2.0.x
 
 Ejecutar:  python main.py
 Estilos/estructura visual: libros.kv
@@ -21,6 +21,7 @@ import threading
 from datetime import datetime
 
 from kivy.clock import Clock, mainthread
+from kivy.core.text import LabelBase
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.metrics import dp
@@ -55,7 +56,7 @@ from books_api import (
     is_cover_cached,
     search_books,
 )
-from locations import normalize_location_name, search_locations
+from locations import normalize_location_name, proximity_label, search_locations
 from store import (
     Condition,
     Delivery,
@@ -68,7 +69,17 @@ from store import (
     format_price,
 )
 
-KV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libros.kv")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+KV_FILE = os.path.join(BASE_DIR, "libros.kv")
+FONTS_DIR = os.path.join(BASE_DIR, "fonts")
+
+LabelBase.register(
+    name="Lora",
+    fn_regular=os.path.join(FONTS_DIR, "Lora-Regular.ttf"),
+    fn_bold=os.path.join(FONTS_DIR, "Lora-Bold.ttf"),
+    fn_italic=os.path.join(FONTS_DIR, "Lora-Italic.ttf"),
+    fn_bolditalic=os.path.join(FONTS_DIR, "Lora-BoldItalic.ttf"),
+)
 
 # (fondo, texto) por estado — mismos colores en todas las pantallas.
 STATUS_COLORS = {
@@ -237,6 +248,7 @@ class StatTile(MDCard):
     value = StringProperty("0")
     label = StringProperty()
     tone = StringProperty("default")
+    icon = StringProperty("chart-box-outline")
     bg = ColorProperty([0.863, 0.910, 1.0, 1.0])
     fg = ColorProperty([0.071, 0.227, 0.478, 1.0])
 
@@ -312,9 +324,29 @@ class LoginScreen(BaseScreen):
 
 class RegisterScreen(BaseScreen):
     def refresh(self):
-        for field in ("name", "email", "password"):
+        for field in ("name", "email", "password", "location"):
             self.ids[field].text = ""
         self.ids.role.value = Role.READER
+        self.ids.suggestions_box.clear_widgets()
+
+    def on_location_text(self, text):
+        self.ids.suggestions_box.clear_widgets()
+        query = (text or "").strip()
+        if len(query) < 2:
+            return
+        for loc in search_locations(query, limit=4):
+            btn = MDButton(
+                MDButtonText(text=loc),
+                style="text",
+                size_hint_x=1,
+                height=dp(36),
+            )
+            btn.bind(on_release=lambda _b, l=loc: self.select_location(l))
+            self.ids.suggestions_box.add_widget(btn)
+
+    def select_location(self, loc):
+        self.ids.location.text = loc
+        self.ids.suggestions_box.clear_widgets()
 
     def do_register(self):
         user = self.app.safe(
@@ -323,6 +355,7 @@ class RegisterScreen(BaseScreen):
             self.ids.email.text,
             self.ids.password.text,
             self.ids.role.value,
+            normalize_location_name(self.ids.location.text),
         )
         if user:
             self.app.notify(f"¡Bienvenido/a, {user.first_name}!")
@@ -912,9 +945,13 @@ class DemoLibrosApp(MDApp):
     HOME_BY_ROLE = {Role.READER: "reader_home", Role.SELLER: "seller_home", Role.ADMIN: "admin_home"}
 
     def build(self):
-        self.title = "App de libros · Demo MVP"
+        self.title = "BookWho? · Demo MVP"
         self.theme_cls.theme_style = "Light"
-        self.theme_cls.primary_palette = "Teal"
+        self.theme_cls.primary_palette = "darkgoldenrod"
+        # Títulos y encabezados en serif (Lora); cuerpo y controles siguen en Roboto.
+        for style in ("Headline", "Title"):
+            for role in self.theme_cls.font_styles[style]:
+                self.theme_cls.font_styles[style][role]["font-name"] = "Lora"
         self.store = build_demo_store(catalog_lookup)
         self.history: list[str] = []
         self.selected_book = None
@@ -1014,7 +1051,9 @@ class DemoLibrosApp(MDApp):
         book = self.store.book(req.book_id)
         offers = self.store.active_offer_count(req.id)
         parts = [req.location, f"máx. {format_price(req.max_price)}", Condition.LABELS[req.accepted_condition]]
-        if not badge and not for_seller and req.status in RequestStatus.OPEN:
+        if not badge and for_seller:
+            badge = proximity_label(self.user.location, req.location)
+        elif not badge and req.status in RequestStatus.OPEN:
             badge = f"{offers} oferta(s) activa(s)"
         return RequestCard(
             title=book.title,

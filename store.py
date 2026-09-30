@@ -144,6 +144,7 @@ class User:
     password: str  # MVP: texto plano en memoria. Nunca así en producción.
     role: str
     status: str = UserStatus.ACTIVE
+    location: str = ""
     created_at: datetime = field(default_factory=datetime.now)
 
     @property
@@ -316,9 +317,9 @@ class Store:
         return self._get(self.books, book_id, "Libro")
 
     # --------------------------------------------------------------- auth
-    def add_user(self, name, email, password, role) -> User:
+    def add_user(self, name, email, password, role, location="") -> User:
         """Alta interna (seed/hardcode). Permite cualquier rol, incluido admin."""
-        user = User(self._next_id("user"), name, email.lower(), password, role)
+        user = User(self._next_id("user"), name, email.lower(), password, role, location=location)
         self.users[user.id] = user
         if role == Role.SELLER:
             self.contacts[user.id] = SellerContact(user.id)
@@ -337,8 +338,9 @@ class Store:
         self._log(user, "login", f"{user.email} inició sesión")
         return user
 
-    def register(self, name: str, email: str, password: str, role: str) -> User:
+    def register(self, name: str, email: str, password: str, role: str, location: str = "") -> User:
         name, email = _clean(name, 80), _clean(email, 120).lower()
+        location = _clean(location, 80)
         if len(name) < 2:
             raise ValidationError("Ingresa tu nombre.")
         if not EMAIL_RE.match(email):
@@ -347,9 +349,11 @@ class Store:
             raise ValidationError("La contraseña debe tener al menos 4 caracteres.")
         if role not in Role.PUBLIC:
             raise PermissionDenied("Rol no permitido en el registro.")
+        if role == Role.SELLER and len(location) < 2:
+            raise ValidationError("Ingresa tu comuna para que los lectores sepan qué tan cerca estás.")
         if self.find_user_by_email(email):
             raise ValidationError("Ya existe una cuenta con ese correo.")
-        user = self.add_user(name, email, password, role)
+        user = self.add_user(name, email, password, role, location)
         self._log(user, "registro", f"Nuevo {Role.LABELS[role].lower()}: {email}")
         return user
 
@@ -798,19 +802,22 @@ class Store:
 # Datos hardcodeados del demo
 # --------------------------------------------------------------------------
 DEMO_USERS = [
-    # (nombre, correo, contraseña, rol)
-    ("Juan Pérez", "lector@demo.cl", "1234", Role.READER),
-    ("María González", "maria@demo.cl", "1234", Role.READER),
-    ("Librería Los Andes", "vendedor@demo.cl", "1234", Role.SELLER),
-    ("Pedro Soto", "pedro@demo.cl", "1234", Role.SELLER),
-    ("Admin", "admin@demo.cl", "admin", Role.ADMIN),
+    # (nombre, correo, contraseña, rol, comuna)
+    ("Juan Pérez", "lector@demo.cl", "1234", Role.READER, ""),
+    ("María González", "maria@demo.cl", "1234", Role.READER, ""),
+    ("Librería Los Andes", "vendedor@demo.cl", "1234", Role.SELLER, "Concepción"),
+    ("Pedro Soto", "pedro@demo.cl", "1234", Role.SELLER, "Santiago"),
+    ("Admin", "admin@demo.cl", "admin", Role.ADMIN, ""),
 ]
 
 
 def build_demo_store(catalog_lookup: Callable[[str], dict]) -> Store:
     """Crea un Store con usuarios hardcodeados y algo de actividad de ejemplo."""
     store = Store()
-    users = {email: store.add_user(n, email, pw, role) for n, email, pw, role in DEMO_USERS}
+    users = {
+        email: store.add_user(n, email, pw, role, loc)
+        for n, email, pw, role, loc in DEMO_USERS
+    }
     juan, maria = users["lector@demo.cl"], users["maria@demo.cl"]
     andes, pedro = users["vendedor@demo.cl"], users["pedro@demo.cl"]
 

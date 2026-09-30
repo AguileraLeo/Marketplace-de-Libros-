@@ -16,6 +16,7 @@ from books_api import (
 from locations import (
     CHILE_LOCATIONS,
     normalize_location_name,
+    proximity_label,
     search_locations,
 )
 
@@ -38,6 +39,19 @@ class LocationsTest(unittest.TestCase):
     def test_normalize_location_name(self):
         norm = normalize_location_name("concepcion")
         self.assertEqual(norm, "Concepción (Biobío)")
+
+    def test_proximity_label_same_comuna(self):
+        self.assertEqual(proximity_label("Concepción", "Concepción (Biobío)"), "Misma comuna")
+
+    def test_proximity_label_same_region(self):
+        self.assertEqual(proximity_label("Concepción", "Talcahuano (Biobío)"), "Misma región")
+
+    def test_proximity_label_other_region(self):
+        self.assertEqual(proximity_label("Concepción", "Santiago (Metropolitana)"), "Otra región (Metropolitana)")
+
+    def test_proximity_label_missing_data(self):
+        self.assertEqual(proximity_label("", "Santiago (Metropolitana)"), "")
+        self.assertEqual(proximity_label("Concepción", ""), "")
         norm_stgo = normalize_location_name("santiago")
         self.assertEqual(norm_stgo, "Santiago (Metropolitana)")
 

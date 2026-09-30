@@ -1,4 +1,19 @@
-# App de libros: demo MVP (KivyMD)
+# BookWho? — demo MVP (KivyMD)
+
+## Problema que resuelve
+
+Encontrar un libro específico (agotado, descatalogado, de segunda mano o simplemente difícil
+de ubicar) obliga hoy a recorrer varias tiendas o grupos de compraventa sin ninguna garantía
+de encontrarlo. **BookWho?** invierte el modelo: el lector publica qué libro busca y son los
+vendedores quienes responden si lo tienen, en vez de que el lector tenga que revisar catálogo
+por catálogo.
+
+## Usuario objetivo
+
+- **Lectores** que buscan un libro puntual (para regalo, colección, estudio) y no quieren
+  perder tiempo comparando tienda por tienda.
+- **Vendedores** (librerías pequeñas o personas particulares) que quieren vender libros
+  puntuales sin mantener ni actualizar un catálogo público.
 
 Demo navegable del circuito completo descrito en `AGENTS.md`:
 
@@ -9,7 +24,17 @@ Buscar libro -> crear solicitud -> publicar -> vendedor encuentra solicitud
 
 Incluye además la experiencia de administrador (estadísticas, usuarios, solicitudes, ofertas, moderación y actividad).
 
-> **¿Recién clonas el repo?** Lee primero [`CONTEXTO.md`](CONTEXTO.md) (estado del proyecto y cómo trabajar en equipo) y [`AGENTS.md`](AGENTS.md) (visión y reglas del producto). Si usas IA, [`CLAUDE.md`](CLAUDE.md) tiene las instrucciones para el asistente.
+> **¿Recién clonas el repo?** Lee primero [`CONTEXTO.md`](CONTEXTO.md) (estado del proyecto y cómo trabajar en equipo) y [`AGENTS.md`](AGENTS.md) (visión y reglas del producto). Si usas IA, [`CLAUDE.md`](CLAUDE.md) tiene las instrucciones para el asistente, y [`uso_ia.md`](uso_ia.md) registra su uso real en este proyecto.
+
+## Capturas
+
+| Login | Inicio (lector) |
+|---|---|
+| ![Login](screenshots/login.png) | ![Inicio lector](screenshots/reader_home.png) |
+
+| Inicio (vendedor) | Administración |
+|---|---|
+| ![Inicio vendedor](screenshots/seller_home.png) | ![Administración](screenshots/admin_home.png) |
 
 ## Requisitos
 
