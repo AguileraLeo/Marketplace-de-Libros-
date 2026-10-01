@@ -12,6 +12,7 @@ Los datos viven únicamente mientras la app está abierta.
 from __future__ import annotations
 
 import itertools
+import os
 import re
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -39,14 +40,17 @@ class RequestStatus:
     DRAFT = "BORRADOR"
     PUBLISHED = "PUBLICADA"
     WITH_OFFERS = "CON_OFERTAS"
+    IN_DEAL = "EN_COORDINACION"
     RESOLVED = "RESUELTA"
     CANCELLED = "CANCELADA"
 
-    OPEN = (PUBLISHED, WITH_OFFERS)  # visibles para vendedores
+    OPEN = (PUBLISHED, WITH_OFFERS)  # visibles para recibir nuevas ofertas
+    ACTIVE = (PUBLISHED, WITH_OFFERS, IN_DEAL)
     TRANSITIONS = {
         DRAFT: {PUBLISHED},
         PUBLISHED: {WITH_OFFERS, CANCELLED},
-        WITH_OFFERS: {RESOLVED, CANCELLED},
+        WITH_OFFERS: {IN_DEAL, RESOLVED, CANCELLED},
+        IN_DEAL: {RESOLVED, WITH_OFFERS, PUBLISHED, CANCELLED},
         RESOLVED: set(),
         CANCELLED: set(),
     }
@@ -54,6 +58,7 @@ class RequestStatus:
         DRAFT: "Borrador",
         PUBLISHED: "Publicada",
         WITH_OFFERS: "Con ofertas",
+        IN_DEAL: "En coordinación",
         RESOLVED: "Resuelta",
         CANCELLED: "Cancelada",
     }
@@ -61,19 +66,26 @@ class RequestStatus:
 
 class OfferStatus:
     PUBLISHED = "PUBLICADA"
+    IN_DEAL = "POR_CONCRETAR"
+    ON_HOLD = "EN_ESPERA"
     ACCEPTED = "ACEPTADA"
     REJECTED = "RECHAZADA"
     CANCELLED = "CANCELADA"
 
+    ACTIVE = (PUBLISHED, IN_DEAL, ON_HOLD)
     TRANSITIONS = {
-        PUBLISHED: {ACCEPTED, REJECTED, CANCELLED},
+        PUBLISHED: {IN_DEAL, ON_HOLD, REJECTED, CANCELLED},
+        IN_DEAL: {ACCEPTED, REJECTED, CANCELLED},
+        ON_HOLD: {PUBLISHED, REJECTED, CANCELLED},
         ACCEPTED: set(),
         REJECTED: set(),
         CANCELLED: set(),
     }
     LABELS = {
         PUBLISHED: "Activa",
-        ACCEPTED: "Aceptada",
+        IN_DEAL: "Por concretar",
+        ON_HOLD: "En espera",
+        ACCEPTED: "Concretada",
         REJECTED: "Rechazada",
         CANCELLED: "Cancelada",
     }
@@ -132,6 +144,7 @@ class User:
     password: str  # MVP: texto plano en memoria. Nunca así en producción.
     role: str
     status: str = UserStatus.ACTIVE
+    location: str = ""
     created_at: datetime = field(default_factory=datetime.now)
 
     @property
@@ -167,6 +180,8 @@ class BookRequest:
     delivery_preference: str
     notes: str
     status: str = RequestStatus.DRAFT
+    canceled_by_role: Optional[str] = None
+    cancellation_reason: str = ""
     created_at: datetime = field(default_factory=datetime.now)
     updated_at: datetime = field(default_factory=datetime.now)
 
@@ -215,7 +230,7 @@ def _clean(value, max_len: int = 500) -> str:
 
 
 def _parse_price(value, *, required: bool, field_name: str) -> Optional[int]:
-    raw = str(value or "").strip().replace(".", "").replace("$", "")
+    raw = "" if value is None else str(value).strip()
     if not raw:
         if required:
             raise ValidationError(f"{field_name} es obligatorio.")
@@ -302,9 +317,9 @@ class Store:
         return self._get(self.books, book_id, "Libro")
 
     # --------------------------------------------------------------- auth
-    def add_user(self, name, email, password, role) -> User:
+    def add_user(self, name, email, password, role, location="") -> User:
         """Alta interna (seed/hardcode). Permite cualquier rol, incluido admin."""
-        user = User(self._next_id("user"), name, email.lower(), password, role)
+        user = User(self._next_id("user"), name, email.lower(), password, role, location=location)
         self.users[user.id] = user
         if role == Role.SELLER:
             self.contacts[user.id] = SellerContact(user.id)
@@ -323,8 +338,9 @@ class Store:
         self._log(user, "login", f"{user.email} inició sesión")
         return user
 
-    def register(self, name: str, email: str, password: str, role: str) -> User:
+    def register(self, name: str, email: str, password: str, role: str, location: str = "") -> User:
         name, email = _clean(name, 80), _clean(email, 120).lower()
+        location = _clean(location, 80)
         if len(name) < 2:
             raise ValidationError("Ingresa tu nombre.")
         if not EMAIL_RE.match(email):
@@ -333,9 +349,11 @@ class Store:
             raise ValidationError("La contraseña debe tener al menos 4 caracteres.")
         if role not in Role.PUBLIC:
             raise PermissionDenied("Rol no permitido en el registro.")
+        if role == Role.SELLER and len(location) < 2:
+            raise ValidationError("Ingresa tu comuna para que los lectores sepan qué tan cerca estás.")
         if self.find_user_by_email(email):
             raise ValidationError("Ya existe una cuenta con ese correo.")
-        user = self.add_user(name, email, password, role)
+        user = self.add_user(name, email, password, role, location)
         self._log(user, "registro", f"Nuevo {Role.LABELS[role].lower()}: {email}")
         return user
 
@@ -419,7 +437,7 @@ class Store:
         reader = self._require_role(actor, Role.READER)
         groups = {
             "todas": None,
-            "activas": RequestStatus.OPEN,
+            "activas": RequestStatus.ACTIVE,
             "resueltas": (RequestStatus.RESOLVED,),
             "canceladas": (RequestStatus.CANCELLED,),
         }
@@ -444,18 +462,22 @@ class Store:
             return req
         raise PermissionDenied("No puedes ver esta solicitud.")
 
-    def cancel_request(self, actor: User, request_id: int) -> BookRequest:
+    def cancel_request(self, actor: User, request_id: int, reason: str = "") -> BookRequest:
         user = self._require_role(actor, Role.READER, Role.ADMIN)
         req = self._get(self.requests, request_id, "Solicitud")
         if user.role == Role.READER and req.reader_id != user.id:
             raise PermissionDenied("Solo puedes cancelar tus propias solicitudes.")
         self._transition(req, RequestStatus.CANCELLED, RequestStatus.TRANSITIONS)
-        # Supuesto del demo: las ofertas activas de una solicitud cancelada se cancelan.
+        req.canceled_by_role = user.role
+        req.cancellation_reason = _clean(reason, 300)
         for offer in self._offers_of(req.id):
-            if offer.status == OfferStatus.PUBLISHED:
+            if offer.status in OfferStatus.ACTIVE:
                 self._transition(offer, OfferStatus.CANCELLED, OfferStatus.TRANSITIONS)
         who = "moderación" if user.role == Role.ADMIN else "lector"
-        self._log(user, "solicitud_cancelada", f"Solicitud #{req.id} cancelada ({who})")
+        detail = f"Solicitud #{req.id} cancelada ({who})"
+        if req.cancellation_reason:
+            detail += f": {req.cancellation_reason}"
+        self._log(user, "solicitud_cancelada", detail)
         return req
 
     # ------------------------------------------------------ seller: feed
@@ -473,6 +495,9 @@ class Store:
         result = []
         for req in self.requests.values():
             if req.status not in RequestStatus.OPEN:
+                continue
+            # Excluir solicitudes donde el vendedor actual ya tenga una oferta activa
+            if self.seller_active_offer(actor, req.id) is not None:
                 continue
             book = self.book(req.book_id)
             haystack = " ".join([book.title, book.authors_text, book.isbn]).lower()
@@ -495,7 +520,7 @@ class Store:
         seller = self._require_role(actor, Role.SELLER)
         return next(
             (o for o in self._offers_of(request_id)
-             if o.seller_id == seller.id and o.status == OfferStatus.PUBLISHED),
+             if o.seller_id == seller.id and o.status in OfferStatus.ACTIVE),
             None,
         )
 
@@ -524,11 +549,7 @@ class Store:
         amount = _parse_price(price, required=True, field_name="El precio")
         if book_condition not in Condition.OFFER_OPTIONS:
             raise ValidationError("Indica si el libro es nuevo o usado.")
-        if not condition_compatible(req.accepted_condition, book_condition):
-            raise ValidationError(
-                f"El lector solo acepta libros en estado "
-                f"{Condition.LABELS[req.accepted_condition].lower()}."
-            )
+        # El estado del libro ofrecido no bloquea la creación de la oferta (el lector decide aceptar o no).
         phone, email, address = _clean(phone, 30), _clean(email, 120), _clean(address, 200)
         if email and not EMAIL_RE.match(email):
             raise ValidationError("El correo de contacto no es válido.")
@@ -577,13 +598,15 @@ class Store:
         raise PermissionDenied("No puedes ver esta oferta.")
 
     def offer_contact(self, actor: User, offer_id: int) -> SellerContact:
-        """Los datos de contacto solo se revelan tras aceptar la oferta."""
+        """Los datos de contacto se revelan cuando la oferta entra en coordinación o es aceptada."""
         offer = self.get_offer(actor, offer_id)
-        if offer.status != OfferStatus.ACCEPTED and actor.role != Role.ADMIN:
-            raise PermissionDenied("El contacto se muestra al aceptar la oferta.")
+        user = self._require_active(actor)
+        if offer.status not in (OfferStatus.IN_DEAL, OfferStatus.ACCEPTED) and user.role != Role.ADMIN:
+            raise PermissionDenied("El contacto se muestra al coordinar o aceptar la oferta.")
         return self.contacts.get(offer.seller_id, SellerContact(offer.seller_id))
 
     def accept_offer(self, actor: User, offer_id: int) -> Offer:
+        """El lector acepta preliminarmente la oferta para coordinar entrega/compra."""
         reader = self._require_role(actor, Role.READER)
         offer = self._get(self.offers, offer_id, "Oferta")
         req = self.requests[offer.request_id]
@@ -591,15 +614,66 @@ class Store:
             raise PermissionDenied("Solo puedes aceptar ofertas de tus solicitudes.")
         if offer.status != OfferStatus.PUBLISHED:
             raise InvalidTransition("Esta oferta ya no está disponible.")
-        # Supuesto del demo: una solicitud acepta una sola oferta y el resto se rechaza.
+        
+        self._transition(req, RequestStatus.IN_DEAL, RequestStatus.TRANSITIONS)
+        self._transition(offer, OfferStatus.IN_DEAL, OfferStatus.TRANSITIONS)
+        # Las demás ofertas activas pasan a estar en espera (no se rechazan aún)
+        for other in self._offers_of(req.id):
+            if other.id != offer.id and other.status == OfferStatus.PUBLISHED:
+                self._transition(other, OfferStatus.ON_HOLD, OfferStatus.TRANSITIONS)
+        self._log(
+            reader, "oferta_por_concretar",
+            f"Oferta #{offer.id} por concretar · solicitud #{req.id} en coordinación",
+        )
+        return offer
+
+    def confirm_deal(self, actor: User, offer_id: int) -> Offer:
+        """El lector confirma que el trato se cerró exitosamente."""
+        reader = self._require_role(actor, Role.READER)
+        offer = self._get(self.offers, offer_id, "Oferta")
+        req = self.requests[offer.request_id]
+        if req.reader_id != reader.id:
+            raise PermissionDenied("Solo puedes confirmar tratos de tus solicitudes.")
+        if offer.status != OfferStatus.IN_DEAL:
+            raise InvalidTransition("Solo puedes confirmar ofertas que estén en coordinación.")
+        
         self._transition(req, RequestStatus.RESOLVED, RequestStatus.TRANSITIONS)
         self._transition(offer, OfferStatus.ACCEPTED, OfferStatus.TRANSITIONS)
         for other in self._offers_of(req.id):
-            if other.id != offer.id and other.status == OfferStatus.PUBLISHED:
+            if other.id != offer.id and other.status == OfferStatus.ON_HOLD:
                 self._transition(other, OfferStatus.REJECTED, OfferStatus.TRANSITIONS)
         self._log(
-            reader, "oferta_aceptada",
-            f"Oferta #{offer.id} aceptada · solicitud #{req.id} resuelta",
+            reader, "trato_concretado",
+            f"Oferta #{offer.id} concretada · solicitud #{req.id} resuelta",
+        )
+        return offer
+
+    def cancel_deal(self, actor: User, offer_id: int, reason: str = "") -> Offer:
+        """El lector o vendedor desiste de la coordinación en curso."""
+        user = self._require_role(actor, Role.READER, Role.SELLER, Role.ADMIN)
+        offer = self._get(self.offers, offer_id, "Oferta")
+        req = self.requests[offer.request_id]
+        if user.role == Role.READER and req.reader_id != user.id:
+            raise PermissionDenied("No puedes desistir de este trato.")
+        if user.role == Role.SELLER and offer.seller_id != user.id:
+            raise PermissionDenied("No puedes desistir de este trato.")
+        if offer.status != OfferStatus.IN_DEAL:
+            raise InvalidTransition("Esta oferta no está en coordinación.")
+
+        new_offer_status = OfferStatus.CANCELLED if user.role == Role.SELLER else OfferStatus.REJECTED
+        self._transition(offer, new_offer_status, OfferStatus.TRANSITIONS)
+
+        # Reactivar las demás ofertas que estaban en espera
+        active_on_hold = [o for o in self._offers_of(req.id) if o.status == OfferStatus.ON_HOLD]
+        for other in active_on_hold:
+            self._transition(other, OfferStatus.PUBLISHED, OfferStatus.TRANSITIONS)
+
+        new_req_status = RequestStatus.WITH_OFFERS if active_on_hold else RequestStatus.PUBLISHED
+        self._transition(req, new_req_status, RequestStatus.TRANSITIONS)
+
+        self._log(
+            user, "trato_desistido",
+            f"Coordinación de oferta #{offer.id} cancelada · solicitud #{req.id} reactivada",
         )
         return offer
 
@@ -616,7 +690,7 @@ class Store:
         seller = self._require_role(actor, Role.SELLER)
         groups = {
             "todas": None,
-            "activas": (OfferStatus.PUBLISHED,),
+            "activas": (OfferStatus.PUBLISHED, OfferStatus.IN_DEAL, OfferStatus.ON_HOLD),
             "aceptadas": (OfferStatus.ACCEPTED,),
             "finalizadas": (OfferStatus.REJECTED, OfferStatus.CANCELLED),
         }
@@ -628,7 +702,7 @@ class Store:
         return sorted(items, key=lambda o: o.updated_at, reverse=True)
 
     def active_offer_count(self, request_id: int) -> int:
-        return sum(1 for o in self._offers_of(request_id) if o.status == OfferStatus.PUBLISHED)
+        return sum(1 for o in self._offers_of(request_id) if o.status in OfferStatus.ACTIVE)
 
     # ------------------------------------------------------------ admin
     def admin_stats(self, actor: User) -> dict[str, int]:
@@ -640,8 +714,8 @@ class Store:
             "lectores": sum(u.role == Role.READER for u in users),
             "vendedores": sum(u.role == Role.SELLER for u in users),
             "solicitudes": len(reqs),
-            "activas": sum(r.status in RequestStatus.OPEN for r in reqs),
-            "con_ofertas": sum(r.status == RequestStatus.WITH_OFFERS for r in reqs),
+            "activas": sum(r.status in RequestStatus.ACTIVE for r in reqs),
+            "con_ofertas": sum(r.status in (RequestStatus.WITH_OFFERS, RequestStatus.IN_DEAL) for r in reqs),
             "resueltas": sum(r.status == RequestStatus.RESOLVED for r in reqs),
             "canceladas": sum(r.status == RequestStatus.CANCELLED for r in reqs),
             "ofertas": len(self.offers),
@@ -655,7 +729,7 @@ class Store:
         self._require_role(actor, Role.ADMIN)
         groups = {
             "todas": None,
-            "activas": RequestStatus.OPEN,
+            "activas": RequestStatus.ACTIVE,
             "resueltas": (RequestStatus.RESOLVED,),
             "canceladas": (RequestStatus.CANCELLED,),
         }
@@ -667,9 +741,23 @@ class Store:
         self._require_role(actor, Role.ADMIN)
         return sorted(self.offers.values(), key=lambda o: o.updated_at, reverse=True)
 
-    def admin_activity(self, actor: User, limit: int = 50) -> list[ActivityEntry]:
+    def admin_activity(self, actor: User, limit: int = 50, text: str = "") -> list[ActivityEntry]:
         self._require_role(actor, Role.ADMIN)
-        return list(reversed(self.activity))[:limit]
+        entries = list(reversed(self.activity))
+        query = _clean(text, 120).lower()
+        if query:
+            def matches(entry: ActivityEntry) -> bool:
+                actor_user = self.users.get(entry.actor_id) if entry.actor_id else None
+                haystack = " ".join([
+                    entry.action,
+                    entry.detail,
+                    actor_user.name if actor_user else "",
+                    actor_user.email if actor_user else "",
+                ]).lower()
+                return query in haystack
+
+            entries = [e for e in entries if matches(e)]
+        return entries[:limit]
 
     def set_user_status(self, actor: User, user_id: int, status: str) -> User:
         admin = self._require_role(actor, Role.ADMIN)
@@ -683,24 +771,54 @@ class Store:
         self._log(admin, "usuario_" + verb, f"{target.email} {verb}")
         return target
 
+    def export_activity_log(self, actor: User, file_path: str = "registro_actividad.txt") -> str:
+        """Exporta el historial de actividad y auditoría a un archivo de texto/log."""
+        self._require_role(actor, Role.ADMIN)
+        lines = [
+            "============================================================",
+            "   REGISTRO DE ACTIVIDAD Y AUDITORÍA - APP DE LIBROS",
+            f"   Exportado el: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}",
+            f"   Por administrador: {actor.name} ({actor.email})",
+            "============================================================",
+            "",
+        ]
+        if not self.activity:
+            lines.append("No hay eventos registrados.")
+        else:
+            for idx, entry in enumerate(reversed(self.activity), 1):
+                actor_user = self.users.get(entry.actor_id) if entry.actor_id else None
+                actor_str = f"{actor_user.name} ({actor_user.email})" if actor_user else "Sistema"
+                dt_str = entry.at.strftime("%d/%m/%Y %H:%M:%S")
+                lines.append(f"{idx:03d}. [{dt_str}] [{entry.action.upper()}]")
+                lines.append(f"     Actor:  {actor_str}")
+                lines.append(f"     Detalle: {entry.detail}")
+                lines.append("-" * 60)
+        content = "\n".join(lines)
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        return os.path.abspath(file_path)
+
 
 # --------------------------------------------------------------------------
 # Datos hardcodeados del demo
 # --------------------------------------------------------------------------
 DEMO_USERS = [
-    # (nombre, correo, contraseña, rol)
-    ("Juan Pérez", "lector@demo.cl", "1234", Role.READER),
-    ("María González", "maria@demo.cl", "1234", Role.READER),
-    ("Librería Los Andes", "vendedor@demo.cl", "1234", Role.SELLER),
-    ("Pedro Soto", "pedro@demo.cl", "1234", Role.SELLER),
-    ("Admin", "admin@demo.cl", "admin", Role.ADMIN),
+    # (nombre, correo, contraseña, rol, comuna)
+    ("Juan Pérez", "lector@demo.cl", "1234", Role.READER, ""),
+    ("María González", "maria@demo.cl", "1234", Role.READER, ""),
+    ("Librería Los Andes", "vendedor@demo.cl", "1234", Role.SELLER, "Concepción"),
+    ("Pedro Soto", "pedro@demo.cl", "1234", Role.SELLER, "Santiago"),
+    ("Admin", "admin@demo.cl", "admin", Role.ADMIN, ""),
 ]
 
 
 def build_demo_store(catalog_lookup: Callable[[str], dict]) -> Store:
     """Crea un Store con usuarios hardcodeados y algo de actividad de ejemplo."""
     store = Store()
-    users = {email: store.add_user(n, email, pw, role) for n, email, pw, role in DEMO_USERS}
+    users = {
+        email: store.add_user(n, email, pw, role, loc)
+        for n, email, pw, role, loc in DEMO_USERS
+    }
     juan, maria = users["lector@demo.cl"], users["maria@demo.cl"]
     andes, pedro = users["vendedor@demo.cl"], users["pedro@demo.cl"]
 

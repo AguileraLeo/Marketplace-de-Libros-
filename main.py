@@ -1,5 +1,5 @@
 """
-App de libros — demo MVP en KivyMD 2.0.x
+BookWho? — demo MVP en KivyMD 2.0.x
 
 Ejecutar:  python main.py
 Estilos/estructura visual: libros.kv
@@ -18,8 +18,10 @@ if platform not in ("android", "ios"):
 
 import os
 import threading
+from datetime import datetime
 
 from kivy.clock import Clock, mainthread
+from kivy.core.text import LabelBase
 from kivy.core.window import Window
 from kivy.lang import Builder
 from kivy.metrics import dp
@@ -31,6 +33,7 @@ from kivy.properties import (
     ObjectProperty,
     StringProperty,
 )
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.widget import Widget
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -45,9 +48,15 @@ from kivymd.uix.dialog import (
 from kivymd.uix.relativelayout import MDRelativeLayout
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.snackbar import MDSnackbar, MDSnackbarText
-from kivymd.uix.stacklayout import MDStackLayout
 
-from books_api import catalog_lookup, search_books
+from books_api import (
+    catalog_lookup,
+    download_and_cache_cover,
+    get_cover_cache_path,
+    is_cover_cached,
+    search_books,
+)
+from locations import normalize_location_name, proximity_label, search_locations
 from store import (
     Condition,
     Delivery,
@@ -60,18 +69,44 @@ from store import (
     format_price,
 )
 
-KV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "libros.kv")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+KV_FILE = os.path.join(BASE_DIR, "libros.kv")
+FONTS_DIR = os.path.join(BASE_DIR, "fonts")
 
-# (fondo, texto) por estado — mismos colores en todas las pantallas.
+LabelBase.register(
+    name="SourceSerif",
+    # La maqueta usa siempre peso 600: "bold" en un título no cambia el peso.
+    fn_regular=os.path.join(FONTS_DIR, "SourceSerif4-Semibold.ttf"),
+    fn_bold=os.path.join(FONTS_DIR, "SourceSerif4-Semibold.ttf"),
+)
+LabelBase.register(
+    name="IBMPlexSans",
+    fn_regular=os.path.join(FONTS_DIR, "IBMPlexSans-Regular.ttf"),
+    fn_bold=os.path.join(FONTS_DIR, "IBMPlexSans-SemiBold.ttf"),
+)
+
+ACCENT = "#1F4D3A"
+PAPER = "#FBFAF7"
+
+# (punto, texto) por estado — mismos colores en todas las pantallas.
+# Solicitud y oferta comparten "PUBLICADA" y "CANCELADA", así que comparten color.
+GRAY = ("#A8A397", "#3F3D38")
+GREEN = (ACCENT, ACCENT)
+AMBER = ("#B26B00", "#8A5300")
+RED = ("#A33A2F", "#7A1C14")
 STATUS_COLORS = {
-    RequestStatus.PUBLISHED: ("#DCE8FF", "#123A7A"),
-    RequestStatus.WITH_OFFERS: ("#FFE9C7", "#6B3F00"),
-    RequestStatus.RESOLVED: ("#D6F5DF", "#11562A"),
-    RequestStatus.CANCELLED: ("#FADBD8", "#7A1C14"),
-    OfferStatus.ACCEPTED: ("#D6F5DF", "#11562A"),
-    OfferStatus.REJECTED: ("#ECE6EE", "#4A4458"),
-    UserStatus.ACTIVE: ("#D6F5DF", "#11562A"),
-    UserStatus.SUSPENDED: ("#FADBD8", "#7A1C14"),
+    RequestStatus.PUBLISHED: GRAY,
+    RequestStatus.WITH_OFFERS: GREEN,
+    RequestStatus.IN_DEAL: AMBER,
+    RequestStatus.RESOLVED: GREEN,
+    RequestStatus.CANCELLED: RED,
+    OfferStatus.IN_DEAL: AMBER,
+    OfferStatus.ON_HOLD: GRAY,
+    OfferStatus.ACCEPTED: GREEN,
+    OfferStatus.REJECTED: GRAY,
+    UserStatus.ACTIVE: GREEN,
+    UserStatus.SUSPENDED: RED,
+    ("offer", OfferStatus.PUBLISHED): GREEN,  # "Activa": una oferta publicada sí está viva
 }
 STATUS_LABELS = {
     "request": RequestStatus.LABELS,
@@ -89,18 +124,38 @@ def fmt_date(value) -> str:
 # ==========================================================================
 class BookCover(MDRelativeLayout):
     source = StringProperty("")
+    local_source = StringProperty("")
     loaded = BooleanProperty(False)
 
-    def on_source(self, *_):
+    def on_source(self, _instance, value):
         self.loaded = False
+        if not value:
+            self.local_source = ""
+            return
+        if os.path.exists(value):
+            self.local_source = value
+            self.loaded = True
+            return
+        cache_path = get_cover_cache_path(value)
+        if cache_path and os.path.exists(cache_path) and os.path.getsize(cache_path) > 100:
+            self.local_source = cache_path
+            self.loaded = True
+            return
+        self.local_source = ""
+        download_and_cache_cover(value, self._on_download_complete)
+
+    def _on_download_complete(self, url, local_path):
+        if self.source == url and os.path.exists(local_path):
+            self.local_source = local_path
+            self.loaded = True
 
 
 class StatusChip(MDBoxLayout):
     status = StringProperty("")
     kind = StringProperty("request")  # request | offer | user
     text = StringProperty("")
-    bg = ColorProperty("#DCE8FF")
-    fg = ColorProperty("#123A7A")
+    dot = ColorProperty(GRAY[0])
+    fg = ColorProperty(GRAY[1])
 
     def on_status(self, *_):
         self._update()
@@ -111,8 +166,8 @@ class StatusChip(MDBoxLayout):
     def _update(self):
         from kivy.utils import get_color_from_hex as c
 
-        bg, fg = STATUS_COLORS.get(self.status, ("#DCE8FF", "#123A7A"))
-        self.bg, self.fg = c(bg), c(fg)
+        dot, fg = STATUS_COLORS.get((self.kind, self.status)) or STATUS_COLORS.get(self.status, GRAY)
+        self.dot, self.fg = c(dot), c(fg)
         self.text = STATUS_LABELS.get(self.kind, {}).get(self.status, self.status)
 
 
@@ -121,7 +176,7 @@ class WideButton(MDButton):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bind(size=lambda *_: Clock.schedule_once(self.adjust_pos))
+        self.bind(size=Clock.create_trigger(self.adjust_pos))
 
     def adjust_pos(self, *args) -> None:
         text, icon = self._button_text, self._button_icon
@@ -134,16 +189,19 @@ class WideButton(MDButton):
             text.x = start + icon_w
 
 
-class ChoiceRow(MDStackLayout):
-    """Grupo de botones de selección única (filled = seleccionado)."""
+class SegmentButton(ButtonBehavior, MDBoxLayout):
+    text = StringProperty()
+    selected = BooleanProperty(False)
+
+
+class SegmentedRow(MDBoxLayout):
+    """Control segmentado de selección única (estilo de la maqueta editorial)."""
 
     options = ListProperty()  # [(valor, etiqueta), ...]
     value = StringProperty("")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.adaptive_height = True
-        self.spacing = dp(8)
         self._trigger = Clock.create_trigger(self._rebuild)
         self.bind(options=self._trigger, value=self._trigger)
         self._trigger()
@@ -151,21 +209,19 @@ class ChoiceRow(MDStackLayout):
     def _rebuild(self, *_):
         self.clear_widgets()
         for value, label in self.options:
-            btn = MDButton(
-                MDButtonText(text=label),
-                style="filled" if value == self.value else "outlined",
-            )
+            btn = SegmentButton(text=label, selected=value == self.value)
             btn.bind(on_release=lambda _b, v=value: setattr(self, "value", v))
             self.add_widget(btn)
 
 
-class RequestCard(MDCard):
+class RequestRow(ButtonBehavior, MDBoxLayout):
     title = StringProperty()
-    subtitle = StringProperty()
+    author = StringProperty()
     meta = StringProperty()
+    price = StringProperty()
     cover = StringProperty()
     status = StringProperty()
-    badge = StringProperty()
+    detail = StringProperty()
     callback = ObjectProperty(None, allownone=True)
 
 
@@ -191,6 +247,7 @@ class BookResultCard(MDCard):
 class StatTile(MDCard):
     value = StringProperty("0")
     label = StringProperty()
+    icon = StringProperty("chart-box-outline")
 
 
 class InfoRow(MDBoxLayout):
@@ -258,9 +315,29 @@ class LoginScreen(BaseScreen):
 
 class RegisterScreen(BaseScreen):
     def refresh(self):
-        for field in ("name", "email", "password"):
+        for field in ("name", "email", "password", "location"):
             self.ids[field].text = ""
         self.ids.role.value = Role.READER
+        self.ids.suggestions_box.clear_widgets()
+
+    def on_location_text(self, text):
+        self.ids.suggestions_box.clear_widgets()
+        query = (text or "").strip()
+        if len(query) < 2:
+            return
+        for loc in search_locations(query, limit=4):
+            btn = MDButton(
+                MDButtonText(text=loc),
+                style="text",
+                size_hint_x=1,
+                height=dp(48),
+            )
+            btn.bind(on_release=lambda _b, l=loc: self.select_location(l))
+            self.ids.suggestions_box.add_widget(btn)
+
+    def select_location(self, loc):
+        self.ids.location.text = loc
+        self.ids.suggestions_box.clear_widgets()
 
     def do_register(self):
         user = self.app.safe(
@@ -269,6 +346,7 @@ class RegisterScreen(BaseScreen):
             self.ids.email.text,
             self.ids.password.text,
             self.ids.role.value,
+            normalize_location_name(self.ids.location.text),
         )
         if user:
             self.app.notify(f"¡Bienvenido/a, {user.first_name}!")
@@ -281,8 +359,10 @@ class ReaderHomeScreen(BaseScreen):
         app, store = self.app, self.app.store
         requests = store.reader_requests(app.user)
         active = [r for r in requests if r.status in RequestStatus.OPEN]
+        offers = sum(store.active_offer_count(r.id) for r in active)
         self.ids.stat_active.value = str(len(active))
-        self.ids.stat_offers.value = str(sum(store.active_offer_count(r.id) for r in active))
+        self.ids.stat_offers.value = str(offers)
+        self.ids.stat_offers.highlight = offers > 0
         self.fill(
             self.ids.recent_list,
             [app.request_card(r, app.open_reader_request) for r in requests[:3]],
@@ -313,17 +393,20 @@ class BookSearchScreen(BaseScreen):
         self.searching = True
         self.status_text = "Buscando…"
         self.ids.results.clear_widgets()
-        threading.Thread(target=self._worker, args=(query, mode), daemon=True).start()
+        self._search_id = getattr(self, "_search_id", 0) + 1
+        threading.Thread(target=self._worker, args=(query, mode, self._search_id), daemon=True).start()
 
-    def _worker(self, query, mode):
+    def _worker(self, query, mode, search_id):
         try:
             results, source = search_books(query, mode)
-            self._show(results, source, None)
+            self._show(results, source, None, search_id)
         except Exception as exc:  # noqa: BLE001 — se muestra al usuario
-            self._show([], "", str(exc))
+            self._show([], "", str(exc), search_id)
 
     @mainthread
-    def _show(self, results, source, error):
+    def _show(self, results, source, error, search_id):
+        if search_id != self._search_id:
+            return  # respuesta de una búsqueda anterior que llegó tarde
         self.searching = False
         if error:
             self.status_text = error
@@ -357,6 +440,8 @@ class CreateRequestScreen(BaseScreen):
         self.ids.cover.source = book.cover_url
         self.ids.book_title.text = book.title
         self.ids.book_meta.text = f"{book.authors_text}\n{book.publisher}  ·  ISBN {book.isbn or '—'}"
+        if hasattr(self.ids, "suggestions_box"):
+            self.ids.suggestions_box.clear_widgets()
 
     def reset_form(self):
         self.ids.max_price.text = ""
@@ -364,16 +449,42 @@ class CreateRequestScreen(BaseScreen):
         self.ids.notes.text = ""
         self.ids.condition.value = Condition.ANY
         self.ids.delivery.value = Delivery.ANY
+        if hasattr(self.ids, "suggestions_box"):
+            self.ids.suggestions_box.clear_widgets()
+
+    def on_location_text(self, text):
+        if not hasattr(self.ids, "suggestions_box"):
+            return
+        self.ids.suggestions_box.clear_widgets()
+        query = (text or "").strip()
+        if len(query) < 2:
+            return
+        matches = search_locations(query, limit=4)
+        for loc in matches:
+            btn = MDButton(
+                MDButtonText(text=loc),
+                style="text",
+                size_hint_x=1,
+                height=dp(48),
+            )
+            btn.bind(on_release=lambda _b, l=loc: self.select_location(l))
+            self.ids.suggestions_box.add_widget(btn)
+
+    def select_location(self, loc):
+        self.ids.location.text = loc
+        if hasattr(self.ids, "suggestions_box"):
+            self.ids.suggestions_box.clear_widgets()
 
     def publish(self):
         app = self.app
+        loc = normalize_location_name(self.ids.location.text)
         req = app.safe(
             app.store.create_request,
             app.user,
             app.selected_book.id if app.selected_book else None,
             self.ids.max_price.text,
             self.ids.condition.value,
-            self.ids.location.text,
+            loc,
             self.ids.delivery.value,
             self.ids.notes.text,
         )
@@ -387,8 +498,8 @@ class RequestPublishedScreen(BaseScreen):
     def refresh(self):
         req = self.app.store.requests.get(self.app.current_request_id)
         if req:
-            self.ids.book_title.text = self.app.store.book(req.book_id).title
-            self.ids.request_id.text = f"Solicitud #{req.id} · estado: Publicada"
+            self.ids.request_id.text = f"SOLICITUD N.º {req.id}"
+            self.fill(self.ids.request_row, [self.app.request_card(req, self.app.open_reader_request)])
 
 
 class ReaderRequestsScreen(BaseScreen):
@@ -414,7 +525,14 @@ class ReaderRequestDetailScreen(BaseScreen):
         app.fill_book_header(self, book)
         self.ids.status.status = req.status
         self.ids.info.clear_widgets()
-        for icon, label, value in app.request_info_rows(req):
+        rows = app.request_info_rows(req)
+        if req.status == RequestStatus.CANCELLED:
+            who = "moderación administrativa" if req.canceled_by_role == Role.ADMIN else "el lector"
+            cancel_msg = f"Cancelada por {who}"
+            if req.cancellation_reason:
+                cancel_msg += f" · Motivo: {req.cancellation_reason}"
+            rows.append(("alert-circle-outline", "Moderación / Cancelación", cancel_msg))
+        for icon, label, value in rows:
             self.ids.info.add_widget(InfoRow(icon=icon, label=label, value=value))
         self.can_cancel = req.status in RequestStatus.OPEN
 
@@ -436,7 +554,7 @@ class ReaderRequestDetailScreen(BaseScreen):
         app = self.app
 
         def do_cancel():
-            if app.safe(app.store.cancel_request, app.user, app.current_request_id):
+            if app.safe(app.store.cancel_request, app.user, app.current_request_id, reason="Cancelada por el lector"):
                 app.notify("Solicitud cancelada.")
                 self.refresh()
 
@@ -449,7 +567,10 @@ class ReaderRequestDetailScreen(BaseScreen):
 
 class OfferDetailScreen(BaseScreen):
     can_accept = BooleanProperty(False)
+    in_deal = BooleanProperty(False)
     accepted = BooleanProperty(False)
+    on_hold = BooleanProperty(False)
+    is_reader = BooleanProperty(False)
 
     def refresh(self):
         app, store = self.app, self.app.store
@@ -462,6 +583,7 @@ class OfferDetailScreen(BaseScreen):
         self.ids.book_title.text = book.title
         self.ids.price.text = format_price(offer.price)
         self.ids.status.status = offer.status
+        self.is_reader = app.user.role == Role.READER and req.reader_id == app.user.id
         rows = [
             ("book-open-variant", "Estado del libro", Condition.LABELS[offer.book_condition]),
             ("text-box-outline", "Condición", offer.condition_description or "—"),
@@ -471,11 +593,20 @@ class OfferDetailScreen(BaseScreen):
         ]
         if req.max_price and offer.price > req.max_price:
             rows.append(("alert-outline", "Atención", f"Supera tu precio máximo ({format_price(req.max_price)})"))
+        if req.accepted_condition != Condition.ANY and req.accepted_condition != offer.book_condition:
+            rows.append((
+                "information-outline",
+                "Nota de condición",
+                f"Ofrecido como {Condition.LABELS[offer.book_condition].lower()} (solicitabas {Condition.LABELS[req.accepted_condition].lower()})",
+            ))
         self.ids.info.clear_widgets()
         for icon, label, value in rows:
             self.ids.info.add_widget(InfoRow(icon=icon, label=label, value=value))
-        self.can_accept = offer.status == OfferStatus.PUBLISHED and req.status in RequestStatus.OPEN
+        
+        self.can_accept = self.is_reader and offer.status == OfferStatus.PUBLISHED and req.status in RequestStatus.OPEN
+        self.in_deal = offer.status == OfferStatus.IN_DEAL
         self.accepted = offer.status == OfferStatus.ACCEPTED
+        self.on_hold = offer.status == OfferStatus.ON_HOLD
 
     def accept(self):
         app = self.app
@@ -486,9 +617,36 @@ class OfferDetailScreen(BaseScreen):
 
         app.confirm(
             "¿Aceptar esta oferta?",
-            "La solicitud quedará resuelta y las demás ofertas se rechazarán. "
-            "Verás los datos de contacto del vendedor.",
-            "Aceptar", do_accept,
+            "La oferta pasará a estado 'Por concretar' y verás los datos de contacto del vendedor para coordinar la entrega. Las demás ofertas quedarán en espera.",
+            "Aceptar para coordinar", do_accept,
+        )
+
+    def confirm_deal(self):
+        app = self.app
+
+        def do_confirm():
+            if app.safe(app.store.confirm_deal, app.user, app.current_offer_id):
+                app.notify("¡Trato concretado con éxito! La solicitud quedó resuelta.")
+                self.refresh()
+
+        app.confirm(
+            "¿Confirmar trato concretado?",
+            "Confirma que compraste/recibiste el libro. La solicitud quedará resuelta definitivamente y las demás ofertas se cerrarán.",
+            "Confirmar compra", do_confirm,
+        )
+
+    def cancel_deal(self):
+        app = self.app
+
+        def do_cancel():
+            if app.safe(app.store.cancel_deal, app.user, app.current_offer_id):
+                app.notify("Se canceló la coordinación. Las demás ofertas vuelven a estar activas.")
+                self.refresh()
+
+        app.confirm(
+            "¿Desistir de este trato?",
+            "Se cancelará la coordinación con este vendedor y las otras ofertas volverán a estar activas para que puedas elegir otra opción.",
+            "Desistir del trato", do_cancel,
         )
 
 
@@ -531,10 +689,10 @@ class SellerHomeScreen(BaseScreen):
         if items is None:
             return
         self.ids.count.text = f"{len(items)} solicitud(es) abiertas"
-        cards = []
-        for r in items:
-            badge = "Ya ofertaste" if store.seller_active_offer(app.user, r.id) else ""
-            cards.append(app.request_card(r, app.open_seller_request, badge=badge, for_seller=True))
+        cards = [
+            app.request_card(r, app.open_seller_request, for_seller=True)
+            for r in items
+        ]
         self.fill(self.ids.list, cards, "No hay solicitudes que coincidan con los filtros.")
 
     def clear_filters(self):
@@ -620,10 +778,14 @@ class SellerOffersScreen(BaseScreen):
         cards = []
         for o in offers:
             req = store.requests[o.request_id]
-            if o.status == OfferStatus.ACCEPTED:
-                meta = "¡Aceptada! El lector ya ve tus datos de contacto y te contactará."
+            if o.status == OfferStatus.IN_DEAL:
+                meta = "¡En coordinación! El lector está revisando tus datos de contacto para cerrar la compra."
+            elif o.status == OfferStatus.ON_HOLD:
+                meta = "En espera: el lector está coordinando con otra oferta. Si desiste, tu oferta volverá a activarse."
+            elif o.status == OfferStatus.ACCEPTED:
+                meta = "¡Trato concretado! Compra finalizada con éxito."
             elif o.status == OfferStatus.REJECTED:
-                meta = "El lector aceptó otra oferta."
+                meta = "El lector concretó otra oferta."
             else:
                 meta = f"Solicitud #{req.id} · {req.location} · máx. {format_price(req.max_price)}"
             cards.append(ItemCard(
@@ -631,7 +793,7 @@ class SellerOffersScreen(BaseScreen):
                 subtitle=f"{format_price(o.price)} · {Condition.LABELS[o.book_condition]}",
                 meta=meta,
                 status=o.status, kind="offer",
-                action_text="Cancelar oferta" if o.status == OfferStatus.PUBLISHED else "",
+                action_text="Cancelar oferta" if o.status in (OfferStatus.PUBLISHED, OfferStatus.ON_HOLD) else "",
                 action_callback=lambda _c, oid=o.id: self.cancel(oid),
                 callback=lambda _c, rid=req.id: app.open_seller_request(rid),
             ))
@@ -650,28 +812,19 @@ class SellerOffersScreen(BaseScreen):
 
 # ---------------------------------------------------------------- admin
 class AdminHomeScreen(BaseScreen):
+    """Inicio del admin: solo métricas generales y accesos rápidos."""
+
     def refresh(self):
-        app, store = self.app, self.app.store
-        stats = store.admin_stats(app.user)
+        stats = self.app.store.admin_stats(self.app.user)
         for key, value in stats.items():
             self.ids["st_" + key].value = str(value)
 
-        section = self.ids.section.value
-        # El filtro de estado solo aplica a la sección "Solicitudes".
-        if not hasattr(self, "_req_filter"):  # ref. fuerte: ids son weakrefs
-            self._req_filter = self.ids.req_filter
-        req_filter, page = self._req_filter, self.ids.list.parent
-        if section == "solicitudes" and req_filter.parent is None:
-            page.add_widget(req_filter, index=1)
-        elif section != "solicitudes" and req_filter.parent is not None:
-            page.remove_widget(req_filter)
-        builder = getattr(self, "_cards_" + section)
-        self.fill(self.ids.list, builder(), "Sin registros.", "database-off-outline")
 
-    def _cards_solicitudes(self):
+class AdminRequestsScreen(BaseScreen):
+    def refresh(self):
         app, store = self.app, self.app.store
         cards = []
-        for r in store.admin_requests(app.user, self.ids.req_filter.value):
+        for r in store.admin_requests(app.user, self.ids.filter.value):
             book = store.book(r.book_id)
             reader = store.user(r.reader_id)
             cards.append(ItemCard(
@@ -680,11 +833,23 @@ class AdminHomeScreen(BaseScreen):
                 meta=f"{len(store.offers_for_request(app.user, r.id))} oferta(s) · actualizada {fmt_date(r.updated_at)}",
                 status=r.status, kind="request",
                 action_text="Cancelar (moderar)" if r.status in RequestStatus.OPEN else "",
-                action_callback=lambda _c, rid=r.id: self.moderate_request(rid),
+                action_callback=lambda _c, rid=r.id: self.moderate(rid),
             ))
-        return cards
+        self.fill(self.ids.list, cards, "Sin registros.", "database-off-outline")
 
-    def _cards_usuarios(self):
+    def moderate(self, request_id):
+        app = self.app
+
+        def do_cancel():
+            if app.safe(app.store.cancel_request, app.user, request_id, reason="Moderación administrativa"):
+                app.notify(f"Solicitud #{request_id} cancelada por moderación.")
+                self.refresh()
+
+        app.confirm("¿Cancelar solicitud?", "Acción de moderación: quedará registrada en la actividad y el lector verá el motivo.", "Cancelar", do_cancel)
+
+
+class AdminUsersScreen(BaseScreen):
+    def refresh(self):
         app, store = self.app, self.app.store
         cards = []
         for u in store.admin_users(app.user):
@@ -697,11 +862,21 @@ class AdminHomeScreen(BaseScreen):
                 meta=f"Alta: {fmt_date(u.created_at)}",
                 status=u.status, kind="user",
                 action_text=action,
-                action_callback=lambda _c, uid=u.id: self.toggle_user(uid),
+                action_callback=lambda _c, uid=u.id: self.toggle(uid),
             ))
-        return cards
+        self.fill(self.ids.list, cards, "Sin registros.", "database-off-outline")
 
-    def _cards_ofertas(self):
+    def toggle(self, user_id):
+        app = self.app
+        target = app.store.user(user_id)
+        new_status = UserStatus.SUSPENDED if target.status == UserStatus.ACTIVE else UserStatus.ACTIVE
+        if app.safe(app.store.set_user_status, app.user, user_id, new_status):
+            app.notify(f"{target.name}: {STATUS_LABELS['user'][new_status].lower()}.")
+            self.refresh()
+
+
+class AdminOffersScreen(BaseScreen):
+    def refresh(self):
         app, store = self.app, self.app.store
         cards = []
         for o in store.admin_offers(app.user):
@@ -712,37 +887,48 @@ class AdminHomeScreen(BaseScreen):
                 meta=f"Solicitud #{req.id} · {fmt_date(o.updated_at)}",
                 status=o.status, kind="offer",
             ))
-        return cards
+        self.fill(self.ids.list, cards, "Sin registros.", "database-off-outline")
 
-    def _cards_actividad(self):
+
+class AdminActivityScreen(BaseScreen):
+    """Auditoría: consulta y exportación de logs de actividad."""
+
+    limit = NumericProperty(50)
+
+    def refresh(self):
         app, store = self.app, self.app.store
+        if app.user is None or "search" not in self.ids:
+            return
+        entries = store.admin_activity(app.user, limit=self.limit, text=self.ids.search.text)
         cards = []
-        for entry in store.admin_activity(app.user):
+        for entry in entries:
             actor = store.users.get(entry.actor_id)
             cards.append(ItemCard(
                 title=entry.detail,
                 subtitle=f"{fmt_date(entry.at)} · {actor.name if actor else 'sistema'}",
                 meta=entry.action,
             ))
-        return cards
+        self.fill(self.ids.list, cards, "Sin registros de actividad.", "text-box-search-outline")
 
-    def moderate_request(self, request_id):
+    def export_logs(self):
         app = self.app
-
-        def do_cancel():
-            if app.safe(app.store.cancel_request, app.user, request_id):
-                app.notify(f"Solicitud #{request_id} cancelada por moderación.")
-                self.refresh()
-
-        app.confirm("¿Cancelar solicitud?", "Acción de moderación: quedará registrada en la actividad.", "Cancelar", do_cancel)
-
-    def toggle_user(self, user_id):
-        app = self.app
-        target = app.store.user(user_id)
-        new_status = UserStatus.SUSPENDED if target.status == UserStatus.ACTIVE else UserStatus.ACTIVE
-        if app.safe(app.store.set_user_status, app.user, user_id, new_status):
-            app.notify(f"{target.name}: {STATUS_LABELS['user'][new_status].lower()}.")
-            self.refresh()
+        stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"registro_actividad_{stamp}.log"
+        candidates = [
+            os.path.join(os.path.expanduser("~"), filename),
+            os.path.join(os.path.dirname(KV_FILE), filename),
+        ]
+        for candidate in candidates:
+            try:
+                path = app.store.export_activity_log(app.user, candidate)
+            except OSError:
+                continue
+            app.info_dialog(
+                "Logs exportados",
+                f"Se guardó el registro de actividad en:\n\n{path}",
+            )
+            return
+        app.notify("No se pudo exportar el registro de actividad.")
 
 
 # ==========================================================================
@@ -755,9 +941,18 @@ class DemoLibrosApp(MDApp):
     HOME_BY_ROLE = {Role.READER: "reader_home", Role.SELLER: "seller_home", Role.ADMIN: "admin_home"}
 
     def build(self):
-        self.title = "App de libros · Demo MVP"
+        self.title = "BookWho? · Demo MVP"
         self.theme_cls.theme_style = "Light"
-        self.theme_cls.primary_palette = "Teal"
+        # Material You deriva el esquema desde el acento; luego se fijan exactos el primario y el fondo.
+        self.theme_cls.on_colors = self._apply_brand_colors
+        self.theme_cls.primary_palette = ACCENT
+        fonts = {"Display": "SourceSerif", "Headline": "SourceSerif", "Title": "SourceSerif",
+                 "Body": "IBMPlexSans", "Label": "IBMPlexSans"}
+        for style, font in fonts.items():
+            for role in self.theme_cls.font_styles[style]:
+                self.theme_cls.font_styles[style][role]["font-name"] = font
+                if font == "SourceSerif":
+                    self.theme_cls.font_styles[style][role]["line-height"] = 1.15
         self.store = build_demo_store(catalog_lookup)
         self.history: list[str] = []
         self.selected_book = None
@@ -765,6 +960,12 @@ class DemoLibrosApp(MDApp):
         self.current_offer_id = None
         Window.bind(on_keyboard=self._on_keyboard)
         return Builder.load_file(KV_FILE)
+
+    def _apply_brand_colors(self):
+        from kivy.utils import get_color_from_hex as c
+        self.theme_cls.primaryColor = c(ACCENT)
+        self.theme_cls.backgroundColor = c(PAPER)
+        self.theme_cls.surfaceColor = c(PAPER)
 
     # ----------------------------------------------------------- navegación
     def go(self, name, reset_to=None):
@@ -808,10 +1009,10 @@ class DemoLibrosApp(MDApp):
         self.root.current = "login"
 
     # ----------------------------------------------------------- feedback
-    def safe(self, fn, *args):
+    def safe(self, fn, *args, **kwargs):
         """Ejecuta un caso de uso y muestra los errores de negocio al usuario."""
         try:
-            result = fn(*args)
+            result = fn(*args, **kwargs)
             return True if result is None else result
         except DomainError as exc:
             self.notify(str(exc))
@@ -853,20 +1054,30 @@ class DemoLibrosApp(MDApp):
         dialog.open()
 
     # ---------------------------------------------------- helpers de vista
-    def request_card(self, req, on_open, badge="", for_seller=False):
+    def request_card(self, req, on_open, for_seller=False):
+        """Fila editorial de una solicitud, usada en todas las listas de solicitudes."""
         book = self.store.book(req.book_id)
-        offers = self.store.active_offer_count(req.id)
-        parts = [req.location, f"máx. {format_price(req.max_price)}", Condition.LABELS[req.accepted_condition]]
-        if not badge and not for_seller and req.status in RequestStatus.OPEN:
-            badge = f"{offers} oferta(s) activa(s)"
-        return RequestCard(
+        if for_seller:
+            detail = proximity_label(self.user.location, req.location)
+        elif req.status in RequestStatus.OPEN:
+            n = self.store.active_offer_count(req.id)
+            detail = "sin ofertas aún" if n == 0 else f"{n} activa" + ("s" if n > 1 else "")
+        else:
+            detail = ""
+        condition = "Nuevo o usado" if req.accepted_condition == Condition.ANY else Condition.LABELS[req.accepted_condition]
+        price = (
+            "[b]Sin tope[/b]" if req.max_price is None
+            else f"[size=12sp][color=#6F6B62]máx. [/color][/size][b]{format_price(req.max_price)}[/b]"
+        )
+        return RequestRow(
             title=book.title,
-            subtitle=book.authors_text,
-            meta=" · ".join(parts),
+            author=book.authors_text,
+            meta=f"{req.location} · {condition}",
+            price=price,
             cover=book.cover_url,
             status=req.status,
-            badge=badge,
-            callback=lambda _c, rid=req.id: on_open(rid),
+            detail=f"· {detail}" if detail else "",
+            callback=lambda _r, rid=req.id: on_open(rid),
         )
 
     def request_info_rows(self, req):

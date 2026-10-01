@@ -1,0 +1,317 @@
+<title>BookWho?</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/*
+  Paleta y tipografía tomadas directo de la app (estilo editorial: verde
+  #1F4D3A, fondo crema #FBFAF7, Source Serif 4 + IBM Plex Sans). Layout: una
+  sola página de scroll, secciones anchas con respiro, sin hero a pantalla
+  completa para que el contenido real quede visible desde el primer cuadro.
+*/
+:root{
+  --bg:#FBFAF7; --surface:#FFFFFF; --surface-2:#EFECE5; --panel:#1F4D3A;
+  --fg:#1A1A17; --muted:#5E5B53; --accent:#1F4D3A; --accent-2:#163A2C;
+  --line:#E6E2D9; --good:#1F4D3A; --warn:#8A5300; --bad:#7A1C14;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141613; --surface:#1C1F1B; --surface-2:#262A25; --panel:#2F5A46;
+    --fg:#ECEAE3; --muted:#A9A598; --accent:#8CC5A6; --accent-2:#B5DCC6;
+    --line:#2E322C; --good:#8CC5A6; --warn:#E3A75B; --bad:#E0897C;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141613; --surface:#1C1F1B; --surface-2:#262A25; --panel:#2F5A46;
+    --fg:#ECEAE3; --muted:#A9A598; --accent:#8CC5A6; --accent-2:#B5DCC6;
+    --line:#2E322C; --good:#8CC5A6; --warn:#E3A75B; --bad:#E0897C;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:'IBM Plex Sans',-apple-system,Segoe UI,sans-serif;
+  line-height:1.55;padding-inline:20px;max-width:100%}
+h1,h2,h3,.brand-word{font-family:'Source Serif 4',Georgia,serif;text-wrap:balance;line-height:1.15}
+a{color:var(--accent)}
+img{max-width:100%;display:block}
+.wrap{max-width:1040px;margin-inline:auto}
+section{padding-block:64px;border-bottom:1px solid var(--line)}
+section:last-of-type{border-bottom:none}
+.eyebrow{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h2{font-size:clamp(26px,4vw,38px);margin:0 0 14px;font-weight:600}
+h1{font-size:clamp(34px,6vw,58px);margin:0 0 18px;font-weight:600;line-height:1.1}
+p{margin:0 0 14px;color:var(--fg)}
+.lede{font-size:clamp(17px,2vw,20px);color:var(--muted);max-width:60ch}
+.muted{color:var(--muted)}
+
+/* ---------- header ---------- */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+header.top .row{max-width:1040px;margin-inline:auto;display:flex;align-items:center;gap:14px;padding-block:12px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--fg)}
+.logo-mark{position:relative;width:34px;height:34px;border-radius:8px;background:var(--panel);
+  display:flex;align-items:center;justify-content:center;flex:none}
+.logo-mark svg{width:18px;height:18px;fill:var(--bg)}
+.logo-badge{position:absolute;right:-5px;bottom:-5px;width:16px;height:16px;border-radius:50%;
+  background:var(--bg);color:var(--accent);border:1px solid var(--accent);font:600 10px/14px 'IBM Plex Sans',sans-serif;text-align:center}
+.wordmark{font-family:'Source Serif 4',Georgia,serif;font-weight:600;font-size:19px}
+nav.links{display:flex;gap:22px;margin-left:auto;font-size:14px}
+nav.links a{color:var(--muted);text-decoration:none}
+nav.links a:hover{color:var(--fg)}
+@media (max-width:640px){nav.links{display:none}}
+
+/* ---------- hero ---------- */
+.hero{padding-block:56px 40px}
+.hero-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+@media (max-width:820px){.hero-grid{grid-template-columns:1fr}}
+.hero-tagline{display:inline-block;background:var(--surface-2);border:1px solid var(--line);
+  color:var(--accent-2);border-radius:6px;padding:6px 14px;font-size:13px;font-weight:500;margin-bottom:18px}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:6px;
+  font-weight:600;font-size:14px;text-decoration:none;border:1px solid transparent}
+.btn.primary{background:var(--accent);color:var(--bg)}
+.btn.ghost{border-color:var(--line);color:var(--fg)}
+.stat-row{display:flex;gap:28px;margin-top:30px;flex-wrap:wrap}
+.stat b{font-family:'Source Serif 4',Georgia,serif;font-weight:600;font-size:26px;display:block;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+
+/* phone mock */
+.phone{width:min(280px,72vw);margin-inline:auto;border-radius:34px;background:var(--surface);
+  border:1px solid var(--line);padding:10px;box-shadow:0 24px 60px -30px rgba(0,0,0,.45)}
+.phone img{border-radius:24px;display:block}
+
+/* ---------- problem/solution ---------- */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+@media (max-width:760px){.two-col{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:26px}
+
+/* ---------- flow ---------- */
+.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:step;margin-top:28px}
+@media (max-width:760px){.flow{grid-template-columns:1fr}}
+.flow-step{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:24px 22px}
+.flow-step .n{font-family:'Source Serif 4',Georgia,serif;font-weight:600;font-size:15px;color:var(--accent);margin-bottom:10px;
+  display:flex;align-items:center;gap:8px}
+.flow-step .n::before{counter-increment:step;content:counter(step);width:26px;height:26px;border-radius:50%;
+  background:var(--surface-2);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px}
+.flow-step h3{font-size:17px;margin:0 0 8px}
+.flow-step p{font-size:14px;color:var(--muted);margin:0}
+.flow-arrow{display:none}
+@media (min-width:761px){
+  .flow{position:relative}
+  .flow-step:not(:last-child)::after{content:"→";position:absolute;right:-24px;top:26px;color:var(--muted);font-size:18px}
+}
+
+/* ---------- features ---------- */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px}
+@media (max-width:900px){.grid3{grid-template-columns:1fr 1fr}}
+@media (max-width:600px){.grid3{grid-template-columns:1fr}}
+.feature{border:1px solid var(--line);border-radius:8px;padding:20px;background:var(--surface)}
+.feature .ic{width:36px;height:36px;border-radius:10px;background:var(--surface-2);display:flex;
+  align-items:center;justify-content:center;margin-bottom:12px;color:var(--accent);font-size:17px}
+.feature h3{font-size:16px;margin:0 0 6px;font-family:'IBM Plex Sans',sans-serif;font-weight:600}
+.feature p{font-size:13.5px;color:var(--muted);margin:0}
+
+/* ---------- gallery ---------- */
+.gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:26px}
+@media (max-width:760px){.gallery{grid-template-columns:1fr}}
+.shot{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface)}
+.shot img{width:100%;height:auto;display:block}
+.shot figcaption{padding:10px 14px;font-size:13px;color:var(--muted);border-top:1px solid var(--line)}
+
+/* ---------- tech ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 14px;font-size:13px}
+.arch{margin-top:22px;border:1px solid var(--line);border-radius:8px;background:var(--surface);
+  padding:20px 22px;font-family:ui-monospace,Consolas,monospace;font-size:12.5px;line-height:1.8;
+  color:var(--muted);overflow-x:auto;white-space:pre}
+.arch b{color:var(--fg)}
+
+/* ---------- status ---------- */
+.status-list{display:grid;gap:12px;margin-top:22px}
+.status-row{display:flex;align-items:center;gap:14px;border:1px solid var(--line);border-radius:8px;
+  padding:14px 18px;background:var(--surface)}
+.dot{width:11px;height:11px;border-radius:50%;flex:none}
+.dot.ok{background:var(--good)} .dot.mid{background:var(--warn)} .dot.pending{background:var(--bad)}
+.status-row .label{font-weight:600;min-width:220px}
+.status-row .desc{color:var(--muted);font-size:13.5px}
+.status-row .weight{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:600;color:var(--accent);flex:none}
+
+/* ---------- footer ---------- */
+footer{padding-block:40px 60px}
+footer .row{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+footer p{color:var(--muted);font-size:13px;margin:0}
+</style>
+
+<header class="top">
+  <div class="row">
+    <a class="logo" href="#top">
+      <span class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M4 4c3 0 5 1 6 2 1-1 3-2 6-2 1.5 0 3 .3 4 1v13c-1-.5-2.5-.8-4-.8-3 0-5 1-6 2-1-1-3-2-6-2-1.5 0-3 .3-4 .8V5c1-.5 2.5-1 4-1z"/></svg>
+        <span class="logo-badge">?</span>
+      </span>
+      <span class="wordmark">BookWho?</span>
+    </a>
+    <nav class="links">
+      <a href="#problema">Problema</a>
+      <a href="#funciona">Cómo funciona</a>
+      <a href="#funciones">Funcionalidades</a>
+      <a href="#capturas">Capturas</a>
+      <a href="#tecnologia">Tecnología</a>
+      <a href="#estado">Estado</a>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap" id="top">
+  <section class="hero">
+    <div class="hero-grid">
+      <div>
+        <span class="hero-tagline">Maqueta funcional · Kivy + KivyMD</span>
+        <h1>Publica el libro que buscas.<br>Que te lo ofrezcan a ti.</h1>
+        <p class="lede">BookWho? da vuelta el marketplace de libros de segunda mano: en vez de
+          recorrer catálogos que casi nunca tienen lo que buscas, publicas tu búsqueda y son
+          los vendedores quienes te responden con una oferta.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="#funciona">Ver cómo funciona</a>
+          <a class="btn ghost" href="#capturas">Ver capturas</a>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><b>19</b><span>Pantallas</span></div>
+          <div class="stat"><b>30</b><span>Pruebas automatizadas</span></div>
+          <div class="stat"><b>3</b><span>Roles: lector, vendedor, admin</span></div>
+          <div class="stat"><b>107</b><span>Comunas en el catálogo</span></div>
+        </div>
+      </div>
+      <div class="phone"><img src="screenshots/login.png" alt="Pantalla de inicio de sesión de BookWho?"></div>
+    </div>
+  </section>
+
+  <section id="problema">
+    <p class="eyebrow">El problema</p>
+    <div class="two-col">
+      <div>
+        <h2>Buscar un libro puntual es un trabajo manual</h2>
+        <p>Un libro agotado, descatalogado o de segunda mano obliga hoy a recorrer tienda por
+          tienda o grupo por grupo de compraventa, sin ninguna garantía de encontrarlo. El
+          lector hace todo el trabajo de búsqueda, y la mayoría de las veces no encuentra nada.</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0;font-family:'IBM Plex Sans',sans-serif;font-weight:600">La vuelta de tuerca</h3>
+        <p style="margin-bottom:0">En vez de un catálogo que el lector debe revisar, el lector
+          <b>publica lo que busca</b> y son los <b>vendedores los que responden</b> si lo
+          tienen. El vendedor tampoco necesita mantener un catálogo público: solo contesta
+          cuando alguien pide justo lo que él puede ofrecer.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="funciona">
+    <p class="eyebrow">Cómo funciona</p>
+    <h2>Un circuito, tres pasos</h2>
+    <p class="lede">El mismo circuito se repite para cada libro: publicar, ofertar, coordinar.</p>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="n">Lector</div>
+        <h3>Publica la solicitud</h3>
+        <p>Busca el libro en una API externa, indica precio máximo, condición aceptada,
+          comuna y preferencia de entrega.</p>
+      </div>
+      <div class="flow-step">
+        <div class="n">Vendedor</div>
+        <h3>Responde con una oferta</h3>
+        <p>Ve las solicitudes abiertas (con la cercanía a su comuna), y si tiene el libro,
+          oferta precio, condición y datos de contacto.</p>
+      </div>
+      <div class="flow-step">
+        <div class="n">Lector</div>
+        <h3>Acepta y coordina</h3>
+        <p>Revisa las ofertas y acepta una para coordinar: en ese momento ve el contacto del
+          vendedor. Cuando la compra se concreta, confirma el trato. La entrega ocurre fuera de la app.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="funciones">
+    <p class="eyebrow">Funcionalidades</p>
+    <h2>Lo que ya está construido</h2>
+    <div class="grid3">
+      <div class="feature"><div class="ic">🔍</div><h3>Búsqueda con respaldo</h3>
+        <p>Google Books → Open Library → catálogo local, con caché de portadas en disco para
+          que nunca se vean vacías.</p></div>
+      <div class="feature"><div class="ic">📨</div><h3>Solicitudes y ofertas</h3>
+        <p>Máquina de estados completa: publicada, con ofertas, en coordinación, resuelta o
+          cancelada, con reglas de negocio en el dominio, no en la interfaz.</p></div>
+      <div class="feature"><div class="ic">🤝</div><h3>Negociación real</h3>
+        <p>Al aceptar una oferta las demás quedan en espera, no se pierden: si el trato se
+          desiste, vuelven a estar activas.</p></div>
+      <div class="feature"><div class="ic">📍</div><h3>Cercanía por comuna</h3>
+        <p>El vendedor ve si una solicitud es de su misma comuna, región u otra región, sin
+          exponer la dirección real de nadie.</p></div>
+      <div class="feature"><div class="ic">🛡️</div><h3>Permisos por rol</h3>
+        <p>Cada acción se revalida en el dominio: un lector no puede tocar solicitudes de
+          otro, un vendedor no puede cancelar ofertas ajenas.</p></div>
+      <div class="feature"><div class="ic">📊</div><h3>Panel de administración</h3>
+        <p>Métricas, gestión de usuarios y solicitudes, moderación con motivo registrado, y
+          auditoría exportable a un archivo de log.</p></div>
+    </div>
+  </section>
+
+  <section id="capturas">
+    <p class="eyebrow">Capturas</p>
+    <h2>La app, en pantalla</h2>
+    <div class="gallery">
+      <figure class="shot"><img src="screenshots/reader_home.png" alt="Inicio del lector"><figcaption>Inicio del lector</figcaption></figure>
+      <figure class="shot"><img src="screenshots/seller_home.png" alt="Solicitudes disponibles para el vendedor"><figcaption>Inicio del vendedor</figcaption></figure>
+      <figure class="shot"><img src="screenshots/admin_home.png" alt="Panel de administración"><figcaption>Administración</figcaption></figure>
+    </div>
+  </section>
+
+  <section id="tecnologia">
+    <p class="eyebrow">Tecnología</p>
+    <h2>Stack y arquitectura</h2>
+    <div class="chips">
+      <span class="chip">Python 3.11</span>
+      <span class="chip">Kivy 2.3.1</span>
+      <span class="chip">KivyMD 2.0 (Material You)</span>
+      <span class="chip">unittest</span>
+      <span class="chip">Google Books API</span>
+      <span class="chip">Open Library API</span>
+    </div>
+    <div class="arch"><b>libros.kv</b>    interfaz declarativa (KV language): toda la UI y el estilo
+   │
+<b>main.py</b>      pantallas y navegación — sin reglas de negocio
+   │
+<b>store.py</b>     dominio: entidades, máquinas de estado, permisos (repositorio en memoria)
+   │
+<b>books_api.py</b> búsqueda externa de libros con caché de portadas
+<b>locations.py</b> catálogo de comunas + cercanía vendedor–lector</div>
+  </section>
+
+  <section id="estado">
+    <p class="eyebrow">Estado del proyecto</p>
+    <h2>Qué está listo y qué falta</h2>
+    <div class="status-list">
+      <div class="status-row"><span class="dot ok"></span>
+        <span class="label">Maqueta funcional</span>
+        <span class="desc">19 pantallas navegables, componentes Material Design, sin errores al ejecutar.</span>
+      </div>
+      <div class="status-row"><span class="dot ok"></span>
+        <span class="label">Estructura y pruebas</span>
+        <span class="desc">Separación interfaz/dominio, 30 pruebas automatizadas en verde.</span>
+      </div>
+      <div class="status-row"><span class="dot ok"></span>
+        <span class="label">Fundamentación UX/UI</span>
+        <span class="desc">Encuesta con 18 respuestas: 94,4 % no encontró un libro específico y 14 de 16 usaría la app.</span>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="row">
+      <p>BookWho? — proyecto académico, Desarrollo Móvil (A+S).</p>
+      <p>Uso de IA declarado en <code>uso_ia.md</code>.</p>
+    </div>
+  </footer>
+</div>
