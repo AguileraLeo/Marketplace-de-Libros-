@@ -7,3 +7,7 @@ __pycache__/
 .claude/settings.local.json
 .cache/
 registro_actividad*.log
+
+# Maquetas de diseño (no son parte de la entrega)
+BookWho — Rediseño editorial – Inicio · lector.html
+Solicitud publicada.pdf

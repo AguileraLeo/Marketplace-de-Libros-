@@ -243,17 +243,18 @@ Es el punto de entrada (`python main.py`) y define:
 
 - **Configuración de ventana**: en escritorio simula el tamaño de un teléfono (420×860). En
   Android/iOS no aplica ese ajuste.
-- **Registro de la tipografía "Lora"** (serif) vía `LabelBase.register(...)`, usada solo en
-  títulos/encabezados (ver §7.2).
+- **Registro de las tipografías "SourceSerif" y "IBMPlexSans"** vía `LabelBase.register(...)`
+  y de los colores de marca `ACCENT` y `PAPER` (ver §7).
 - **Widgets reutilizables** (su apariencia vive en `libros.kv`, su lógica acá):
   - `BookCover`: portada de un libro, con carga desde caché en disco y *placeholder* mientras
     descarga.
-  - `StatusChip`: la píldora de color que muestra el estado de una solicitud/oferta/usuario.
+  - `StatusChip`: el estado de una solicitud/oferta/usuario, como punto de color más texto
+    (colores en `STATUS_COLORS`).
   - `WideButton` / `PrimaryButton`: botón a todo el ancho.
-  - `ChoiceRow`: grupo de botones de selección única (usado para elegir condición, rol,
-    filtros, etc.).
-  - `RequestCard`, `ItemCard`, `BookResultCard`, `StatTile`, `InfoRow`, `EmptyState`: tarjetas
-    y filas reutilizadas en casi todas las pantallas.
+  - `SegmentedRow` / `SegmentButton`: control segmentado de selección única (modo de búsqueda,
+    condición, rol, entrega, filtros).
+  - `RequestRow`, `ItemCard`, `BookResultCard`, `StatTile`, `InfoRow`, `EmptyState`: filas y
+    tarjetas reutilizadas en casi todas las pantallas.
 - **Pantallas** (una clase por pantalla, todas heredan de `BaseScreen`): `LoginScreen`,
   `RegisterScreen`, `ReaderHomeScreen`, `BookSearchScreen`, `CreateRequestScreen`,
   `RequestPublishedScreen`, `ReaderRequestsScreen`, `ReaderRequestDetailScreen`,
@@ -276,9 +277,10 @@ Contiene **toda** la interfaz: layout, estilos, colores por estado, tipografía 
 entre pantallas. Se divide en:
 
 1. **Componentes reutilizables** (arriba del archivo): `Heading`, `Muted`, `FieldLabel`,
-   `Panel`, `ListBox`, `BookCover`, `StatusChip`, `RequestCard`, `ItemCard`, `BookResultCard`,
-   `StatTile`, `InfoRow`, `EmptyState`, `BookHeader`, `BackBar`, `BrandMark` (el logo de
-   BookWho?). Definir estos "átomos" una sola vez evita repetir estilos en cada pantalla.
+   `Gap`, `Rule`, `NextStep`, `Panel`, `ListBox`, `SegmentedRow`, `StatLink`, `RequestRow`,
+   `BookCover`, `StatusChip`, `ItemCard`, `BookResultCard`, `StatTile`, `InfoRow`, `EmptyState`,
+   `BookHeader`, `BackBar`, `BrandMark` (el logo de BookWho?), más reglas globales para
+   `MDLabel`, `MDTextField` y `MDTopAppBar`. Definir estos "átomos" una sola vez evita repetir estilos en cada pantalla.
 2. **`MDScreenManager`**: la lista de las 19 pantallas de la app.
 3. **Una regla `<NombreDePantalla>:` por pantalla**, con su layout completo.
 
@@ -444,22 +446,64 @@ python -m unittest discover -s tests -v
 KivyMD 2.0 genera un esquema Material You completo a partir de un solo color "semilla"
 (`theme_cls.primary_palette`, definido en `main.py`). Se probaron varias familias de color
 (marrón/rojiza, azul/índigo, dorada) y se descartó la familia roja porque su tono resultante
-chocaba visualmente con el color ya usado para el estado "cancelada". Se eligió
-**`"darkgoldenrod"`**: un dorado envejecido tipo papel/pergamino, que se ve serio y cálido sin
-competir con los colores de estado (azul/verde/naranja/rojo/morado que usa `STATUS_COLORS` en
-`main.py`).
+chocaba visualmente con el color ya usado para el estado "cancelada". Primero se usó
+`"darkgoldenrod"`. Luego, siguiendo la maqueta "BookWho — Rediseño editorial", se cambió a un
+**verde oscuro `#1F4D3A`** (`ACCENT` en `main.py`) con fondo **crema `#FBFAF7`** (`PAPER`).
+El acento es la semilla del esquema Material You. Como Material You ajusta levemente el tono,
+`_apply_brand_colors()` fija exactos el color primario y el fondo cada vez que se regenera el
+esquema. Los colores de estado (`STATUS_COLORS`) no cambiaron.
 
 ### 7.2 Tipografía
 
-Se registró la fuente **Lora** (serif, licencia OFL de Google Fonts, archivos en `fonts/`) y
-se aplicó únicamente a los estilos tipográficos "Headline" y "Title" del tema de KivyMD (título
-de la app, encabezados de sección, nombres de libro en las tarjetas, números del panel de
-admin). El cuerpo de texto, botones y campos de formulario siguen en Roboto (la fuente por
-defecto de KivyMD), para mantener legibilidad. Es la combinación clásica editorial
-serif+sans, y se aplicó modificando el diccionario `theme_cls.font_styles` una sola vez en
-`main.py`, sin tocar cada pantalla individualmente.
+Siguiendo la misma maqueta, los estilos "Display", "Headline" y "Title" de KivyMD usan
+**Source Serif 4** (seminegrita) y los estilos "Body" y "Label" (texto, botones y campos)
+usan **IBM Plex Sans**. Ambas fuentes tienen licencia OFL; los `.ttf` estáticos y sus
+licencias están en `fonts/`. Kivy no lee `woff2`, el formato que traía la maqueta, por eso se
+usan los `.ttf` oficiales de Adobe e IBM. Se aplica modificando `theme_cls.font_styles` una
+sola vez en `main.py`, sin tocar cada pantalla.
 
-### 7.3 Marca (`BrandMark`)
+### 7.3 Estilo editorial en todas las pantallas
+
+La app sigue las maquetas "BookWho — Rediseño editorial" (inicio del lector, HTML) y
+"Solicitud publicada" (PDF). Las dos pantallas con maqueta se reconstruyeron tal cual:
+
+- **Inicio del lector:** marca "BookWho?" con el signo en el color de acento, saludo y título
+  grandes, control segmentado Título / Autor / ISBN, campo de búsqueda cuyo texto guía cambia
+  según el modo, dos cifras resumen separadas por líneas finas (`StatLink`) y la lista de
+  solicitudes recientes.
+- **Solicitud publicada:** botón de cerrar, círculo con check, número de solicitud, título
+  "Tu solicitud está publicada", la solicitud, la sección "Qué sigue" con tres pasos
+  (`NextStep`) y los botones "Ver solicitud" y "Volver al inicio" fijos abajo.
+
+Las demás pantallas mantienen su estructura, pero heredan el mismo lenguaje visual porque se
+restilizaron los componentes compartidos:
+
+- **Listas planas** separadas por líneas finas en vez de tarjetas con borde: `RequestRow`
+  (todas las listas de solicitudes, armadas con `app.request_card()`), `ItemCard` (ofertas,
+  usuarios, actividad) y `BookResultCard` (resultados de búsqueda).
+- **Estados** como punto de color más texto (`StatusChip`, colores en `STATUS_COLORS`):
+  gris para publicada/en espera/rechazada, verde para con ofertas/activa/resuelta/aceptada,
+  ámbar para en coordinación/por concretar y rojo para cancelada/suspendido.
+- **Selectores** como control segmentado (`SegmentedRow`) en lugar de botones píldora.
+- **Paneles** blancos con borde fino; los avisos (contacto oculto, coordinación, espera,
+  pagos) en gris cálido. Métricas del admin en blanco y tinta, sin colores por métrica.
+- **Botones** con esquinas de 6 dp; campos de texto con borde gris cálido y foco verde; barras
+  superiores con una línea fina abajo.
+- Los tonos neutros del diseño (`INK`, `MUTED`, `FAINT`, `RULE`, `FIELD_LINE`, `TRACK`) están
+  al inicio de `libros.kv`.
+
+Ajustes tipográficos: los títulos en serif usan interlineado 1,15, como la maqueta (los valores
+de KivyMD están pensados para Roboto), y todas las etiquetas usan `font_hinting: None`, porque el
+*hinting* por defecto de Kivy abría huecos dentro de las palabras en Source Serif ("ofer tas").
+Queda un caso menor y poco frecuente: una palabra que cae al inicio de una línea partida puede
+verse con un pequeño hueco, por cómo Kivy compone el texto.
+
+Diferencias deliberadas con las maquetas: todos los botones de acción y opciones de selección
+miden al menos 48 dp, el mínimo táctil de Material (la maqueta usa 36 px en el selector); se
+muestran las portadas reales en vez de portadas dibujadas; y no se muestra la etiqueta "Nuevas"
+junto a las ofertas, porque la app no registra qué ofertas ya vio el lector.
+
+### 7.4 Marca (`BrandMark`)
 
 En vez de un ícono genérico de Material Icons, se armó un logo propio combinando dos
 elementos superpuestos (definido como componente reutilizable en `libros.kv`): un cuadrado
@@ -472,11 +516,11 @@ superpuesta en la esquina — literalmente "BookWho?" convertido en símbolo.
 
 | Criterio | Peso | Estado |
 |---|---|---|
-| A — Fundamentación UX/UI con evidencia de usuarios | 30% | **Pendiente** — requiere encuesta/entrevistas reales, deliberadamente pospuesto para no inventar datos. |
+| A — Fundamentación UX/UI con evidencia de usuarios | 30% | Cubierto: encuesta en Google Forms con 18 respuestas, analizada en [`FUNDAMENTACION-UX-UI.md`](FUNDAMENTACION-UX-UI.md) (metodología, resultados, matriz hallazgo → decisión, estructura y accesibilidad). |
 | B — Maqueta funcional Kivy + KivyMD | 30% | Cubierto: la app ejecuta sin errores, usa componentes KivyMD con coherencia Material Design. |
 | C — Estructura del proyecto y navegación | 25% | Cubierto: separación `.py`/`.kv`, `ScreenManager` con 19 pantallas, validaciones, proyecto ordenado. |
 | D — Presentación oral y demo en vivo | 15% | Depende de la presentación misma. |
 
-El mayor pendiente sigue siendo el punto A: sin evidencia real de usuarios (encuesta o
-entrevistas), ese 30% de la nota no se puede completar honestamente, y es intencional dejarlo
-así hasta tener los datos.
+El punto A se completó con la encuesta real. Lo que los usuarios pidieron y quedó fuera del MVP
+(calificaciones de vendedores y reporte de usuarios) está declarado como próximo paso en la
+fundamentación.

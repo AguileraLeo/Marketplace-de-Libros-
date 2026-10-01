@@ -3,7 +3,7 @@
 ## Herramienta y modelo
 
 - **Herramienta:** Claude Code (Anthropic), CLI de asistencia para desarrollo de software.
-- **Modelo:** Claude Sonnet 5.
+- **Modelo:** Claude Sonnet 5; en la sesión de revisión final se usaron Claude Sonnet 5 y Claude Opus 5.5.
 - **Alcance de esta declaración:** trabajo de pulido y ajustes sobre la maqueta `BookWho?` (Kivy/KivyMD), correspondiente a una sesión de trabajo previa a la presentación de la evaluación E2. El dominio, las pantallas base y el flujo principal de la app ya existían de un trabajo anterior del equipo; en esta sesión se usó IA para revisar, corregir y pulir esa base.
 
 ## Prompts / instrucciones usados (resumen cronológico)
@@ -20,6 +20,15 @@
 10. "El selector de ubicación no me muestra todas las comunas que esperaba (por ejemplo Temuco). Revisa si el catálogo está incompleto o si es un problema de la interfaz."
 11. "El último cambio de interfaz no me convenció. Revierte específicamente esa parte y deja el resto del trabajo tal como estaba."
 12. "Haz un balance honesto de qué porcentaje de la rúbrica de evaluación estamos cubriendo hasta este punto, y qué falta para completarla."
+13. "Dejé los resultados de la encuesta en la carpeta del ramo; hay un nombre en broma dentro, lo demás es correcto." / "Revisa que no quede nada más en inglés o mal codificado."
+14. "Mi compañero me dio esta información junto con el archivo de las respuestas. ¿Con esa información cumplimos toda la rúbrica? Si no falta nada, hagamos una revisión del código: que no haya agujeros, funciones inventadas ni código muerto."
+15. "Abre la app y empecemos a reparar todo, desde lo más importante a lo más simple."
+16. "Vamos con la opción B" (fundamentación sin afirmar una reputación de vendedor que la app no tiene).
+17. "Arregla el texto de mi compañero; después lo reescribiremos con nuestra voz." / "¿Todos los documentos están actualizados?"
+18. "Dejé un HTML con un diseño para la aplicación." (Primero aplicamos solo la paleta y las fuentes.)
+19. "Hagamos el diseño que te pasé; no me gusta cómo se ve sin la reestructuración de las pantallas."
+20. "Aplica el diseño que te compartí." / "Espera, te compartí un PDF, a ese diseño me refería." (Maqueta de la pantalla "Solicitud publicada".)
+21. "Entonces continúa y aplícalo a todas las pantallas; arregla los ajustes que afectan a otras pantallas."
 
 ## Outputs relevantes generados con IA
 
@@ -29,6 +38,13 @@
 - **Función de cercanía vendedor–lector**: `proximity_label()` en `locations.py`, que compara comuna/región del vendedor con la de la solicitud (sin exponer direcciones exactas), más el campo "comuna" agregado al registro de vendedores.
 - **Aclaraciones de texto en la interfaz** para que quede explícito que el modelo es "el lector publica lo que busca, el vendedor responde" (no un catálogo de inventario).
 - Ejecución de la suite de pruebas (`python -m unittest discover -s tests -v`) después de cada cambio relevante.
+- **Limpieza de la encuesta**: se reparó la codificación rota (tildes y ñ) en 227 celdas de la planilla y se reemplazó un nombre en broma.
+- **Verificación de cifras**: se recalcularon los porcentajes del texto del equipo contra la planilla. El 94,4 % y el 13 de 18 eran correctos; el 87,5 % requería precisar su base (14 de 16) y la muestra no era solo de 18 a 24 años (10 de 18).
+- **Detección de una afirmación sin respaldo**: el texto decía que las tarjetas mostraban la reputación del vendedor, pero esa función no existe en la app y está fuera del MVP según `AGENTS.md`.
+- **Revisión de código y 5 correcciones**: búsquedas de libros que podían mostrar resultados viejos (`main.py`), chequeo de permisos de `offer_contact()` que confiaba en el rol enviado por el cliente (`store.py`), código muerto y un precio 0 mal validado en `_parse_price()`, y redimensionado ineficiente de `WideButton`. Se agregaron pruebas que fallan con el código anterior y pasan con el corregido.
+- **Redacción de `FUNDAMENTACION-UX-UI.md`** a partir de la encuesta y del texto del equipo, verificando cada pantalla y componente citado contra el código.
+- **Paleta y fuentes de la maqueta editorial**: verde `#1F4D3A`, fondo crema `#FBFAF7`, Source Serif 4 en títulos e IBM Plex Sans en el resto. La IA detectó con capturas que un esquema de color dejaba botones invisibles en el inicio del lector y lo corrigió antes de entregarlo. Después se reconstruyó el inicio del lector según la maqueta (selector segmentado, cifras resumen y lista editorial), subiendo el selector a 48 dp por accesibilidad y omitiendo la etiqueta "Nuevas", que la app no puede calcular. Luego se rehízo la confirmación "Solicitud publicada" según su maqueta en PDF, reutilizando la misma fila de solicitud y ajustando el interlineado de los títulos en serif. Finalmente se llevó el estilo a las 19 pantallas restilizando los componentes compartidos (listas planas, estados con punto de color, selector segmentado, paneles y botones), y se revisó cada pantalla con capturas automáticas. En esa revisión la IA detectó y corrigió: huecos dentro de palabras por el *hinting* de Kivy, el estado "Activa" de ofertas en gris, una etiqueta aplastada y botones de comuna que se salían de la pantalla o medían menos de 48 dp.
+- **Actualización de documentos desactualizados**: reglas de estados en `README.md`, cantidad de pruebas en `CONTEXTO.md` y estado de la rúbrica en `DOCUMENTACION.md`.
 
 ## Ajustes, correcciones y decisiones tomadas por mí sobre lo entregado por la IA
 
@@ -38,6 +54,9 @@
 - Definí el alcance de la función de cercanía (nivel comuna/región, sin coordenadas exactas) en vez de la alternativa con distancia en kilómetros que la IA también ofreció, por menor riesgo de datos incorrectos a un día del ensayo.
 - Decidí posponer la encuesta/entrevistas de usuarios (fundamentación UX/UI) para el final, priorizando primero el pulido técnico.
 - Revisé visualmente cada cambio importante corriendo la app real antes de aceptarlo.
+- Ante la reputación de vendedor que no existía, elegí **no implementarla a última hora** y declararla como próximo paso (opción B), para que la fundamentación coincida con lo que muestra la demo.
+- Decidí reescribir con nuestras propias palabras el texto de la presentación, usando como base la versión corregida.
+- Hago yo los commits, después de revisar los cambios.
 
 ## Reflexión personal
 

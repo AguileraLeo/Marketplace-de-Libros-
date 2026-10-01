@@ -33,6 +33,7 @@ from kivy.properties import (
     ObjectProperty,
     StringProperty,
 )
+from kivy.uix.behaviors import ButtonBehavior
 from kivy.uix.widget import Widget
 from kivymd.app import MDApp
 from kivymd.uix.boxlayout import MDBoxLayout
@@ -47,7 +48,6 @@ from kivymd.uix.dialog import (
 from kivymd.uix.relativelayout import MDRelativeLayout
 from kivymd.uix.screen import MDScreen
 from kivymd.uix.snackbar import MDSnackbar, MDSnackbarText
-from kivymd.uix.stacklayout import MDStackLayout
 
 from books_api import (
     catalog_lookup,
@@ -74,45 +74,44 @@ KV_FILE = os.path.join(BASE_DIR, "libros.kv")
 FONTS_DIR = os.path.join(BASE_DIR, "fonts")
 
 LabelBase.register(
-    name="Lora",
-    fn_regular=os.path.join(FONTS_DIR, "Lora-Regular.ttf"),
-    fn_bold=os.path.join(FONTS_DIR, "Lora-Bold.ttf"),
-    fn_italic=os.path.join(FONTS_DIR, "Lora-Italic.ttf"),
-    fn_bolditalic=os.path.join(FONTS_DIR, "Lora-BoldItalic.ttf"),
+    name="SourceSerif",
+    # La maqueta usa siempre peso 600: "bold" en un título no cambia el peso.
+    fn_regular=os.path.join(FONTS_DIR, "SourceSerif4-Semibold.ttf"),
+    fn_bold=os.path.join(FONTS_DIR, "SourceSerif4-Semibold.ttf"),
+)
+LabelBase.register(
+    name="IBMPlexSans",
+    fn_regular=os.path.join(FONTS_DIR, "IBMPlexSans-Regular.ttf"),
+    fn_bold=os.path.join(FONTS_DIR, "IBMPlexSans-SemiBold.ttf"),
 )
 
-# (fondo, texto) por estado — mismos colores en todas las pantallas.
+ACCENT = "#1F4D3A"
+PAPER = "#FBFAF7"
+
+# (punto, texto) por estado — mismos colores en todas las pantallas.
+# Solicitud y oferta comparten "PUBLICADA" y "CANCELADA", así que comparten color.
+GRAY = ("#A8A397", "#3F3D38")
+GREEN = (ACCENT, ACCENT)
+AMBER = ("#B26B00", "#8A5300")
+RED = ("#A33A2F", "#7A1C14")
 STATUS_COLORS = {
-    RequestStatus.PUBLISHED: ("#DCE8FF", "#123A7A"),
-    RequestStatus.WITH_OFFERS: ("#FFE9C7", "#6B3F00"),
-    RequestStatus.IN_DEAL: ("#FFF0D4", "#8A5300"),
-    RequestStatus.RESOLVED: ("#D6F5DF", "#11562A"),
-    RequestStatus.CANCELLED: ("#FADBD8", "#7A1C14"),
-    OfferStatus.PUBLISHED: ("#E2EDF8", "#1E4976"),
-    OfferStatus.IN_DEAL: ("#D4E5FF", "#0C448C"),
-    OfferStatus.ON_HOLD: ("#EFEBE9", "#5D4037"),
-    OfferStatus.ACCEPTED: ("#D6F5DF", "#11562A"),
-    OfferStatus.REJECTED: ("#ECE6EE", "#4A4458"),
-    OfferStatus.CANCELLED: ("#FADBD8", "#7A1C14"),
-    UserStatus.ACTIVE: ("#D6F5DF", "#11562A"),
-    UserStatus.SUSPENDED: ("#FADBD8", "#7A1C14"),
+    RequestStatus.PUBLISHED: GRAY,
+    RequestStatus.WITH_OFFERS: GREEN,
+    RequestStatus.IN_DEAL: AMBER,
+    RequestStatus.RESOLVED: GREEN,
+    RequestStatus.CANCELLED: RED,
+    OfferStatus.IN_DEAL: AMBER,
+    OfferStatus.ON_HOLD: GRAY,
+    OfferStatus.ACCEPTED: GREEN,
+    OfferStatus.REJECTED: GRAY,
+    UserStatus.ACTIVE: GREEN,
+    UserStatus.SUSPENDED: RED,
+    ("offer", OfferStatus.PUBLISHED): GREEN,  # "Activa": una oferta publicada sí está viva
 }
 STATUS_LABELS = {
     "request": RequestStatus.LABELS,
     "offer": OfferStatus.LABELS,
     "user": {UserStatus.ACTIVE: "Activo", UserStatus.SUSPENDED: "Suspendido"},
-}
-
-# (fondo, texto) para diferenciar visualmente las tarjetas de métricas del admin.
-STAT_TONES = {
-    "blue": ("#DCE8FF", "#123A7A"),
-    "green": ("#D6F5DF", "#11562A"),
-    "orange": ("#FFE9C7", "#6B3F00"),
-    "purple": ("#EADDFF", "#4F378B"),
-    "red": ("#FADBD8", "#7A1C14"),
-    "teal": ("#CCE8E2", "#0B4F4A"),
-    "gray": ("#ECE6EE", "#4A4458"),
-    "default": ("#DCE8FF", "#123A7A"),
 }
 
 
@@ -155,8 +154,8 @@ class StatusChip(MDBoxLayout):
     status = StringProperty("")
     kind = StringProperty("request")  # request | offer | user
     text = StringProperty("")
-    bg = ColorProperty("#DCE8FF")
-    fg = ColorProperty("#123A7A")
+    dot = ColorProperty(GRAY[0])
+    fg = ColorProperty(GRAY[1])
 
     def on_status(self, *_):
         self._update()
@@ -167,8 +166,8 @@ class StatusChip(MDBoxLayout):
     def _update(self):
         from kivy.utils import get_color_from_hex as c
 
-        bg, fg = STATUS_COLORS.get(self.status, ("#DCE8FF", "#123A7A"))
-        self.bg, self.fg = c(bg), c(fg)
+        dot, fg = STATUS_COLORS.get((self.kind, self.status)) or STATUS_COLORS.get(self.status, GRAY)
+        self.dot, self.fg = c(dot), c(fg)
         self.text = STATUS_LABELS.get(self.kind, {}).get(self.status, self.status)
 
 
@@ -177,7 +176,7 @@ class WideButton(MDButton):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.bind(size=lambda *_: Clock.schedule_once(self.adjust_pos))
+        self.bind(size=Clock.create_trigger(self.adjust_pos))
 
     def adjust_pos(self, *args) -> None:
         text, icon = self._button_text, self._button_icon
@@ -190,16 +189,19 @@ class WideButton(MDButton):
             text.x = start + icon_w
 
 
-class ChoiceRow(MDStackLayout):
-    """Grupo de botones de selección única (filled = seleccionado)."""
+class SegmentButton(ButtonBehavior, MDBoxLayout):
+    text = StringProperty()
+    selected = BooleanProperty(False)
+
+
+class SegmentedRow(MDBoxLayout):
+    """Control segmentado de selección única (estilo de la maqueta editorial)."""
 
     options = ListProperty()  # [(valor, etiqueta), ...]
     value = StringProperty("")
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.adaptive_height = True
-        self.spacing = dp(8)
         self._trigger = Clock.create_trigger(self._rebuild)
         self.bind(options=self._trigger, value=self._trigger)
         self._trigger()
@@ -207,21 +209,19 @@ class ChoiceRow(MDStackLayout):
     def _rebuild(self, *_):
         self.clear_widgets()
         for value, label in self.options:
-            btn = MDButton(
-                MDButtonText(text=label),
-                style="filled" if value == self.value else "outlined",
-            )
+            btn = SegmentButton(text=label, selected=value == self.value)
             btn.bind(on_release=lambda _b, v=value: setattr(self, "value", v))
             self.add_widget(btn)
 
 
-class RequestCard(MDCard):
+class RequestRow(ButtonBehavior, MDBoxLayout):
     title = StringProperty()
-    subtitle = StringProperty()
+    author = StringProperty()
     meta = StringProperty()
+    price = StringProperty()
     cover = StringProperty()
     status = StringProperty()
-    badge = StringProperty()
+    detail = StringProperty()
     callback = ObjectProperty(None, allownone=True)
 
 
@@ -247,16 +247,7 @@ class BookResultCard(MDCard):
 class StatTile(MDCard):
     value = StringProperty("0")
     label = StringProperty()
-    tone = StringProperty("default")
     icon = StringProperty("chart-box-outline")
-    bg = ColorProperty([0.863, 0.910, 1.0, 1.0])
-    fg = ColorProperty([0.071, 0.227, 0.478, 1.0])
-
-    def on_tone(self, *_):
-        from kivy.utils import get_color_from_hex as c
-
-        bg, fg = STAT_TONES.get(self.tone, STAT_TONES["default"])
-        self.bg, self.fg = c(bg), c(fg)
 
 
 class InfoRow(MDBoxLayout):
@@ -339,7 +330,7 @@ class RegisterScreen(BaseScreen):
                 MDButtonText(text=loc),
                 style="text",
                 size_hint_x=1,
-                height=dp(36),
+                height=dp(48),
             )
             btn.bind(on_release=lambda _b, l=loc: self.select_location(l))
             self.ids.suggestions_box.add_widget(btn)
@@ -368,8 +359,10 @@ class ReaderHomeScreen(BaseScreen):
         app, store = self.app, self.app.store
         requests = store.reader_requests(app.user)
         active = [r for r in requests if r.status in RequestStatus.OPEN]
+        offers = sum(store.active_offer_count(r.id) for r in active)
         self.ids.stat_active.value = str(len(active))
-        self.ids.stat_offers.value = str(sum(store.active_offer_count(r.id) for r in active))
+        self.ids.stat_offers.value = str(offers)
+        self.ids.stat_offers.highlight = offers > 0
         self.fill(
             self.ids.recent_list,
             [app.request_card(r, app.open_reader_request) for r in requests[:3]],
@@ -400,17 +393,20 @@ class BookSearchScreen(BaseScreen):
         self.searching = True
         self.status_text = "Buscando…"
         self.ids.results.clear_widgets()
-        threading.Thread(target=self._worker, args=(query, mode), daemon=True).start()
+        self._search_id = getattr(self, "_search_id", 0) + 1
+        threading.Thread(target=self._worker, args=(query, mode, self._search_id), daemon=True).start()
 
-    def _worker(self, query, mode):
+    def _worker(self, query, mode, search_id):
         try:
             results, source = search_books(query, mode)
-            self._show(results, source, None)
+            self._show(results, source, None, search_id)
         except Exception as exc:  # noqa: BLE001 — se muestra al usuario
-            self._show([], "", str(exc))
+            self._show([], "", str(exc), search_id)
 
     @mainthread
-    def _show(self, results, source, error):
+    def _show(self, results, source, error, search_id):
+        if search_id != self._search_id:
+            return  # respuesta de una búsqueda anterior que llegó tarde
         self.searching = False
         if error:
             self.status_text = error
@@ -469,7 +465,7 @@ class CreateRequestScreen(BaseScreen):
                 MDButtonText(text=loc),
                 style="text",
                 size_hint_x=1,
-                height=dp(36),
+                height=dp(48),
             )
             btn.bind(on_release=lambda _b, l=loc: self.select_location(l))
             self.ids.suggestions_box.add_widget(btn)
@@ -502,8 +498,8 @@ class RequestPublishedScreen(BaseScreen):
     def refresh(self):
         req = self.app.store.requests.get(self.app.current_request_id)
         if req:
-            self.ids.book_title.text = self.app.store.book(req.book_id).title
-            self.ids.request_id.text = f"Solicitud #{req.id} · estado: Publicada"
+            self.ids.request_id.text = f"SOLICITUD N.º {req.id}"
+            self.fill(self.ids.request_row, [self.app.request_card(req, self.app.open_reader_request)])
 
 
 class ReaderRequestsScreen(BaseScreen):
@@ -947,11 +943,16 @@ class DemoLibrosApp(MDApp):
     def build(self):
         self.title = "BookWho? · Demo MVP"
         self.theme_cls.theme_style = "Light"
-        self.theme_cls.primary_palette = "darkgoldenrod"
-        # Títulos y encabezados en serif (Lora); cuerpo y controles siguen en Roboto.
-        for style in ("Headline", "Title"):
+        # Material You deriva el esquema desde el acento; luego se fijan exactos el primario y el fondo.
+        self.theme_cls.on_colors = self._apply_brand_colors
+        self.theme_cls.primary_palette = ACCENT
+        fonts = {"Display": "SourceSerif", "Headline": "SourceSerif", "Title": "SourceSerif",
+                 "Body": "IBMPlexSans", "Label": "IBMPlexSans"}
+        for style, font in fonts.items():
             for role in self.theme_cls.font_styles[style]:
-                self.theme_cls.font_styles[style][role]["font-name"] = "Lora"
+                self.theme_cls.font_styles[style][role]["font-name"] = font
+                if font == "SourceSerif":
+                    self.theme_cls.font_styles[style][role]["line-height"] = 1.15
         self.store = build_demo_store(catalog_lookup)
         self.history: list[str] = []
         self.selected_book = None
@@ -959,6 +960,12 @@ class DemoLibrosApp(MDApp):
         self.current_offer_id = None
         Window.bind(on_keyboard=self._on_keyboard)
         return Builder.load_file(KV_FILE)
+
+    def _apply_brand_colors(self):
+        from kivy.utils import get_color_from_hex as c
+        self.theme_cls.primaryColor = c(ACCENT)
+        self.theme_cls.backgroundColor = c(PAPER)
+        self.theme_cls.surfaceColor = c(PAPER)
 
     # ----------------------------------------------------------- navegación
     def go(self, name, reset_to=None):
@@ -1047,22 +1054,30 @@ class DemoLibrosApp(MDApp):
         dialog.open()
 
     # ---------------------------------------------------- helpers de vista
-    def request_card(self, req, on_open, badge="", for_seller=False):
+    def request_card(self, req, on_open, for_seller=False):
+        """Fila editorial de una solicitud, usada en todas las listas de solicitudes."""
         book = self.store.book(req.book_id)
-        offers = self.store.active_offer_count(req.id)
-        parts = [req.location, f"máx. {format_price(req.max_price)}", Condition.LABELS[req.accepted_condition]]
-        if not badge and for_seller:
-            badge = proximity_label(self.user.location, req.location)
-        elif not badge and req.status in RequestStatus.OPEN:
-            badge = f"{offers} oferta(s) activa(s)"
-        return RequestCard(
+        if for_seller:
+            detail = proximity_label(self.user.location, req.location)
+        elif req.status in RequestStatus.OPEN:
+            n = self.store.active_offer_count(req.id)
+            detail = "sin ofertas aún" if n == 0 else f"{n} activa" + ("s" if n > 1 else "")
+        else:
+            detail = ""
+        condition = "Nuevo o usado" if req.accepted_condition == Condition.ANY else Condition.LABELS[req.accepted_condition]
+        price = (
+            "[b]Sin tope[/b]" if req.max_price is None
+            else f"[size=12sp][color=#6F6B62]máx. [/color][/size][b]{format_price(req.max_price)}[/b]"
+        )
+        return RequestRow(
             title=book.title,
-            subtitle=book.authors_text,
-            meta=" · ".join(parts),
+            author=book.authors_text,
+            meta=f"{req.location} · {condition}",
+            price=price,
             cover=book.cover_url,
             status=req.status,
-            badge=badge,
-            callback=lambda _c, rid=req.id: on_open(rid),
+            detail=f"· {detail}" if detail else "",
+            callback=lambda _r, rid=req.id: on_open(rid),
         )
 
     def request_info_rows(self, req):

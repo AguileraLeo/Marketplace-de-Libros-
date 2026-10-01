@@ -3,6 +3,14 @@
 #:import Role store.Role
 #:import Condition store.Condition
 #:import Delivery store.Delivery
+#:import hex kivy.utils.get_color_from_hex
+#:import hexstr kivy.utils.get_hex_from_color
+#:set INK "#1A1A17"
+#:set MUTED "#5E5B53"
+#:set FAINT "#6F6B62"
+#:set RULE "#E6E2D9"
+#:set FIELD_LINE "#D6D1C6"
+#:set TRACK "#EFECE5"
 
 
 # ==========================================================================
@@ -33,11 +41,29 @@
     theme_width: "Custom"
     size_hint_x: 1
     height: dp(48)
+    radius: [dp(6)] * 4
 
 <PrimaryButton@WideButton>:
     style: "filled"
     height: dp(52)
-    radius: [dp(26)] * 4
+
+# El hinting "normal" de Kivy abre huecos dentro de palabras en Source Serif ("ofer tas").
+<MDLabel>:
+    font_hinting: None
+    font_kerning: True
+
+<MDTextField>:
+    radius: [dp(6)] * 4
+    theme_line_color: "Custom"
+    line_color_normal: hex(FIELD_LINE)
+    line_color_focus: app.theme_cls.primaryColor
+
+<MDTopAppBar>:
+    canvas.after:
+        Color:
+            rgba: hex(RULE)
+        Line:
+            points: [self.x, self.y, self.right, self.y]
 
 <Page@MDBoxLayout>:
     orientation: "vertical"
@@ -53,25 +79,178 @@
     height: self.minimum_height
     padding: dp(16)
     spacing: dp(10)
-    radius: [dp(18)] * 4
+    radius: [dp(8)] * 4
     ripple_effect: False
-    md_bg_color: app.theme_cls.surfaceContainerLowColor
+    md_bg_color: hex("#FFFFFF")
+    line_color: hex(RULE)
+
+<Gap@Widget>:
+    size_hint_y: None
+    height: dp(12)
+
+<Rule@Widget>:
+    size_hint_y: None
+    height: dp(1)
+    canvas:
+        Color:
+            rgba: hex(RULE)
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
+<NextStep@MDBoxLayout>:
+    number: ""
+    text: ""
+    adaptive_height: True
+    padding: 0, dp(10)
+    MDLabel:
+        text: root.number
+        size_hint_x: None
+        width: dp(30)
+        font_style: "Title"
+        role: "medium"
+        adaptive_height: True
+        pos_hint: {"top": 1}
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.primaryColor
+    MDLabel:
+        text: root.text
+        font_style: "Body"
+        role: "large"
+        adaptive_height: True
+        pos_hint: {"top": 1}
+        theme_text_color: "Custom"
+        text_color: hex(INK)
+
+<SegmentedRow>:
+    adaptive_height: True
+    padding: dp(3)
+    spacing: dp(2)
+    radius: [dp(7)] * 4
+    md_bg_color: hex(TRACK)
+
+<SegmentButton>:
+    size_hint_y: None
+    height: dp(48)
+    radius: [dp(5)] * 4
+    md_bg_color: hex("#FFFFFF") if self.selected else hex(TRACK)
+    line_color: hex(FIELD_LINE) if self.selected else hex(TRACK)
+    MDLabel:
+        text: root.text
+        halign: "center"
+        font_style: "Body"
+        role: "medium"
+        bold: root.selected
+        theme_text_color: "Custom"
+        text_color: hex(INK) if root.selected else hex(MUTED)
+
+<StatLink@ButtonBehavior+MDBoxLayout>:
+    value: "0"
+    label: ""
+    highlight: False
+    orientation: "vertical"
+    adaptive_height: True
+    spacing: dp(2)
+    MDLabel:
+        text: root.value
+        font_style: "Headline"
+        role: "medium"
+        adaptive_height: True
+        theme_text_color: "Custom"
+        text_color: app.theme_cls.primaryColor if root.highlight else hex(INK)
+    MDLabel:
+        text: root.label
+        font_style: "Body"
+        role: "small"
+        adaptive_height: True
+        theme_text_color: "Custom"
+        text_color: hex(MUTED)
+
+<RequestRow>:
+    orientation: "horizontal"
+    size_hint_y: None
+    height: max(dp(70), info.minimum_height) + dp(32)
+    padding: 0, dp(16)
+    spacing: dp(14)
+    on_release: root.callback(root) if root.callback else None
+    canvas.after:
+        Color:
+            rgba: hex(RULE)
+        Line:
+            points: [self.x, self.y, self.right, self.y]
+    BookCover:
+        source: root.cover
+        size: dp(48), dp(70)
+        radius: [dp(2)] * 4
+        pos_hint: {"top": 1}
+    MDBoxLayout:
+        id: info
+        orientation: "vertical"
+        adaptive_height: True
+        spacing: dp(2)
+        pos_hint: {"top": 1}
+        MDBoxLayout:
+            adaptive_height: True
+            spacing: dp(12)
+            MDLabel:
+                text: root.title
+                font_style: "Title"
+                role: "medium"
+                adaptive_height: True
+                theme_text_color: "Custom"
+                text_color: hex(INK)
+            MDLabel:
+                text: root.price
+                markup: True
+                font_style: "Body"
+                role: "medium"
+                adaptive_size: True
+                pos_hint: {"top": 1}
+                theme_text_color: "Custom"
+                text_color: hex(INK)
+        MDLabel:
+            text: root.author
+            font_style: "Body"
+            role: "small"
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: hex(MUTED)
+        MDLabel:
+            text: root.meta
+            font_style: "Body"
+            role: "small"
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: hex(MUTED)
+        MDBoxLayout:
+            adaptive_height: True
+            spacing: dp(8)
+            padding: 0, dp(6), 0, 0
+            StatusChip:
+                status: root.status
+                kind: "request"
+            MDLabel:
+                text: root.detail
+                font_style: "Body"
+                role: "small"
+                adaptive_size: True
+                theme_text_color: "Custom"
+                text_color: hex(FAINT)
 
 <ListBox@MDBoxLayout>:
     orientation: "vertical"
     adaptive_height: True
-    spacing: dp(10)
 
 <BookCover>:
     size_hint: None, None
     size: dp(64), dp(92)
-    md_bg_color: app.theme_cls.secondaryContainerColor
-    radius: [dp(8)] * 4
+    md_bg_color: hex(TRACK)
+    radius: [dp(3)] * 4
     MDIcon:
         icon: "book-open-page-variant"
         pos_hint: {"center_x": .5, "center_y": .5}
         theme_text_color: "Custom"
-        text_color: app.theme_cls.onSecondaryContainerColor
+        text_color: hex(FAINT)
     Image:
         source: root.local_source
         fit_mode: "cover"
@@ -79,103 +258,76 @@
 
 <StatusChip>:
     adaptive_size: True
-    padding: dp(10), dp(4)
-    radius: [dp(10)] * 4
-    md_bg_color: root.bg
+    spacing: dp(8)
     pos_hint: {"center_y": .5}
+    Widget:
+        size_hint: None, None
+        size: dp(7), dp(7)
+        pos_hint: {"center_y": .5}
+        canvas:
+            Color:
+                rgba: root.dot
+            Ellipse:
+                pos: self.pos
+                size: self.size
     MDLabel:
         text: root.text or " "
         adaptive_size: True
-        font_style: "Label"
-        role: "medium"
+        font_style: "Body"
+        role: "small"
         bold: True
         theme_text_color: "Custom"
         text_color: root.fg
 
-<RequestCard>:
-    style: "outlined"
-    orientation: "horizontal"
-    size_hint_y: None
-    height: max(dp(116), content.minimum_height + dp(24))
-    padding: dp(12)
-    spacing: dp(14)
-    radius: [dp(16)] * 4
-    on_release: root.callback(root) if root.callback else None
-    BookCover:
-        source: root.cover
-        pos_hint: {"top": 1}
-    MDBoxLayout:
-        id: content
-        orientation: "vertical"
-        adaptive_height: True
-        spacing: dp(4)
-        pos_hint: {"top": 1}
-        MDLabel:
-            text: root.title
-            font_style: "Title"
-            role: "small"
-            bold: True
-            adaptive_height: True
-        Muted:
-            text: root.subtitle
-            role: "small"
-        MDLabel:
-            text: root.meta
-            font_style: "Body"
-            role: "small"
-            adaptive_height: True
-        MDBoxLayout:
-            adaptive_height: True
-            spacing: dp(8)
-            padding: 0, dp(4), 0, 0
-            StatusChip:
-                status: root.status
-                kind: "request"
-            MDLabel:
-                text: root.badge or " "
-                font_style: "Label"
-                role: "medium"
-                bold: True
-                theme_text_color: "Custom"
-                text_color: app.theme_cls.primaryColor
-                pos_hint: {"center_y": .5}
-                adaptive_height: True
-
 <ItemCard>:
-    style: "outlined"
+    style: "filled"
+    theme_bg_color: "Custom"
+    md_bg_color: 0, 0, 0, 0
     orientation: "vertical"
     size_hint_y: None
     height: self.minimum_height
-    padding: dp(14), dp(12)
-    spacing: dp(4)
-    radius: [dp(16)] * 4
-    ripple_effect: root.callback is not None
+    padding: 0, dp(14)
+    spacing: dp(2)
+    radius: [0] * 4
+    ripple_effect: False
     on_release: root.callback(root) if root.callback else None
+    canvas.after:
+        Color:
+            rgba: hex(RULE)
+        Line:
+            points: [self.x, self.y, self.right, self.y]
     MDBoxLayout:
         adaptive_height: True
-        spacing: dp(8)
+        spacing: dp(12)
         MDLabel:
             text: root.title
             font_style: "Title"
-            role: "small"
-            bold: True
+            role: "medium"
             adaptive_height: True
             pos_hint: {"center_y": .5}
+            theme_text_color: "Custom"
+            text_color: hex(INK)
         StatusChip:
             status: root.status
             kind: root.kind
             opacity: 1 if root.status else 0
-    Muted:
+    MDLabel:
         text: root.subtitle
+        font_style: "Body"
         role: "small"
+        adaptive_height: True
+        theme_text_color: "Custom"
+        text_color: hex(MUTED)
     MDLabel:
         text: root.meta
         font_style: "Body"
         role: "small"
         adaptive_height: True
+        theme_text_color: "Custom"
+        text_color: hex(MUTED)
     MDBoxLayout:
         size_hint_y: None
-        height: dp(40) if root.action_text else 0
+        height: dp(48) if root.action_text else 0
         opacity: 1 if root.action_text else 0
         disabled: not root.action_text
         Widget:
@@ -188,79 +340,94 @@
                 text_color: app.theme_cls.errorColor if root.action_text.startswith(("Cancelar", "Suspender")) else app.theme_cls.primaryColor
 
 <BookResultCard>:
-    style: "outlined"
+    style: "filled"
+    theme_bg_color: "Custom"
+    md_bg_color: 0, 0, 0, 0
     orientation: "horizontal"
     size_hint_y: None
-    height: max(dp(116), content.minimum_height + dp(24))
-    padding: dp(12)
+    height: max(dp(70), content.minimum_height) + dp(32)
+    padding: 0, dp(16)
     spacing: dp(14)
-    radius: [dp(16)] * 4
+    radius: [0] * 4
     ripple_effect: False
+    canvas.after:
+        Color:
+            rgba: hex(RULE)
+        Line:
+            points: [self.x, self.y, self.right, self.y]
     BookCover:
         source: root.cover
+        size: dp(48), dp(70)
         pos_hint: {"top": 1}
     MDBoxLayout:
         id: content
         orientation: "vertical"
         adaptive_height: True
-        spacing: dp(4)
+        spacing: dp(2)
         pos_hint: {"top": 1}
         MDLabel:
             text: root.title
             font_style: "Title"
-            role: "small"
-            bold: True
+            role: "medium"
             adaptive_height: True
-        Muted:
+            theme_text_color: "Custom"
+            text_color: hex(INK)
+        MDLabel:
             text: root.subtitle
+            font_style: "Body"
             role: "small"
+            adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: hex(MUTED)
         MDLabel:
             text: root.meta
             font_style: "Body"
             role: "small"
             adaptive_height: True
+            theme_text_color: "Custom"
+            text_color: hex(MUTED)
         MDBoxLayout:
             adaptive_height: True
+            padding: 0, dp(6), 0, 0
             Widget:
             MDButton:
-                style: "tonal"
+                style: "outlined"
+                radius: [dp(6)] * 4
                 on_release: app.select_book(root.book)
-                MDButtonIcon:
-                    icon: "check"
                 MDButtonText:
                     text: "Seleccionar"
 
 <StatTile>:
     style: "filled"
     theme_bg_color: "Custom"
+    md_bg_color: hex("#FFFFFF")
+    line_color: hex(RULE)
     orientation: "vertical"
     size_hint_y: None
     height: dp(84)
     padding: dp(14), dp(10)
-    radius: [dp(16)] * 4
+    radius: [dp(6)] * 4
     ripple_effect: False
-    md_bg_color: root.bg
     MDBoxLayout:
         adaptive_height: True
         MDLabel:
             text: root.value
             font_style: "Headline"
             role: "medium"
-            bold: True
             theme_text_color: "Custom"
-            text_color: root.fg
+            text_color: hex(INK)
         Widget:
         MDIcon:
             icon: root.icon
             theme_text_color: "Custom"
-            text_color: root.fg
+            text_color: hex(FAINT)
             pos_hint: {"center_y": .6}
     MDLabel:
         text: root.label
-        font_style: "Label"
-        role: "medium"
+        font_style: "Body"
+        role: "small"
         theme_text_color: "Custom"
-        text_color: root.fg
+        text_color: hex(MUTED)
 
 <InfoRow>:
     adaptive_height: True
@@ -312,19 +479,20 @@
     MDCard:
         style: "filled"
         theme_bg_color: "Custom"
-        md_bg_color: app.theme_cls.primaryContainerColor
-        radius: [dp(28)] * 4
+        md_bg_color: app.theme_cls.primaryColor
+        radius: [dp(14)] * 4
         ripple_effect: False
         MDIcon:
             icon: "book-open-page-variant"
             font_size: "40sp"
             pos_hint: {"center_x": .5, "center_y": .5}
             theme_text_color: "Custom"
-            text_color: app.theme_cls.onPrimaryContainerColor
+            text_color: app.theme_cls.onPrimaryColor
     MDCard:
         style: "filled"
         theme_bg_color: "Custom"
-        md_bg_color: app.theme_cls.primaryColor
+        md_bg_color: app.theme_cls.backgroundColor
+        line_color: app.theme_cls.primaryColor
         radius: [dp(15)] * 4
         size_hint: None, None
         size: dp(30), dp(30)
@@ -335,7 +503,7 @@
             font_size: "18sp"
             pos_hint: {"center_x": .5, "center_y": .5}
             theme_text_color: "Custom"
-            text_color: app.theme_cls.onPrimaryColor
+            text_color: app.theme_cls.primaryColor
 
 # Barra superior con botón "atrás"
 <BackBar@MDTopAppBar>:
@@ -507,7 +675,7 @@ MDScreenManager:
                         mode: "persistent"
                 FieldLabel:
                     text: "¿Cómo usarás la app?"
-                ChoiceRow:
+                SegmentedRow:
                     id: role
                     options: [(Role.READER, "Busco libros (Lector)"), (Role.SELLER, "Vendo libros (Vendedor)")]
                     value: Role.READER
@@ -550,7 +718,8 @@ MDScreenManager:
         MDTopAppBar:
             type: "small"
             MDTopAppBarTitle:
-                text: "Hola, " + app.user_name
+                markup: True
+                text: "BookWho[color=" + hexstr(app.theme_cls.primaryColor) + "]?[/color]"
             MDTopAppBarTrailingButtonContainer:
                 MDActionTopAppBarButton:
                     icon: "format-list-bulleted"
@@ -559,64 +728,100 @@ MDScreenManager:
                     icon: "logout"
                     on_release: app.logout()
         MDScrollView:
-            Page:
-                Panel:
-                    md_bg_color: app.theme_cls.primaryContainerColor
-                    MDLabel:
-                        text: "¿Qué libro estás buscando?"
-                        font_style: "Headline"
-                        role: "small"
-                        bold: True
-                        adaptive_height: True
-                        theme_text_color: "Custom"
-                        text_color: app.theme_cls.onPrimaryContainerColor
-                    MDLabel:
-                        text: "Publica tu búsqueda y los vendedores te enviarán ofertas."
-                        font_style: "Body"
-                        role: "small"
-                        adaptive_height: True
-                        theme_text_color: "Custom"
-                        text_color: app.theme_cls.onPrimaryContainerColor
-                        opacity: 0.85
+            MDBoxLayout:
+                orientation: "vertical"
+                adaptive_height: True
+                padding: dp(20), dp(28), dp(20), dp(32)
+                MDLabel:
+                    text: "Hola, " + app.user_name
+                    font_style: "Body"
+                    role: "medium"
+                    adaptive_height: True
+                    theme_text_color: "Custom"
+                    text_color: hex(MUTED)
+                Gap:
+                    height: dp(6)
+                MDLabel:
+                    text: "¿Qué libro estás buscando?"
+                    font_style: "Headline"
+                    role: "medium"
+                    adaptive_height: True
+                    theme_text_color: "Custom"
+                    text_color: hex(INK)
+                Gap:
+                    height: dp(8)
+                MDLabel:
+                    text: "Publica tu búsqueda y los vendedores te enviarán ofertas."
+                    font_style: "Body"
+                    role: "medium"
+                    adaptive_height: True
+                    theme_text_color: "Custom"
+                    text_color: hex(MUTED)
+                Gap:
+                    height: dp(20)
+                SegmentedRow:
+                    id: mode
+                    options: [("titulo", "Título"), ("autor", "Autor"), ("isbn", "ISBN")]
+                    value: "titulo"
+                Gap:
+                    height: dp(12)
+                MDBoxLayout:
+                    adaptive_height: True
+                    spacing: dp(8)
                     MDTextField:
                         id: query
-                        mode: "filled"
+                        mode: "outlined"
                         on_text_validate: root.search()
                         MDTextFieldLeadingIcon:
                             icon: "magnify"
                         MDTextFieldHintText:
-                            text: "Título, autor o ISBN"
-                    ChoiceRow:
-                        id: mode
-                        options: [("titulo", "Título"), ("autor", "Autor"), ("isbn", "ISBN")]
-                        value: "titulo"
-                    PrimaryButton:
+                            text: {"titulo": "Título del libro", "autor": "Nombre del autor", "isbn": "ISBN"}.get(mode.value, "")
+                    MDButton:
+                        style: "filled"
+                        theme_height: "Custom"
+                        height: query.height
+                        radius: [dp(6)] * 4
+                        pos_hint: {"center_y": .5}
                         on_release: root.search()
-                        MDButtonIcon:
-                            icon: "magnify"
                         MDButtonText:
-                            text: "Buscar libro"
+                            text: "Buscar"
+                Gap:
+                    height: dp(28)
                 MDGridLayout:
                     cols: 2
-                    spacing: dp(12)
                     adaptive_height: True
-                    StatTile:
+                    canvas.before:
+                        Color:
+                            rgba: hex(RULE)
+                        Line:
+                            points: [self.x, self.top, self.right, self.top]
+                        Line:
+                            points: [self.x, self.y, self.right, self.y]
+                        Line:
+                            points: [self.center_x, self.y, self.center_x, self.top]
+                    StatLink:
                         id: stat_active
                         label: "Solicitudes activas"
-                        tone: "blue"
-                        icon: "file-document-outline"
-                    StatTile:
+                        padding: 0, dp(16), dp(16), dp(16)
+                        on_release: app.go("reader_requests")
+                    StatLink:
                         id: stat_offers
                         label: "Ofertas por revisar"
-                        tone: "orange"
-                        icon: "tag-outline"
+                        padding: dp(16), dp(16), 0, dp(16)
+                        on_release: app.go("reader_requests")
+                Gap:
+                    height: dp(20)
                 MDBoxLayout:
                     adaptive_height: True
-                    Heading:
+                    MDLabel:
                         text: "Solicitudes recientes"
+                        font_style: "Title"
+                        role: "large"
+                        adaptive_height: True
                         pos_hint: {"center_y": .5}
                     MDButton:
                         style: "text"
+                        pos_hint: {"center_y": .5}
                         on_release: app.go("reader_requests")
                         MDButtonText:
                             text: "Ver todas"
@@ -641,7 +846,7 @@ MDScreenManager:
                     icon: "magnify"
                 MDTextFieldHintText:
                     text: "Título, autor o ISBN"
-            ChoiceRow:
+            SegmentedRow:
                 id: mode
                 options: [("titulo", "Título"), ("autor", "Autor"), ("isbn", "ISBN")]
                 value: "titulo"
@@ -712,7 +917,7 @@ MDScreenManager:
                         mode: "persistent"
                 FieldLabel:
                     text: "¿En qué estado lo aceptas?"
-                ChoiceRow:
+                SegmentedRow:
                     id: condition
                     options: [(Condition.ANY, "Cualquiera"), (Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
                     value: Condition.ANY
@@ -737,33 +942,43 @@ MDScreenManager:
                     padding: 0, dp(4), 0, 0
                     Muted:
                         text: "Rápido:"
+                        adaptive_width: True
                         font_style: "Label"
                         role: "small"
                         pos_hint: {"center_y": .5}
                     MDButton:
+                        theme_width: "Custom"
+                        size_hint_x: 1
                         style: "outlined"
                         size_hint_y: None
-                        height: dp(32)
+                        height: dp(48)
+                        radius: [dp(6)] * 4
                         on_release: root.select_location("Concepción (Biobío)")
                         MDButtonText:
                             text: "Concepción"
                     MDButton:
+                        theme_width: "Custom"
+                        size_hint_x: 1
                         style: "outlined"
                         size_hint_y: None
-                        height: dp(32)
+                        height: dp(48)
+                        radius: [dp(6)] * 4
                         on_release: root.select_location("Santiago (Metropolitana)")
                         MDButtonText:
                             text: "Santiago"
                     MDButton:
+                        theme_width: "Custom"
+                        size_hint_x: 1
                         style: "outlined"
                         size_hint_y: None
-                        height: dp(32)
+                        height: dp(48)
+                        radius: [dp(6)] * 4
                         on_release: root.select_location("Valparaíso (Valparaíso)")
                         MDButtonText:
                             text: "Valparaíso"
                 FieldLabel:
                     text: "Preferencia de entrega"
-                ChoiceRow:
+                SegmentedRow:
                     id: delivery
                     options: [(Delivery.IN_PERSON, "Presencial"), (Delivery.SHIPPING, "Envío"), (Delivery.ANY, "Cualquiera")]
                     value: Delivery.ANY
@@ -790,45 +1005,102 @@ MDScreenManager:
 <RequestPublishedScreen>:
     name: "request_published"
     md_bg_color: app.theme_cls.backgroundColor
-    MDScrollView:
-        Page:
-            padding: dp(24), dp(80), dp(24), dp(32)
-            spacing: dp(16)
-            MDIcon:
-                icon: "check-circle"
-                font_size: "72sp"
-                pos_hint: {"center_x": .5}
-                theme_text_color: "Custom"
-                text_color: app.theme_cls.primaryColor
-            MDLabel:
-                text: "¡Solicitud publicada!"
-                halign: "center"
-                font_style: "Headline"
-                role: "medium"
-                bold: True
-                adaptive_height: True
-            MDLabel:
-                id: book_title
-                halign: "center"
-                font_style: "Title"
-                role: "medium"
-                adaptive_height: True
-            Muted:
-                id: request_id
-                halign: "center"
-            Muted:
-                text: "Los vendedores ya pueden verla y enviarte ofertas."
-                halign: "center"
+    MDBoxLayout:
+        orientation: "vertical"
+        MDBoxLayout:
+            size_hint_y: None
+            height: dp(56)
+            padding: 0, dp(4), dp(8), 0
             Widget:
-                size_hint_y: None
-                height: dp(16)
-            PrimaryButton:
+            MDIconButton:
+                icon: "close"
+                pos_hint: {"center_y": .5}
+                theme_icon_color: "Custom"
+                icon_color: hex(INK)
+                on_release: app.go_home()
+        MDScrollView:
+            MDBoxLayout:
+                orientation: "vertical"
+                adaptive_height: True
+                padding: dp(22), dp(18), dp(22), dp(16)
+                MDAnchorLayout:
+                    size_hint: None, None
+                    size: dp(56), dp(56)
+                    radius: [dp(28)] * 4
+                    line_color: app.theme_cls.primaryColor
+                    line_width: dp(1)
+                    MDIcon:
+                        icon: "check"
+                        theme_text_color: "Custom"
+                        text_color: app.theme_cls.primaryColor
+                Gap:
+                    height: dp(24)
+                MDLabel:
+                    id: request_id
+                    font_style: "Label"
+                    role: "large"
+                    bold: True
+                    adaptive_height: True
+                    theme_text_color: "Custom"
+                    text_color: hex(FAINT)
+                Gap:
+                    height: dp(8)
+                MDLabel:
+                    text: "Tu solicitud está publicada"
+                    font_style: "Headline"
+                    role: "large"
+                    adaptive_height: True
+                    theme_text_color: "Custom"
+                    text_color: hex(INK)
+                Gap:
+                    height: dp(8)
+                MDLabel:
+                    text: "Los vendedores ya pueden verla y enviarte ofertas."
+                    font_style: "Body"
+                    role: "large"
+                    adaptive_height: True
+                    theme_text_color: "Custom"
+                    text_color: hex(MUTED)
+                Gap:
+                    height: dp(24)
+                Rule:
+                ListBox:
+                    id: request_row
+                Gap:
+                    height: dp(28)
+                MDLabel:
+                    text: "QUÉ SIGUE"
+                    font_style: "Label"
+                    role: "large"
+                    bold: True
+                    adaptive_height: True
+                    theme_text_color: "Custom"
+                    text_color: hex(INK)
+                Gap:
+                    height: dp(8)
+                NextStep:
+                    number: "1"
+                    text: "Los vendedores que tengan el libro te envían una oferta."
+                NextStep:
+                    number: "2"
+                    text: "Comparas precio, estado y ubicación, y aceptas una."
+                NextStep:
+                    number: "3"
+                    text: "Ves los datos de contacto del vendedor para coordinar."
+        MDBoxLayout:
+            orientation: "vertical"
+            adaptive_height: True
+            padding: dp(22), dp(8), dp(22), dp(24)
+            spacing: dp(10)
+            WideButton:
+                style: "filled"
+                radius: [dp(6)] * 4
                 on_release: app.open_reader_request(app.current_request_id)
                 MDButtonText:
                     text: "Ver solicitud"
             WideButton:
                 style: "outlined"
-                height: dp(52)
+                radius: [dp(6)] * 4
                 on_release: app.go_home()
                 MDButtonText:
                     text: "Volver al inicio"
@@ -843,7 +1115,7 @@ MDScreenManager:
             title: "Mis solicitudes"
         Page:
             padding: dp(16), dp(12), dp(16), dp(4)
-            ChoiceRow:
+            SegmentedRow:
                 id: filter
                 options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
                 value: "todas"
@@ -914,12 +1186,11 @@ MDScreenManager:
         MDScrollView:
             Page:
                 Panel:
-                    md_bg_color: app.theme_cls.primaryContainerColor
                     Muted:
                         id: book_title
                         font_style: "Title"
                         role: "small"
-                        text_color: app.theme_cls.onPrimaryContainerColor
+                        text_color: hex(MUTED)
                     MDLabel:
                         id: price
                         font_style: "Display"
@@ -927,7 +1198,7 @@ MDScreenManager:
                         bold: True
                         adaptive_height: True
                         theme_text_color: "Custom"
-                        text_color: app.theme_cls.onPrimaryContainerColor
+                        text_color: hex(INK)
                     StatusChip:
                         id: status
                         kind: "offer"
@@ -937,7 +1208,7 @@ MDScreenManager:
                         id: info
                         spacing: dp(2)
                 Panel:
-                    md_bg_color: app.theme_cls.secondaryContainerColor
+                    md_bg_color: hex(TRACK)
                     opacity: 1 if root.can_accept else 0
                     height: self.minimum_height if root.can_accept else 0
                     MDBoxLayout:
@@ -952,7 +1223,7 @@ MDScreenManager:
                             role: "medium"
                             adaptive_height: True
                 Panel:
-                    md_bg_color: app.theme_cls.tertiaryContainerColor
+                    md_bg_color: hex(TRACK)
                     opacity: 1 if root.in_deal else 0
                     height: self.minimum_height if root.in_deal else 0
                     MDBoxLayout:
@@ -967,7 +1238,7 @@ MDScreenManager:
                             role: "medium"
                             adaptive_height: True
                 Panel:
-                    md_bg_color: app.theme_cls.surfaceContainerHighColor
+                    md_bg_color: hex(TRACK)
                     opacity: 1 if root.on_hold else 0
                     height: self.minimum_height if root.on_hold else 0
                     MDBoxLayout:
@@ -1055,7 +1326,7 @@ MDScreenManager:
                         id: contact
                         spacing: dp(2)
                 Panel:
-                    md_bg_color: app.theme_cls.tertiaryContainerColor
+                    md_bg_color: hex(TRACK)
                     MDBoxLayout:
                         adaptive_height: True
                         spacing: dp(12)
@@ -1063,14 +1334,14 @@ MDScreenManager:
                             icon: "information-outline"
                             pos_hint: {"top": 1}
                             theme_text_color: "Custom"
-                            text_color: app.theme_cls.onTertiaryContainerColor
+                            text_color: hex(INK)
                         MDLabel:
                             text: "La compra y la entrega se coordinan directamente entre tú y el vendedor. La app no procesa pagos ni envíos."
                             font_style: "Body"
                             role: "medium"
                             adaptive_height: True
                             theme_text_color: "Custom"
-                            text_color: app.theme_cls.onTertiaryContainerColor
+                            text_color: hex(INK)
                 PrimaryButton:
                     on_release: app.go_home()
                     MDButtonText:
@@ -1132,7 +1403,7 @@ MDScreenManager:
                 MDBoxLayout:
                     adaptive_height: True
                     spacing: dp(8)
-                    ChoiceRow:
+                    SegmentedRow:
                         id: condition
                         options: [("todas", "Todas"), (Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
                         value: "todas"
@@ -1185,7 +1456,7 @@ MDScreenManager:
                         id: info
                         spacing: dp(2)
                 Panel:
-                    md_bg_color: app.theme_cls.secondaryContainerColor
+                    md_bg_color: hex(TRACK)
                     opacity: 1 if root.offer_note else 0
                     height: self.minimum_height if root.offer_note else 0
                     MDLabel:
@@ -1231,7 +1502,7 @@ MDScreenManager:
                         text: "Ej: 12990"
                 FieldLabel:
                     text: "Estado del libro"
-                ChoiceRow:
+                SegmentedRow:
                     id: condition
                     options: [(Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
                     value: Condition.USED
@@ -1294,7 +1565,7 @@ MDScreenManager:
             title: "Mis ofertas"
         Page:
             padding: dp(16), dp(12), dp(16), dp(4)
-            ChoiceRow:
+            SegmentedRow:
                 id: filter
                 options: [("todas", "Todas"), ("activas", "Activas"), ("aceptadas", "Aceptadas"), ("finalizadas", "Finalizadas")]
                 value: "todas"
@@ -1334,47 +1605,38 @@ MDScreenManager:
                     StatTile:
                         id: st_usuarios
                         label: "Usuarios"
-                        tone: "blue"
                         icon: "account-group-outline"
                     StatTile:
                         id: st_lectores
                         label: "Lectores"
-                        tone: "teal"
                         icon: "account-search-outline"
                     StatTile:
                         id: st_vendedores
                         label: "Vendedores"
-                        tone: "purple"
                         icon: "storefront-outline"
                     StatTile:
                         id: st_solicitudes
                         label: "Solicitudes"
-                        tone: "gray"
                         icon: "file-document-outline"
                     StatTile:
                         id: st_activas
                         label: "Activas"
-                        tone: "orange"
                         icon: "flash-outline"
                     StatTile:
                         id: st_con_ofertas
                         label: "Con ofertas"
-                        tone: "orange"
                         icon: "tag-outline"
                     StatTile:
                         id: st_resueltas
                         label: "Resueltas"
-                        tone: "green"
                         icon: "check-decagram-outline"
                     StatTile:
                         id: st_canceladas
                         label: "Canceladas"
-                        tone: "red"
                         icon: "close-circle-outline"
                     StatTile:
                         id: st_ofertas
                         label: "Ofertas"
-                        tone: "blue"
                         icon: "handshake-outline"
                 Heading:
                     text: "Gestión"
@@ -1424,7 +1686,7 @@ MDScreenManager:
             title: "Solicitudes"
         Page:
             padding: dp(16), dp(12), dp(16), dp(4)
-            ChoiceRow:
+            SegmentedRow:
                 id: filter
                 options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
                 value: "todas"
