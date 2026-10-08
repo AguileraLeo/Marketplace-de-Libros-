@@ -24,6 +24,8 @@ Buscar libro -> crear solicitud -> publicar -> vendedor encuentra solicitud
 
 Incluye además la experiencia de administrador (estadísticas, usuarios, solicitudes, ofertas, moderación y actividad).
 
+La fundamentación del diseño a partir de la encuesta a usuarios está en [`FUNDAMENTACION-UX-UI.md`](FUNDAMENTACION-UX-UI.md).
+
 > **¿Recién clonas el repo?** Lee primero [`CONTEXTO.md`](CONTEXTO.md) (estado del proyecto y cómo trabajar en equipo) y [`AGENTS.md`](AGENTS.md) (visión y reglas del producto). Si usas IA, [`CLAUDE.md`](CLAUDE.md) tiene las instrucciones para el asistente, y [`uso_ia.md`](uso_ia.md) registra su uso real en este proyecto.
 
 ## Capturas
@@ -80,10 +82,10 @@ Opcional: define `GOOGLE_BOOKS_API_KEY` para usar Google Books. Sin clave, Googl
 
 ## Decisiones tomadas para el demo (pendientes de spec, ver AGENTS.md §19)
 
-- Al aceptar una oferta, la solicitud pasa a `RESUELTA` y las demás ofertas activas a `RECHAZADA`. Solo se acepta una oferta por solicitud.
-- Los datos de contacto del vendedor solo son visibles tras la aceptación.
+- Al aceptar una oferta para coordinar, la oferta pasa a `POR_CONCRETAR`, la solicitud a `EN_COORDINACION` y las demás ofertas activas quedan `EN_ESPERA`. Cuando el lector confirma la compra, la oferta pasa a `ACEPTADA`, la solicitud a `RESUELTA` y las ofertas en espera a `RECHAZADA`. Si alguien desiste, las ofertas en espera vuelven a `PUBLICADA`.
+- Los datos de contacto del vendedor solo son visibles desde que la oferta entra en coordinación.
 - Cancelar una solicitud cancela sus ofertas activas.
-- Un vendedor solo puede tener una oferta activa por solicitud, y el estado del libro ofrecido (nuevo/usado) debe ser compatible con lo que acepta el lector.
+- Un vendedor solo puede tener una oferta activa por solicitud. Puede ofrecer el libro nuevo o usado aunque no coincida con lo que pidió el lector; el lector lo evalúa al revisar la oferta.
 - Si un vendedor cancela su oferta, la solicitud se mantiene en `CON_OFERTAS`, porque la máquina de estados no define la vuelta a `PUBLICADA`.
 - Una cuenta tiene un solo rol. Los usuarios suspendidos no pueden iniciar sesión ni operar.
 - "Recuperar contraseña" es simulado: no se envían correos.

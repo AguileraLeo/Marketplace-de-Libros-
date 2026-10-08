@@ -3,6 +3,7 @@
 Ejecutar desde la raíz:  python -m unittest discover -s tests -v
 """
 
+import dataclasses
 import os
 import sys
 import tempfile
@@ -58,6 +59,8 @@ class HappyPathTest(StoreTestCase):
 
         with self.assertRaises(PermissionDenied):  # contacto oculto antes de coordinar o aceptar
             self.store.offer_contact(self.reader, offer.id)
+        with self.assertRaises(PermissionDenied):  # un rol falsificado por el cliente no salta la regla
+            self.store.offer_contact(dataclasses.replace(self.reader, role=Role.ADMIN), offer.id)
 
         other = self.store.create_offer(
             self.seller2, req.id, "18000", Condition.NEW, "", "", "", "p@demo.cl", ""
@@ -106,6 +109,8 @@ class ValidationTest(StoreTestCase):
         self.assertIsNone(self.new_request(max_price="").max_price)
         with self.assertRaises(ValidationError):
             self.new_request(max_price="abc")
+        with self.assertRaisesRegex(ValidationError, "mayor que 0"):
+            self.new_request(max_price=0)
 
     def test_offer_needs_contact_and_price_and_allows_any_condition(self):
         req = self.new_request(accepted_condition=Condition.NEW)

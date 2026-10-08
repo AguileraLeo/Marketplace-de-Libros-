@@ -33,7 +33,8 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Admin: búsqueda y exportación de logs de actividad a `.log` | Hecho |
 | Máquinas de estado de solicitud y oferta (estados intermedios) | Hecho, en `store.py` |
 | Permisos por rol en la capa de dominio (no solo en la UI) | Hecho |
-| Pruebas automatizadas (25 tests) | Pasan |
+| Pruebas automatizadas (30 tests) | Pasan |
+| Fundamentación UX/UI con encuesta real (18 respuestas) | Hecho, en `FUNDAMENTACION-UX-UI.md` |
 | Persistencia (base de datos o archivo) | **No existe**: todo vive en memoria (excepto caché de portadas en `.cache/covers/`) |
 | Documentación SDD en `docs/` (specs, casos de uso, ADR) | **Pendiente** |
 | Reportes, auditoría formal, notificaciones | Fuera del demo |

@@ -230,7 +230,7 @@ def _clean(value, max_len: int = 500) -> str:
 
 
 def _parse_price(value, *, required: bool, field_name: str) -> Optional[int]:
-    raw = str(value or "").strip().replace(".", "").replace("$", "")
+    raw = "" if value is None else str(value).strip()
     if not raw:
         if required:
             raise ValidationError(f"{field_name} es obligatorio.")
@@ -600,7 +600,8 @@ class Store:
     def offer_contact(self, actor: User, offer_id: int) -> SellerContact:
         """Los datos de contacto se revelan cuando la oferta entra en coordinación o es aceptada."""
         offer = self.get_offer(actor, offer_id)
-        if offer.status not in (OfferStatus.IN_DEAL, OfferStatus.ACCEPTED) and actor.role != Role.ADMIN:
+        user = self._require_active(actor)
+        if offer.status not in (OfferStatus.IN_DEAL, OfferStatus.ACCEPTED) and user.role != Role.ADMIN:
             raise PermissionDenied("El contacto se muestra al coordinar o aceptar la oferta.")
         return self.contacts.get(offer.seller_id, SellerContact(offer.seller_id))
 
