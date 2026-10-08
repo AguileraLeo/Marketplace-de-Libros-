@@ -86,6 +86,54 @@ nav.links a:hover{color:var(--fg)}
 @media (max-width:760px){.two-col{grid-template-columns:1fr}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px}
 
+/* ---------- ux evidence (charts) ---------- */
+.survey-note{display:inline-flex;align-items:center;gap:10px;background:var(--surface-2);
+  border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:13px;font-weight:500;
+  color:var(--accent-2);margin-bottom:6px}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:26px}
+@media (max-width:820px){.metrics{grid-template-columns:1fr 1fr}}
+@media (max-width:460px){.metrics{grid-template-columns:1fr}}
+.metric{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;
+  display:flex;gap:14px;align-items:center}
+.donut{flex:none;width:68px;height:68px;position:relative}
+.donut svg{width:68px;height:68px;transform:rotate(-90deg)}
+.donut circle{fill:none;stroke-width:4.5;stroke-linecap:round}
+.donut .track{stroke:var(--surface-2)}
+.donut .val{stroke:var(--accent);stroke-dasharray:100;stroke-dashoffset:100;
+  transition:stroke-dashoffset 1.2s cubic-bezier(.22,.61,.36,1)}
+.metric.in .donut .val{stroke-dashoffset:var(--off)}
+.donut .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:Lora,serif;font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.metric .mtext b{display:block;font-family:Lora,serif;font-size:15px;line-height:1.25}
+.metric .mtext span{font-size:12.5px;color:var(--muted)}
+
+.bars{margin-top:28px;display:grid;gap:18px}
+.bar-row{display:grid;grid-template-columns:1.15fr 2fr 58px;gap:16px;align-items:center}
+@media (max-width:640px){.bar-row{grid-template-columns:1fr auto;gap:4px 12px}
+  .bar-row .track{grid-column:1 / -1}}
+.bar-row .blabel{font-size:14px;font-weight:500;line-height:1.3}
+.bar-row .blabel small{display:block;color:var(--muted);font-weight:400;font-size:12px}
+.track{height:12px;background:var(--surface-2);border-radius:999px;overflow:hidden}
+.fill{height:100%;width:0;border-radius:999px;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width 1.2s cubic-bezier(.22,.61,.36,1)}
+.bar-row.in .fill{width:var(--w)}
+.bar-row .bval{font-variant-numeric:tabular-nums;font-weight:700;color:var(--accent);
+  font-family:Lora,serif;text-align:right}
+
+.age{margin-top:34px;border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:22px}
+.age h3{font-size:16px;margin:0 0 4px}
+.age p{margin:0 0 16px;font-size:13px;color:var(--muted)}
+.stack{display:flex;gap:4px;height:18px;border-radius:999px;overflow:hidden;background:var(--surface-2)}
+.stack i{display:block;width:0;transition:width 1s cubic-bezier(.22,.61,.36,1)}
+.age.in .stack i{width:var(--w)}
+.stack .s1{background:var(--accent)}
+.stack .s2{background:var(--panel)}
+.stack .s3{background:var(--muted)}
+.legend{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:8px}
+.legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
+
 /* ---------- flow ---------- */
 .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:step;margin-top:28px}
 @media (max-width:760px){.flow{grid-template-columns:1fr}}
@@ -155,6 +203,7 @@ footer p{color:var(--muted);font-size:13px;margin:0}
     </a>
     <nav class="links">
       <a href="#problema">Problema</a>
+      <a href="#evidencia">Evidencia</a>
       <a href="#funciona">Cómo funciona</a>
       <a href="#funciones">Funcionalidades</a>
       <a href="#capturas">Capturas</a>
@@ -203,6 +252,94 @@ footer p{color:var(--muted);font-size:13px;margin:0}
           <b>publica lo que busca</b> y son los <b>vendedores los que responden</b> si lo
           tienen. El vendedor tampoco necesita mantener un catálogo público: solo contesta
           cuando alguien pide justo lo que él puede ofrecer.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="evidencia">
+    <p class="eyebrow">Fundamentación UX/UI</p>
+    <h2>El diseño no es una corazonada</h2>
+    <p class="lede">Diseñamos a partir de lo que dijeron usuarios reales, no de suposiciones.
+      Una encuesta en Google Forms midió el problema y las expectativas antes de decidir la interfaz.</p>
+    <span class="survey-note">📋 Encuesta propia · 18 respuestas · 23 preguntas</span>
+
+    <div class="metrics">
+      <div class="metric" data-animate style="--off:5.6">
+        <div class="donut">
+          <svg viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="15.9155"></circle>
+            <circle class="val" cx="18" cy="18" r="15.9155"></circle></svg>
+          <span class="pct">94,4%</span>
+        </div>
+        <div class="mtext"><b>No encontró el libro</b><span>17 de 18 lo buscaron en tiendas y no apareció</span></div>
+      </div>
+      <div class="metric" data-animate style="--off:22.2">
+        <div class="donut">
+          <svg viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="15.9155"></circle>
+            <circle class="val" cx="18" cy="18" r="15.9155"></circle></svg>
+          <span class="pct">77,8%</span>
+        </div>
+        <div class="mtext"><b>15 min o más</b><span>14 de 18 dedican ese tiempo a buscar un libro puntual</span></div>
+      </div>
+      <div class="metric" data-animate style="--off:12.5">
+        <div class="donut">
+          <svg viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="15.9155"></circle>
+            <circle class="val" cx="18" cy="18" r="15.9155"></circle></svg>
+          <span class="pct">87,5%</span>
+        </div>
+        <div class="mtext"><b>Usaría la app</b><span>14 de 16 respondieron "sí" o "probablemente sí"</span></div>
+      </div>
+      <div class="metric" data-animate style="--off:11.1">
+        <div class="donut">
+          <svg viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="15.9155"></circle>
+            <circle class="val" cx="18" cy="18" r="15.9155"></circle></svg>
+          <span class="pct">88,9%</span>
+        </div>
+        <div class="mtext"><b>Ayuda a las pymes</b><span>16 de 18 creen que beneficia a librerías y ferias</span></div>
+      </div>
+    </div>
+
+    <h3 style="font-size:17px;margin:34px 0 0">Lo que pidieron los usuarios</h3>
+    <p class="muted" style="font-size:13.5px">Y la decisión de diseño que tomamos para cada caso.</p>
+    <div class="bars">
+      <div class="bar-row" data-animate style="--w:88.9%">
+        <div class="blabel">Ayudar a vendedores pequeños<small>El vendedor no mantiene catálogo: responde solicitudes reales</small></div>
+        <div class="track"><div class="fill"></div></div>
+        <div class="bval">88,9%</div>
+      </div>
+      <div class="bar-row" data-animate style="--w:72.2%">
+        <div class="blabel">Calificaciones de vendedores<small>Fuera del MVP; declarado como próximo paso</small></div>
+        <div class="track"><div class="fill"></div></div>
+        <div class="bval">72,2%</div>
+      </div>
+      <div class="bar-row" data-animate style="--w:66.7%">
+        <div class="blabel">Verificación de identidad<small>Login con roles reales validados en el dominio</small></div>
+        <div class="track"><div class="fill"></div></div>
+        <div class="bval">66,7%</div>
+      </div>
+      <div class="bar-row" data-animate style="--w:50%">
+        <div class="blabel">Protección de datos<small>El contacto queda oculto hasta aceptar y coordinar</small></div>
+        <div class="track"><div class="fill"></div></div>
+        <div class="bval">50%</div>
+      </div>
+      <div class="bar-row" data-animate style="--w:50%">
+        <div class="blabel">Reportar usuarios<small>El admin puede suspender y moderar dejando motivo</small></div>
+        <div class="track"><div class="fill"></div></div>
+        <div class="bval">50%</div>
+      </div>
+    </div>
+
+    <div class="age" data-animate>
+      <h3>Perfil de los encuestados</h3>
+      <p>18 respuestas · sesgo hacia público joven, con presencia relevante de adultos.</p>
+      <div class="stack">
+        <i class="s1" style="--w:55.6%" title="18–24 años: 10"></i>
+        <i class="s2" style="--w:38.9%" title="35 años o más: 7"></i>
+        <i class="s3" style="--w:5.6%" title="Otros: 1"></i>
+      </div>
+      <div class="legend">
+        <span><i class="s1" style="background:var(--accent)"></i>18–24 años · 10</span>
+        <span><i class="s2" style="background:var(--panel)"></i>35 años o más · 7</span>
+        <span><i class="s3" style="background:var(--muted)"></i>Otros · 1</span>
       </div>
     </div>
   </section>
@@ -301,9 +438,9 @@ footer p{color:var(--muted);font-size:13px;margin:0}
         <span class="label">Estructura y pruebas</span>
         <span class="desc">Separación interfaz/dominio, 30 pruebas automatizadas en verde.</span>
       </div>
-      <div class="status-row"><span class="dot pending"></span>
-        <span class="label">Fundamentación UX/UI</span>
-        <span class="desc">Pendiente: encuesta/entrevistas a usuarios reales, aún no aplicadas.</span>
+      <div class="status-row"><span class="dot mid"></span>
+        <span class="label"><a href="#evidencia" style="color:inherit;text-decoration:none">Fundamentación UX/UI</a></span>
+        <span class="desc">Encuesta propia aplicada: 18 respuestas y 23 preguntas. Pendiente: entrevistas a profundidad.</span>
       </div>
     </div>
   </section>
@@ -315,3 +452,22 @@ footer p{color:var(--muted);font-size:13px;margin:0}
     </div>
   </footer>
 </div>
+
+<script>
+(function(){
+  var targets = document.querySelectorAll('[data-animate]');
+  if (!('IntersectionObserver' in window)) {
+    targets.forEach(function(el){ el.classList.add('in'); });
+    return;
+  }
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if (entry.isIntersecting){
+        entry.target.classList.add('in');
+        io.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.3 });
+  targets.forEach(function(el){ io.observe(el); });
+})();
+</script>
