@@ -40,6 +40,10 @@
 
 22. "Lee la rúbrica, está en la carpeta Desarrollo Móvil." / "Te puse las sesiones que faltaban, léelas también; estas son las instrucciones para mañana."
 23. "Sí, es ese [proyecto], pero creo que necesitamos mejorarlo: tiene que correr en Android. ¿Es posible dejarlo para descargar?"
+24. "Tengo un servidor, mi PC viejo Lenovo Z40, y un dominio. ¿Sirven de algo en esta ocasión?".
+25. "Mi teléfono es iOS, ¿no podré probarlo entonces?" / "Ya, emulemos Android para revisar."
+26. "Configuremos la configuración remota." / "Dame los comandos." 
+27. "Hagamos lo que falta." (Release del APK, repositorio personal, esta declaración y guía de defensa.)
 
 ## 4. Outputs
 
@@ -67,6 +71,7 @@
 - **`services/remote_config.py` + `remote_config.json`:** lectura asíncrona con `UrlRequest` desde GitHub, `DEFAULTS` como respaldo sin conexión y validación de claves/tipos.
 - **Hash SHA-256 de contraseñas** en `store.py`, porque al persistir quedarían en texto plano en el JSON.
 - **Android:** `buildozer.spec`, certificados con `certifi` para que HTTPS funcione en el teléfono, y compilación del APK con Docker.
+- **Pruebas en emulador Android 14:** la IA configuró el emulador, instaló el APK y verificó con capturas el login, la notificación, la persistencia tras forzar el cierre y la configuración remota con y sin red. Antes de eso detectó en el contenido del APK dos fallas que lo habrían cerrado al abrir (falta de `pycairo` y una versión vieja de `materialyoucolor`) y una que impedía mostrar notificaciones en Android 12+.
 - **Documentación:** secciones nuevas del `README.md` (servicios y dónde están, Android, dificultades) y la reorganización de este archivo en las 6 secciones pedidas.
 
 ## 5. Ajustes
@@ -85,7 +90,11 @@
 
 ### E3
 
-> **Por completar por el equipo:** qué revisaron, cambiaron o decidieron ustedes sobre lo que entregó la IA en la E3 (por ejemplo, qué eventos disparan la notificación, qué valor se lee por configuración remota, qué probaron en el teléfono).
+- Pedí que la app no quedara solo en escritorio: tenía que correr en Android y quedar disponible para descargar (APK en GitHub Releases).
+- Revisé que todo funcionara en un emulador Android en el PC: login, notificación al entrar como lector, datos que se mantienen al cerrar y reabrir la app, y el banner de configuración remota con y sin conexión.
+- Decidí no portar la app a iOS en esta etapa, aunque mi teléfono es iPhone: requiere Mac, Xcode y firma de Apple, y a esta altura podía ser contraproducente.
+- Quería servir la configuración remota y la descarga desde mi propio servidor (un Lenovo Z40 con dominio propio). Como estaba apagado, decidí dejarlo para después de la evaluación y usar GitHub como fuente remota.
+- Hice yo los commits y el paso a `main` con un Pull Request, como veníamos trabajando en el equipo.
 
 ## 6. Reflexión en el uso de IA
 
@@ -101,4 +110,8 @@ Mi mayor aprendizaje fue que usar IA bien no es "que te resuelva todo", sino ten
 
 ### E3
 
-> **Por completar por el equipo, con sus palabras:** qué les sirvió, qué les costó y qué aprendieron al integrar los servicios y llevar la app a Android.
+La IA me sirvió principalmente para configurar los servicios y entender cómo funcionan: dónde se guarda el JSON, qué dispara la notificación y de dónde sale el valor remoto.
+
+Me preocupa no haber podido configurar todo como hubiera querido, desde mi servidor Z40 con dominio propio. También me preocupa entender código escrito a última hora, pero no es una limitante: se entiende la lógica detrás de cada acción.
+
+Aprendí a compilar para Android. Antes lo había hecho para iOS en una aplicación personal, y entender ambos sistemas me aporta al progreso general.
