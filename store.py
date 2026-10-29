@@ -1,16 +1,17 @@
 """
 Capa de dominio del MVP: entidades, máquinas de estado, permisos y un
-repositorio en memoria (sin base de datos).
+repositorio en memoria que services/persistence.py guarda en data.json.
 
 Toda regla de negocio y de autorización vive aquí, NO en la interfaz:
 la UI solo oculta/deshabilita acciones, pero cada método del Store vuelve
 a validar el rol, la propiedad del recurso y el estado (AGENTS.md §18.7).
 
-Los datos viven únicamente mientras la app está abierta.
+La contraseña se guarda como hash SHA-256 (nunca en texto plano).
 """
 
 from __future__ import annotations
 
+import hashlib
 import itertools
 import os
 import re
@@ -141,7 +142,7 @@ class User:
     id: int
     name: str
     email: str
-    password: str  # MVP: texto plano en memoria. Nunca así en producción.
+    password: str  # hash SHA-256 (ver hash_password)
     role: str
     status: str = UserStatus.ACTIVE
     location: str = ""
@@ -245,6 +246,11 @@ def _parse_price(value, *, required: bool, field_name: str) -> Optional[int]:
     return price
 
 
+def hash_password(email: str, password: str) -> str:
+    """El correo actúa como 'sal': dos usuarios con la misma clave tienen hashes distintos."""
+    return hashlib.sha256(f"{email.lower()}:{password}".encode("utf-8")).hexdigest()
+
+
 def format_price(value: Optional[int]) -> str:
     if value is None:
         return "Sin máximo"
@@ -319,7 +325,9 @@ class Store:
     # --------------------------------------------------------------- auth
     def add_user(self, name, email, password, role, location="") -> User:
         """Alta interna (seed/hardcode). Permite cualquier rol, incluido admin."""
-        user = User(self._next_id("user"), name, email.lower(), password, role, location=location)
+        user = User(
+            self._next_id("user"), name, email.lower(), hash_password(email, password), role, location=location
+        )
         self.users[user.id] = user
         if role == Role.SELLER:
             self.contacts[user.id] = SellerContact(user.id)
@@ -331,7 +339,7 @@ class Store:
 
     def authenticate(self, email: str, password: str) -> User:
         user = self.find_user_by_email(email)
-        if user is None or user.password != password:
+        if user is None or user.password != hash_password(user.email, password):
             raise ValidationError("Correo o contraseña incorrectos.")
         if user.status != UserStatus.ACTIVE:
             raise PermissionDenied("Tu cuenta está suspendida. Contacta a soporte.")

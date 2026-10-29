@@ -1,12 +1,18 @@
 # Declaración de uso de Inteligencia Artificial
 
-## Herramienta y modelo
+## 1. IA usada
 
 - **Herramienta:** Claude Code (Anthropic), CLI de asistencia para desarrollo de software.
-- **Modelo:** Claude Sonnet 5; en la sesión de revisión final se usaron Claude Sonnet 5 y Claude Opus 5.5.
-- **Alcance de esta declaración:** trabajo de pulido y ajustes sobre la maqueta `BookWho?` (Kivy/KivyMD), correspondiente a una sesión de trabajo previa a la presentación de la evaluación E2. El dominio, las pantallas base y el flujo principal de la app ya existían de un trabajo anterior del equipo; en esta sesión se usó IA para revisar, corregir y pulir esa base.
 
-## Prompts / instrucciones usados (resumen cronológico)
+## 2. Modelo
+
+- **E2:** Claude Sonnet 5; en la sesión de revisión final, Claude Sonnet 5 y Claude Opus 5.5.
+- **E3:** Claude Opus 5.5 (`claude-opus-5-5`).
+
+## 3. Prompts realizados
+
+### E2 (maqueta)
+- **Alcance de esta declaración:** trabajo de pulido y ajustes sobre la maqueta `BookWho?` (Kivy/KivyMD), correspondiente a una sesión de trabajo previa a la presentación de la evaluación E2. El dominio, las pantallas base y el flujo principal de la app ya existían de un trabajo anterior del equipo; en esta sesión se usó IA para revisar, corregir y pulir esa base.
 
 1. "Antes de escribir código, haz una auditoría completa del repositorio y del material del ramo. Quiero entender qué está hecho, qué falta y qué tecnología corresponde usar antes de definir los próximos pasos del MVP."
 2. "Quiero definirle un nombre a la aplicación. Dame opciones que combinen la idea de búsqueda, hallazgo o cacería de un libro, algo original y con identidad propia."
@@ -30,9 +36,16 @@
 20. "Aplica el diseño que te compartí." / "Espera, te compartí un PDF, a ese diseño me refería." (Maqueta de la pantalla "Solicitud publicada".)
 21. "Entonces continúa y aplícalo a todas las pantallas; arregla los ajustes que afectan a otras pantallas."
 
-## Outputs relevantes generados con IA
+### E3 (servicios integrados y Android)
 
-- **Diagnóstico de la rúbrica E2**: lectura del documento de rúbrica del curso y detección de que la fundamentación UX/UI (30% de la nota) dependía de evidencia real de usuarios que aún no existía, y de que el archivo `uso_ia.md` era obligatorio por política general del curso (no solo por la rúbrica de esta evaluación).
+22. "Lee la rúbrica, está en la carpeta Desarrollo Móvil." / "Te puse las sesiones que faltaban, léelas también; estas son las instrucciones para mañana."
+23. "Sí, es ese [proyecto], pero creo que necesitamos mejorarlo: tiene que correr en Android. ¿Es posible dejarlo para descargar?"
+
+## 4. Outputs
+
+### E2
+
+- **Diagnóstico de la rúbrica E2**: lectura del documento de rúbrica del curso y detección de que la fundamentación UX/UI (30% de la nota) dependía de evidencia real de usuarios que aún no existía, y de que el archivo `USO_IA.md` era obligatorio por política general del curso (no solo por la rúbrica de esta evaluación).
 - **Corrección de un bug real de interfaz**: las tarjetas de métricas del panel de administrador no mostraban colores diferenciados por falta de `theme_bg_color: "Custom"` en KivyMD 2.0; se corrigió en `libros.kv` y se verificó con capturas antes/después.
 - **Rediseño visual**: cambio de paleta de color (Teal → dorado envejecido/"darkgoldenrod", derivado con Material You), tipografía serif (Lora, con licencia OFL) para títulos y encabezados, y una marca propia (ícono de libro + insignia "?") para reemplazar el ícono genérico inicial.
 - **Función de cercanía vendedor–lector**: `proximity_label()` en `locations.py`, que compara comuna/región del vendedor con la de la solicitud (sin exponer direcciones exactas), más el campo "comuna" agregado al registro de vendedores.
@@ -46,7 +59,19 @@
 - **Paleta y fuentes de la maqueta editorial**: verde `#1F4D3A`, fondo crema `#FBFAF7`, Source Serif 4 en títulos e IBM Plex Sans en el resto. La IA detectó con capturas que un esquema de color dejaba botones invisibles en el inicio del lector y lo corrigió antes de entregarlo. Después se reconstruyó el inicio del lector según la maqueta (selector segmentado, cifras resumen y lista editorial), subiendo el selector a 48 dp por accesibilidad y omitiendo la etiqueta "Nuevas", que la app no puede calcular. Luego se rehízo la confirmación "Solicitud publicada" según su maqueta en PDF, reutilizando la misma fila de solicitud y ajustando el interlineado de los títulos en serif. Finalmente se llevó el estilo a las 19 pantallas restilizando los componentes compartidos (listas planas, estados con punto de color, selector segmentado, paneles y botones), y se revisó cada pantalla con capturas automáticas. En esa revisión la IA detectó y corrigió: huecos dentro de palabras por el *hinting* de Kivy, el estado "Activa" de ofertas en gris, una etiqueta aplastada y botones de comuna que se salían de la pantalla o medían menos de 48 dp.
 - **Actualización de documentos desactualizados**: reglas de estados en `README.md`, cantidad de pruebas en `CONTEXTO.md` y estado de la rúbrica en `DOCUMENTACION.md`.
 
-## Ajustes, correcciones y decisiones tomadas por mí sobre lo entregado por la IA
+### E3
+
+- **Diagnóstico:** la IA comparó el repositorio con la rúbrica E3 y las sesiones 17–24 y detectó que faltaban 3 de los 4 servicios (el login existía, pero solo en memoria; no había JSON, notificaciones ni configuración remota).
+- **`services/persistence.py`:** guardar/cargar todo el `Store` en `data.json` (fechas como ISO, escritura atómica con `.tmp`, respaldo si el JSON está corrupto, contadores de id que siguen desde el mayor guardado) y `tests/test_persistence.py`.
+- **`services/notifications.py`:** notificación local con plyer y permiso `POST_NOTIFICATIONS` en Android; disparada al publicar una oferta y al entrar un lector con ofertas por revisar.
+- **`services/remote_config.py` + `remote_config.json`:** lectura asíncrona con `UrlRequest` desde GitHub, `DEFAULTS` como respaldo sin conexión y validación de claves/tipos.
+- **Hash SHA-256 de contraseñas** en `store.py`, porque al persistir quedarían en texto plano en el JSON.
+- **Android:** `buildozer.spec`, certificados con `certifi` para que HTTPS funcione en el teléfono, y compilación del APK con Docker.
+- **Documentación:** secciones nuevas del `README.md` (servicios y dónde están, Android, dificultades) y la reorganización de este archivo en las 6 secciones pedidas.
+
+## 5. Ajustes
+
+### E2
 
 - Decidí **mantener el modelo de solicitud/oferta** tal como estaba (no agregar catálogo de vendedor), después de que la IA me explicara el trade-off.
 - Elegí yo el nombre final **"BookWho?"** en vez de las opciones que propuso la IA (Hallalibro, Bibliocaza, etc.).
@@ -58,7 +83,13 @@
 - Decidí reescribir con nuestras propias palabras el texto de la presentación, usando como base la versión corregida.
 - Hago yo los commits, después de revisar los cambios.
 
-## Reflexión personal
+### E3
+
+> **Por completar por el equipo:** qué revisaron, cambiaron o decidieron ustedes sobre lo que entregó la IA en la E3 (por ejemplo, qué eventos disparan la notificación, qué valor se lee por configuración remota, qué probaron en el teléfono).
+
+## 6. Reflexión en el uso de IA
+
+### E2
 
 Esta fue la primera vez que usé un asistente de IA de forma tan integrada al flujo de desarrollo, no solo para pedir código suelto sino para iterar sobre una app que ya existía. Lo que más me sirvió fue que la IA no se limitó a "hacer lo que pedí": cuando le pedí un cambio de color se dio cuenta sola de que había un bug real en las tarjetas del panel de administrador (KivyMD estaba ignorando los colores personalizados) y lo arregló antes de seguir. Eso me hizo entender que no basta con mirar la pantalla y decir "se ve bien", hay que entender por qué algo se ve como se ve.
 
@@ -67,3 +98,7 @@ También aprendí que la IA puede equivocarse de foco si uno no la corrige a tie
 Lo que más tuve que revisar por mi cuenta fueron las decisiones de producto: el nombre de la app, si agregábamos o no un catálogo para vendedores, y hasta qué nivel de precisión le poníamos a la ubicación. La IA proponía alternativas con sus ventajas y riesgos, pero la decisión final siempre fue mía, sobre todo pensando en el tiempo que quedaba antes del ensayo con el profesor.
 
 Mi mayor aprendizaje fue que usar IA bien no es "que te resuelva todo", sino tener claro qué le estoy pidiendo, por qué, y revisar el resultado en la app real antes de darlo por bueno. También me quedó claro que la parte más importante de esta evaluación (la fundamentación con usuarios reales) es algo que la IA no puede inventar por mí, y que la dejé pendiente a propósito para no caer en la tentación de rellenarla con datos que no existen.
+
+### E3
+
+> **Por completar por el equipo, con sus palabras:** qué les sirvió, qué les costó y qué aprendieron al integrar los servicios y llevar la app a Android.

@@ -5,6 +5,7 @@ Ejecutar:  python main.py
 Estilos/estructura visual: libros.kv
 Dominio, reglas y permisos: store.py
 Búsqueda de libros: books_api.py
+Servicios (JSON, notificaciones, config remota): services/
 """
 
 from kivy.utils import platform
@@ -17,8 +18,20 @@ if platform not in ("android", "ios"):
     Config.set("graphics", "height", "860")
 
 import os
+import sys
 import threading
+import types
 from datetime import datetime
+
+try:
+    import materialshapes.kivy_widget  # noqa: F401
+except ImportError:
+    # Android: materialshapes necesita pycairo, que no compila allí. KivyMD lo importa solo para
+    # FitImage (MDList lo carga), que esta app no usa: basta una clase base vacía.
+    _shape = types.ModuleType("materialshapes.kivy_widget")
+    _shape.MaterialShape = type("MaterialShape", (), {})
+    sys.modules["materialshapes"] = types.ModuleType("materialshapes")
+    sys.modules["materialshapes.kivy_widget"] = _shape
 
 from kivy.clock import Clock, mainthread
 from kivy.core.text import LabelBase
@@ -56,6 +69,7 @@ from books_api import (
     is_cover_cached,
     search_books,
 )
+from services import notifications, persistence, remote_config
 from locations import normalize_location_name, proximity_label, search_locations
 from store import (
     Condition,
@@ -768,6 +782,7 @@ class CreateOfferScreen(BaseScreen):
         )
         if offer:
             app.notify("¡Oferta publicada! El lector ya puede revisarla.")
+            notifications.send("Oferta publicada", "El lector recibirá tu oferta y podrá aceptarla.")
             app.go("seller_offers", reset_to="seller_home")
 
 
@@ -937,6 +952,7 @@ class AdminActivityScreen(BaseScreen):
 class DemoLibrosApp(MDApp):
     user = ObjectProperty(None, allownone=True)
     user_name = StringProperty("")
+    banner = StringProperty(remote_config.DEFAULTS["banner"])  # lo reemplaza la config remota
 
     HOME_BY_ROLE = {Role.READER: "reader_home", Role.SELLER: "seller_home", Role.ADMIN: "admin_home"}
 
@@ -953,13 +969,34 @@ class DemoLibrosApp(MDApp):
                 self.theme_cls.font_styles[style][role]["font-name"] = font
                 if font == "SourceSerif":
                     self.theme_cls.font_styles[style][role]["line-height"] = 1.15
-        self.store = build_demo_store(catalog_lookup)
+        # En Android la carpeta del código se reemplaza al actualizar el APK: el JSON va en user_data_dir.
+        data_dir = self.user_data_dir if platform == "android" else BASE_DIR
+        self.data_file = os.path.join(data_dir, "data.json")
+        self.store = persistence.load_store(self.data_file) or build_demo_store(catalog_lookup)
+        self.save()
         self.history: list[str] = []
         self.selected_book = None
         self.current_request_id = None
         self.current_offer_id = None
         Window.bind(on_keyboard=self._on_keyboard)
         return Builder.load_file(KV_FILE)
+
+    def on_start(self):
+        notifications.request_permission()
+        remote_config.fetch(self.apply_remote_config)
+
+    def apply_remote_config(self, config):
+        self.banner = config["banner"]
+
+    def save(self):
+        persistence.save_store(self.store, self.data_file)
+
+    def on_pause(self):  # Android puede cerrar la app en segundo plano sin llamar on_stop
+        self.save()
+        return True
+
+    def on_stop(self):
+        self.save()
 
     def _apply_brand_colors(self):
         from kivy.utils import get_color_from_hex as c
@@ -1000,6 +1037,11 @@ class DemoLibrosApp(MDApp):
         self.history = []
         self.root.transition.direction = "left"
         self.root.current = self.HOME_BY_ROLE[user.role]
+        if user.role == Role.READER:
+            n = sum(self.store.active_offer_count(r.id) for r in self.store.reader_requests(user)
+                    if r.status in RequestStatus.OPEN)
+            if n:
+                notifications.send("Tienes ofertas por revisar", f"{n} oferta(s) activa(s) en tus solicitudes.")
 
     def logout(self):
         self.user = None
@@ -1010,9 +1052,10 @@ class DemoLibrosApp(MDApp):
 
     # ----------------------------------------------------------- feedback
     def safe(self, fn, *args, **kwargs):
-        """Ejecuta un caso de uso y muestra los errores de negocio al usuario."""
+        """Ejecuta un caso de uso, guarda el JSON si funcionó y muestra los errores de negocio."""
         try:
             result = fn(*args, **kwargs)
+            self.save()
             return True if result is None else result
         except DomainError as exc:
             self.notify(str(exc))

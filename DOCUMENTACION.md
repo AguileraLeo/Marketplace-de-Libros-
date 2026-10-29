@@ -9,7 +9,7 @@ Documentos relacionados en este repositorio:
 - [`README.md`](README.md) — instalación rápida, cuentas de demo, capturas.
 - [`AGENTS.md`](AGENTS.md) — visión de producto y reglas de trabajo (fuente de verdad original).
 - [`CONTEXTO.md`](CONTEXTO.md) — estado del proyecto y cómo trabajar en equipo.
-- [`uso_ia.md`](uso_ia.md) — declaración de uso de Inteligencia Artificial.
+- [`USO_IA.md`](USO_IA.md) — declaración de uso de Inteligencia Artificial.
 
 ---
 
@@ -367,7 +367,7 @@ esta sesión se trabajó específicamente en:
 
 1. **Diagnóstico contra la rúbrica de evaluación** (E2): se detectó que la fundamentación
    UX/UI con evidencia de usuarios (30% de la nota) era el mayor riesgo, y que existe una
-   política de curso que exige un archivo `uso_ia.md` separado del README.
+   política de curso que exige un archivo `USO_IA.md` separado del README.
 2. **Nombre e identidad**: la app pasó de un genérico "App de libros" a **BookWho?**, con una
    marca propia (ícono de libro + insignia "?").
 3. **Corrección de un bug real**: las tarjetas de métricas del panel de administrador no
