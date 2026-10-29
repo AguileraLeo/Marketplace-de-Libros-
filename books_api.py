@@ -13,10 +13,16 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import ssl
 import threading
 import urllib.parse
 import urllib.request
 from typing import Callable, Optional
+
+import certifi
+
+# Android no trae certificados raíz: sin esto todo HTTPS falla y se usaría siempre el catálogo local.
+SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
 
 GOOGLE_BOOKS_URL = "https://www.googleapis.com/books/v1/volumes"
 OPEN_LIBRARY_URL = "https://openlibrary.org/search.json"
@@ -76,7 +82,7 @@ def download_and_cache_cover(
                 url,
                 headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"},
             )
-            with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+            with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS, context=SSL_CONTEXT) as resp:
                 data = resp.read()
                 if data and len(data) > 100:
                     with open(cache_path, "wb") as f:
@@ -223,7 +229,7 @@ def _get_json(url: str, params: dict) -> dict:
         f"{url}?{urllib.parse.urlencode(params)}",
         headers={"User-Agent": "demolibros-mvp/0.1"},
     )
-    with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS) as resp:
+    with urllib.request.urlopen(req, timeout=TIMEOUT_SECONDS, context=SSL_CONTEXT) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
