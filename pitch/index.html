@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BookWho? | Publica el libro que buscas y recibe ofertas</title>
+  <meta name="description" content="Deja de recorrer tiendas: publica el libro que buscas y los vendedores que lo tienen te envían una oferta. Compara precio, estado y cercanía, y coordina directo.">
+  <meta name="keywords" content="libros, marketplace libros, comprar libros usados, librerías chile, encontrar libros, BookWho">
+  
+  <!-- Open Graph / Redes Sociales -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="¿Quién tiene el libro que buscas? | BookWho?">
+  <meta property="og:description" content="Publica lo que buscas y recibe ofertas de quienes tienen el libro. Sin catálogos infinitos.">
+  <meta property="og:image" content="icon.svg">
+  <meta name="theme-color" content="#0E1214">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+
+  <!-- Tipografías Oficiales de BookWho? (Source Serif 4 + IBM Plex Sans) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400;1,8..60,600&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            // Paleta Warm Editorial aprobada en brand-and-motion-direction.md
+            'bw-bg': '#0E1214',           // Carbón Imprenta Profundo
+            'bw-surface': '#161D20',      // Pizarra Tinta
+            'bw-surface-2': '#20292E',    // Grafito Encuadernación
+            'bw-surface-3': '#29353B',
+            'bw-border': 'rgba(251, 250, 247, 0.09)',
+            'bw-border-light': 'rgba(251, 250, 247, 0.18)',
+            'bw-text': '#FBFAF7',         // Marfil Hoja de Libro
+            'bw-muted': '#9EADB5',        // Ceniza Neutro
+            'bw-muted-dark': '#6C7E87',
+            'terracotta': {
+              DEFAULT: '#D97757',         // Terracota de Guardas
+              hover: '#C56545',
+              glow: 'rgba(217, 119, 87, 0.25)',
+              subtle: 'rgba(217, 119, 87, 0.12)'
+            },
+            'forest': {
+              DEFAULT: '#2D6A4F',         // Verde Biblioteca Clásica
+              light: '#3F8865',
+              dark: '#1B4332',
+              glow: 'rgba(45, 106, 79, 0.25)'
+            },
+            'reading-amber': '#E5A93C',   // Ámbar Lámpara de Lectura
+            'cream': '#F6F1E7'            // Papel Marfil
+          },
+          fontFamily: {
+            serif: ['"Source Serif 4"', 'Georgia', 'serif'],
+            sans: ['"IBM Plex Sans"', '-apple-system', 'BlinkMacSystemFont', 'sans-serif']
+          },
+          boxShadow: {
+            'phone': '0 25px 60px -15px rgba(0, 0, 0, 0.9), 0 0 40px -10px rgba(217, 119, 87, 0.12)',
+            'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(251, 250, 247, 0.08)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* ===================================================================== */
+    /* MOTION DESIGN TOKENS & ESTILOS EDITORIALES                           */
+    /* ===================================================================== */
+    :root {
+      --ease-editorial: cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-out-smooth: cubic-bezier(0, 0, 0.2, 1);
+      --motion-fast: 150ms;
+      --motion-normal: 300ms;
+      --motion-flow: 500ms;
+      --motion-story: 800ms;
+    }
+
+    body {
+      background-color: #0E1214;
+      color: #FBFAF7;
+      font-family: 'IBM Plex Sans', sans-serif;
+      overflow-x: hidden;
+      selection-background-color: #D97757;
+      selection-color: #FBFAF7;
+    }
+
+    ::selection {
+      background: #D97757;
+      color: #FBFAF7;
+    }
+
+    h1, h2, h3, .font-serif-brand {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-optical-sizing: auto;
+      text-wrap: balance;
+    }
+
+    /* Tarjetas Glassmorphism Cálidas */
+    .glass-card {
+      background: rgba(22, 29, 32, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(251, 250, 247, 0.09);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45), inset 0 1px 0 0 rgba(251, 250, 247, 0.07);
+    }
+
+    .glass-card-hover {
+      transition: transform var(--motion-normal) var(--ease-editorial),
+                  border-color var(--motion-normal) var(--ease-editorial),
+                  box-shadow var(--motion-normal) var(--ease-editorial);
+    }
+    .glass-card-hover:hover {
+      transform: translateY(-4px);
+      border-color: rgba(217, 119, 87, 0.4);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 25px -5px rgba(217, 119, 87, 0.15);
+    }
+
+    /* Teléfono Chassis Realista con Bisel Editorial */
+    .phone-mockup-frame {
+      border: 9px solid #1E2630;
+      box-shadow: 0 0 0 1px rgba(251, 250, 247, 0.12),
+                  0 25px 60px -15px rgba(0, 0, 0, 0.95),
+                  0 0 35px -5px rgba(217, 119, 87, 0.15);
+      background-color: #000;
+    }
+
+    /* Ambient Glows Cálidos */
+    .radial-ambient {
+      background: radial-gradient(circle at 50% 30%, rgba(217, 119, 87, 0.12) 0%, rgba(45, 106, 79, 0.09) 45%, transparent 70%);
+    }
+    .radial-hero {
+      background: radial-gradient(circle at 65% 40%, rgba(217, 119, 87, 0.14) 0%, rgba(229, 169, 60, 0.08) 35%, transparent 70%);
+    }
+
+    /* Scroll Reveal Engine: Oculto por defecto progresivamente */
+    .reveal-on-scroll {
+      opacity: 0;
+      transform: translateY(22px);
+      transition: opacity var(--motion-story) var(--ease-editorial),
+                  transform var(--motion-story) var(--ease-editorial);
+      will-change: opacity, transform;
+    }
+    .reveal-on-scroll.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Stagger Delays automáticos para listas y rejillas */
+    .stagger-group > *:nth-child(1) { transition-delay: 50ms; }
+    .stagger-group > *:nth-child(2) { transition-delay: 130ms; }
+    .stagger-group > *:nth-child(3) { transition-delay: 210ms; }
+    .stagger-group > *:nth-child(4) { transition-delay: 290ms; }
+
+    /* Barra de progreso de lectura superior */
+    #scrollProgressBar {
+      transform-origin: 0% 50%;
+      will-change: transform;
+    }
+
+    /* Flotación ambiental serena para el teléfono */
+    @keyframes subtleFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-6px); }
+    }
+    .ambient-phone-float {
+      animation: subtleFloat 6s ease-in-out infinite;
+    }
+
+    /* Accesibilidad: Respeto estricto a prefers-reduced-motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, ::before, ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+      .reveal-on-scroll {
+        opacity: 1 !important;
+        transform: none !important;
+      }
+      .ambient-phone-float {
+        animation: none !important;
+      }
+      #scrollProgressBar {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-bw-bg text-bw-text antialiased min-h-screen flex flex-col">
+
+  <!-- Barra de progreso de lectura scroll-linked fija en la parte superior -->
+  <div id="scrollProgressBar" class="fixed top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-terracotta via-reading-amber to-forest z-50 transform scale-x-0 transition-transform duration-75"></div>
+
+  <!-- Barra de aviso de modo demo / evaluación -->
+  <aside aria-label="Aviso de demostración" class="bg-bw-surface-2 border-b border-bw-border text-xs py-2.5 px-4 text-center text-bw-muted relative z-40">
+    <div class="max-w-6xl mx-auto flex items-center justify-center gap-2 flex-wrap">
+      <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+      <span class="font-medium text-bw-text">Demostración en vivo:</span>
+      <span>Explora el flujo completo de BookWho? paso a paso.</span>
+      <button onclick="openDemoModal()" class="text-terracotta hover:text-bw-text font-semibold underline underline-offset-2 ml-1 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-terracotta rounded">
+        Ver demo interactiva &rarr;
+      </button>
+      <span class="text-bw-muted-dark hidden sm:inline" aria-hidden="true">&middot;</span>
+      <a href="#descargar-app" class="text-bw-muted hover:text-terracotta font-medium underline underline-offset-2 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-terracotta rounded">
+        Descargar app para Android
+      </a>
+    </div>
+  </aside>
+
+  <!-- NAVEGACIÓN SUPERIOR STICKY (Refinada con Identidad Editorial) -->
+  <header class="sticky top-0 z-40 bg-bw-bg/90 backdrop-blur-md border-b border-bw-border transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- Brand Logo & Lockup Armonizado -->
+      <a href="#" class="flex items-center gap-3.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta rounded-xl p-1" aria-label="BookWho? Inicio">
+        <!-- Pastilla institucional marfil con icono auténtico -->
+        <div class="relative w-10 h-10 rounded-xl overflow-hidden bg-cream p-1 shadow-md border border-white/10 group-hover:scale-105 transition-transform duration-200">
+          <img src="icon.svg" alt="BookWho? Isotipo" class="w-full h-full object-contain">
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-baseline">
+            <span class="font-serif text-2xl font-bold tracking-tight text-bw-text">BookWho</span>
+            <span class="font-serif text-2xl font-bold text-terracotta">?</span>
+          </div>
+          <span class="text-[10px] uppercase tracking-widest text-bw-muted -mt-1 font-medium">Marketplace de Libros</span>
+        </div>
+      </a>
+
+      <!-- Desktop Navigation Links con Microinteracción -->
+      <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-bw-muted">
+        <a href="#como-funciona" class="hover:text-bw-text transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-terracotta after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200">Cómo funciona</a>
+        <a href="#caracteristicas" class="hover:text-bw-text transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-terracotta after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200">Características</a>
+        <a href="#vendedores" class="hover:text-bw-text transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-terracotta after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200">Para vendedores</a>
+        <a href="#confianza" class="hover:text-bw-text transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-terracotta after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200">Confianza</a>
+        <a href="#faq" class="hover:text-bw-text transition-colors relative py-1 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-terracotta after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200">Preguntas</a>
+      </nav>
+
+      <!-- Desktop CTAs -->
+      <div class="hidden sm:flex items-center gap-4">
+        <a href="#vendedores" class="text-xs lg:text-sm font-medium text-bw-muted hover:text-bw-text px-3 py-2 transition-colors">
+          Tengo libros para vender &rarr;
+        </a>
+        <button onclick="openDemoModal()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-terracotta hover:bg-terracotta-hover text-bw-text font-semibold text-sm shadow-lg shadow-terracotta/20 hover:shadow-terracotta/30 transition-all duration-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <span>Ver la demo</span>
+        </button>
+      </div>
+
+      <!-- Mobile Menu Toggle Button -->
+      <button id="mobileMenuBtn" onclick="toggleMobileMenu()" class="md:hidden p-2.5 rounded-xl text-bw-muted hover:text-bw-text hover:bg-bw-surface border border-bw-border focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta" aria-label="Abrir menú">
+        <svg id="menuIconClosed" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <svg id="menuIconOpen" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobileMenu" class="hidden md:hidden bg-bw-surface/98 backdrop-blur-xl border-b border-bw-border px-6 py-6 transition-all">
+      <nav class="flex flex-col gap-4 text-base font-medium">
+        <a href="#como-funciona" onclick="toggleMobileMenu()" class="text-bw-muted hover:text-bw-text py-2">Cómo funciona</a>
+        <a href="#caracteristicas" onclick="toggleMobileMenu()" class="text-bw-muted hover:text-bw-text py-2">Características</a>
+        <a href="#vendedores" onclick="toggleMobileMenu()" class="text-bw-muted hover:text-bw-text py-2">Para vendedores</a>
+        <a href="#confianza" onclick="toggleMobileMenu()" class="text-bw-muted hover:text-bw-text py-2">Confianza</a>
+        <a href="#faq" onclick="toggleMobileMenu()" class="text-bw-muted hover:text-bw-text py-2">Preguntas frecuentes</a>
+        <hr class="border-bw-border my-2">
+        <a href="#vendedores" onclick="toggleMobileMenu()" class="text-terracotta hover:underline py-1">Tengo libros para vender &rarr;</a>
+        <button onclick="toggleMobileMenu(); openDemoModal()" class="w-full mt-2 inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-terracotta text-bw-text font-semibold text-center">
+          <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          <span>Ver la demo</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="flex-grow">
+
+    <!-- ================================================================= -->
+    <!-- 1. HERO SECTION (Motion Stagger Controlado & Micro-narrativa)     -->
+    <!-- ================================================================= -->
+    <section class="relative pt-12 pb-20 md:pt-20 md:pb-32 overflow-hidden radial-hero">
+      <!-- Resplandores ambientales cálidos de fondo -->
+      <div class="absolute top-1/4 right-5 sm:right-1/4 w-[28rem] h-[28rem] bg-terracotta/10 rounded-full blur-[90px] pointer-events-none"></div>
+      <div class="absolute top-1/3 left-10 w-80 h-80 bg-forest/15 rounded-full blur-[80px] pointer-events-none"></div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          
+          <!-- Columna Izquierda: Copywriting Hero con Stagger Inicial -->
+          <div class="lg:col-span-7 flex flex-col items-start text-left z-10">
+            
+            <!-- Antetítulo (Eyebrow Oficial) -->
+            <div class="reveal-on-scroll inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-terracotta/10 border border-terracotta/30 text-terracotta text-xs font-semibold tracking-wider uppercase mb-6 shadow-sm">
+              <span class="w-1.5 h-1.5 rounded-full bg-terracotta"></span>
+              <span>¿QUIÉN TIENE EL LIBRO QUE BUSCAS?</span>
+            </div>
+
+            <!-- Titular Principal (H1 Oficial) -->
+            <h1 class="reveal-on-scroll font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-bw-text leading-[1.12] mb-6">
+              Deja de recorrer tiendas. <br class="hidden sm:inline">
+              <span class="text-transparent bg-clip-text bg-gradient-to-r from-bw-text via-cream to-terracotta">Publica el libro que buscas.</span>
+            </h1>
+
+            <!-- Subtítulo (Oficial S1) -->
+            <p class="reveal-on-scroll text-lg sm:text-xl text-bw-muted leading-relaxed max-w-2xl mb-8">
+              BookWho? invierte la búsqueda: cuentas qué libro necesitas y los vendedores que lo tienen te envían una oferta. Comparas precio, estado y cercanía, y coordinas directo con la persona.
+            </p>
+
+            <!-- Fila de Botones y Llamados a la Acción -->
+            <div class="reveal-on-scroll flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto mb-4">
+              <button onclick="openDemoModal()" class="inline-flex items-center justify-center gap-2.5 px-7 py-3.5 rounded-xl bg-terracotta hover:bg-terracotta-hover text-bw-text font-semibold text-base shadow-xl shadow-terracotta/25 hover:shadow-terracotta/35 transition-all duration-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                <span>Ver la demo</span>
+              </button>
+              
+              <a href="#como-funciona" class="inline-flex items-center justify-center px-6 py-3.5 rounded-xl bg-bw-surface hover:bg-bw-surface-2 text-bw-text font-medium text-base border border-bw-border hover:border-bw-border-light transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta">
+                Cómo funciona
+              </a>
+            </div>
+
+            <!-- Enlace Terciario & Microcopy -->
+            <div class="reveal-on-scroll flex flex-col gap-2 pt-2">
+              <a href="#vendedores" class="inline-flex items-center gap-1.5 text-sm font-medium text-terracotta hover:text-bw-text transition-colors">
+                <span>Tengo libros para vender</span>
+                <span aria-hidden="true">&rarr;</span>
+              </a>
+              <p class="text-xs text-bw-muted-dark flex items-center gap-2">
+                <svg class="w-3.5 h-3.5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span>Demostración interactiva en vivo.</span>
+              </p>
+            </div>
+
+            <!-- Indicadores Rápidos de Confianza -->
+            <div class="reveal-on-scroll grid grid-cols-3 gap-6 pt-10 mt-8 border-t border-bw-border/60 w-full max-w-lg">
+              <div>
+                <span class="block font-serif text-2xl font-bold text-bw-text">107</span>
+                <span class="text-xs text-bw-muted uppercase tracking-wider">Comunas en Chile</span>
+              </div>
+              <div>
+                <span class="block font-serif text-2xl font-bold text-bw-text">API Real</span>
+                <span class="text-xs text-bw-muted uppercase tracking-wider">Google & OpenLib</span>
+              </div>
+              <div>
+                <span class="block font-serif text-2xl font-bold text-terracotta">Directo</span>
+                <span class="text-xs text-bw-muted uppercase tracking-wider">Sin comisiones</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Columna Derecha: Mockup de Smartphone con Flotación Suave -->
+          <div class="lg:col-span-5 flex justify-center lg:justify-end relative">
+            
+            <!-- Resplandor Cálido Difuminado -->
+            <div class="absolute -inset-6 bg-gradient-to-tr from-terracotta/20 via-reading-amber/10 to-forest/15 rounded-[3.5rem] blur-3xl opacity-70 pointer-events-none"></div>
+
+            <!-- Contenedor Marco de Teléfono Móvil con Micro-narrativa -->
+            <div class="relative w-full max-w-[300px] sm:max-w-[315px] group ambient-phone-float">
+              
+              <!-- Chasis de Smartphone -->
+              <div class="relative rounded-3xl sm:rounded-[2.75rem] border border-slate-700/60 bg-[#121620] p-3 shadow-2xl phone-mockup-frame">
+                
+                <!-- Botones Laterales Físicos Simulados -->
+                <div class="absolute -left-[12px] top-24 w-[3px] h-9 bg-slate-700 rounded-l"></div>
+                <div class="absolute -left-[12px] top-36 w-[3px] h-12 bg-slate-700 rounded-l"></div>
+                <div class="absolute -right-[12px] top-28 w-[3px] h-14 bg-slate-700 rounded-r"></div>
+
+                <!-- Pantalla Bisel Delgado (526:1056 nativo) -->
+                <div class="relative overflow-hidden rounded-[2rem] bg-black aspect-[526/1056] border border-slate-900 shadow-inner">
+                  
+                  <!-- Dynamic Island / Muesca Frontal -->
+                  <div class="absolute top-2.5 left-1/2 -translate-x-1/2 w-24 h-5 bg-black/90 rounded-full z-20 flex items-center justify-between px-2.5 border border-white/10 shadow-sm pointer-events-none">
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center">
+                      <div class="w-1 h-1 rounded-full bg-amber-950"></div>
+                    </div>
+                    <div class="w-2 h-2 rounded-full bg-emerald-500/80 animate-ping"></div>
+                  </div>
+
+                  <!-- GIF en Reproducción Fluida (usuario_aceptar_oferta.gif) -->
+                  <img 
+                    src="gif/usuario_aceptar_oferta.gif" 
+                    alt="Demostración interactiva BookWho?: Lector compara ofertas y acepta para revelar datos de contacto" 
+                    class="w-full h-full object-cover select-none"
+                    loading="eager"
+                  >
+
+                  <!-- Reflejo sutil de cristal editorial -->
+                  <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none z-10"></div>
+                </div>
+
+                <!-- Barra de Inicio Inferior (Home Indicator) -->
+                <div class="w-28 h-1 bg-slate-600/70 rounded-full mx-auto mt-2.5"></div>
+              </div>
+
+              <!-- Micro-Card 1: Oferta Cercana en Providencia -->
+              <div class="absolute -top-4 -left-8 hidden sm:flex items-center gap-3 p-3 rounded-2xl glass-card border border-bw-border shadow-xl z-20 transition-transform duration-300 hover:scale-105">
+                <div class="w-9 h-9 rounded-xl bg-forest/30 border border-forest/50 flex items-center justify-center text-emerald-400 font-bold text-xs">
+                  $
+                </div>
+                <div>
+                  <span class="block text-xs font-semibold text-bw-text">Oferta recibida</span>
+                  <span class="block text-[11px] text-emerald-400 font-mono">$12.000 · Usado excelente</span>
+                </div>
+              </div>
+
+              <!-- Micro-Card 2: Contacto Seguro Desbloqueado -->
+              <div class="absolute -bottom-5 -right-6 hidden sm:flex items-center gap-3 p-3 rounded-2xl glass-card border border-bw-border shadow-xl z-20 transition-transform duration-300 hover:scale-105">
+                <div class="w-9 h-9 rounded-xl bg-terracotta/20 border border-terracotta/40 flex items-center justify-center text-terracotta">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <div>
+                  <span class="block text-xs font-semibold text-bw-text">Contacto seguro</span>
+                  <span class="block text-[11px] text-bw-muted">Revelado al aceptar</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 2. SECCIÓN DEL PROBLEMA (Contadores de Cifras con Scroll Reveal)  -->
+    <!-- ================================================================= -->
+    <section id="problema" class="py-20 bg-bw-surface/40 border-y border-bw-border relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="max-w-3xl mx-auto text-center mb-16 reveal-on-scroll">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest/20 text-emerald-400 border border-forest/40 text-xs font-semibold uppercase tracking-wider mb-4">
+            LA REALIDAD DEL MERCADO
+          </div>
+          <!-- Titular Recomendado Oficial -->
+          <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-bw-text tracking-tight mb-5">
+            No falta el libro. <br class="hidden sm:inline">
+            <span class="text-terracotta">Falta saber quién lo tiene.</span>
+          </h2>
+          <p class="text-base sm:text-lg text-bw-muted leading-relaxed">
+            En una encuesta a 18 lectores y vendedores (septiembre de 2026), pudimos comprobar que la fricción no es la falta de ejemplares en el país, sino la falta de un canal directo donde encontrarse.
+          </p>
+        </div>
+
+        <!-- Métricas Reales con Contadores y Medidores Dinámicos -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 mb-16 stagger-group">
+          
+          <!-- Métrica 1: 94,4 % -->
+          <div class="reveal-on-scroll glass-card glass-card-hover rounded-2xl p-7 flex flex-col justify-between">
+            <div>
+              <div class="flex items-baseline gap-2 mb-2">
+                <span id="counterMetric1" class="font-serif text-5xl font-bold text-terracotta" data-target="94.4">0%</span>
+                <span class="text-xs text-bw-muted uppercase font-medium">17 de 18 encuestados</span>
+              </div>
+              <!-- Barra de proporción animada -->
+              <div class="w-full bg-bw-surface-2 rounded-full h-1.5 mb-4 overflow-hidden">
+                <div id="meterBar1" class="bg-terracotta h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%;"></div>
+              </div>
+              <h3 class="font-serif text-xl font-semibold text-bw-text mb-2">Buscaron un libro y no lo hallaron</h3>
+              <p class="text-sm text-bw-muted leading-relaxed">
+                Títulos descatalogados, ediciones específicas o libros de segunda mano que no figuran en las vitrinas de los grandes almacenes.
+              </p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-bw-border/60 text-xs text-bw-muted-dark font-medium italic">
+              "Ese libro parece no existir"
+            </div>
+          </div>
+
+          <!-- Métrica 2: 77,8 % -->
+          <div class="reveal-on-scroll glass-card glass-card-hover rounded-2xl p-7 flex flex-col justify-between">
+            <div>
+              <div class="flex items-baseline gap-2 mb-2">
+                <span id="counterMetric2" class="font-serif text-5xl font-bold text-bw-text" data-target="77.8">0%</span>
+                <span class="text-xs text-bw-muted uppercase font-medium">14 de 18 encuestados</span>
+              </div>
+              <!-- Barra de proporción animada -->
+              <div class="w-full bg-bw-surface-2 rounded-full h-1.5 mb-4 overflow-hidden">
+                <div id="meterBar2" class="bg-reading-amber h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%;"></div>
+              </div>
+              <h3 class="font-serif text-xl font-semibold text-bw-text mb-2">Pierden 15 min a más de una hora</h3>
+              <p class="text-sm text-bw-muted leading-relaxed">
+                Recorren tienda por tienda, preguntan en grupos de compraventa o caminan ferias enteras con un gasto excesivo de tiempo.
+              </p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-bw-border/60 text-xs text-bw-muted-dark font-medium italic">
+              "Se me va la tarde buscando"
+            </div>
+          </div>
+
+          <!-- Métrica 3: 100 % Demanda -->
+          <div class="reveal-on-scroll glass-card glass-card-hover rounded-2xl p-7 flex flex-col justify-between">
+            <div>
+              <div class="flex items-baseline gap-2 mb-2">
+                <span class="font-serif text-5xl font-bold text-emerald-400">100%</span>
+                <span class="text-xs text-bw-muted uppercase font-medium">Demanda lista</span>
+              </div>
+              <div class="w-full bg-bw-surface-2 rounded-full h-1.5 mb-4 overflow-hidden">
+                <div class="bg-emerald-400 h-full rounded-full w-full"></div>
+              </div>
+              <h3 class="font-serif text-xl font-semibold text-bw-text mb-2">La oferta está dispersa</h3>
+              <p class="text-sm text-bw-muted leading-relaxed">
+                Librerías de viejo, ferias y particulares tienen los libros en sus estantes, pero nadie sabe que los tienen porque no tienen catálogo online.
+              </p>
+            </div>
+            <div class="mt-6 pt-4 border-t border-bw-border/60 text-xs text-bw-muted-dark font-medium italic">
+              "Tengo libros que nadie ve"
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Cuadro de Contraste Fundamental -->
+        <div class="reveal-on-scroll glass-card rounded-2xl p-8 lg:p-10 border border-slate-700/60 max-w-4xl mx-auto bg-gradient-to-r from-bw-surface-2 to-bw-surface">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div class="border-b md:border-b-0 md:border-r border-bw-border pb-6 md:pb-0 md:pr-8">
+              <span class="text-xs uppercase font-semibold text-bw-muted-dark tracking-wider block mb-1">El modelo tradicional de catálogo</span>
+              <p class="font-serif text-xl text-bw-muted leading-snug">
+                Los catálogos te muestran lo que hay en stock. Si tu libro no está, tu búsqueda se detiene.
+              </p>
+            </div>
+            <div>
+              <span class="text-xs uppercase font-semibold text-terracotta tracking-wider block mb-1">El modelo BookWho?</span>
+              <p class="font-serif text-2xl text-bw-text font-bold leading-snug">
+                BookWho? te muestra <span class="text-terracotta underline decoration-terracotta/40 decoration-2 underline-offset-4">quién lo tiene</span>. La demanda se publica y la oferta responde.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 3. CÓMO FUNCIONA (3 Pasos Guiados con Línea de Conexión)         -->
+    <!-- ================================================================= -->
+    <section id="como-funciona" class="py-24 relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center max-w-3xl mx-auto mb-20 reveal-on-scroll">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-terracotta/10 text-terracotta border border-terracotta/30 text-xs font-semibold uppercase tracking-wider mb-4">
+            EL FLUJO PRINCIPAL
+          </div>
+          <!-- Titular Oficial -->
+          <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-bw-text tracking-tight mb-5">
+            Publicas una vez. Te responden. Coordinas.
+          </h2>
+          <p class="text-base sm:text-lg text-bw-muted">
+            Encontrar un libro deja de ser una recorrida agotadora y pasa a ser una respuesta concreta.
+          </p>
+        </div>
+
+        <!-- 3 Pasos con Conector Visual -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 relative stagger-group">
+          
+          <!-- Paso 1 -->
+          <div class="reveal-on-scroll glass-card glass-card-hover rounded-3xl p-8 relative flex flex-col border-t-2 border-t-terracotta">
+            <div class="w-12 h-12 rounded-2xl bg-terracotta/15 border border-terracotta/30 text-terracotta font-serif text-2xl font-bold flex items-center justify-center mb-6 shadow-sm">
+              1
+            </div>
+            <span class="text-xs font-semibold uppercase text-terracotta tracking-wider mb-1">Lector</span>
+            <h3 class="font-serif text-2xl font-bold text-bw-text mb-3">Publica tu búsqueda</h3>
+            <p class="text-sm text-bw-muted leading-relaxed mb-6 flex-grow">
+              Busca el libro mediante Google Books o Open Library para obtener portadas y datos exactos. Fija tu comuna, condición aceptada (nuevo o usado) y tu presupuesto máximo.
+            </p>
+            <div class="p-3.5 rounded-xl bg-bw-surface-2 border border-bw-border text-xs text-bw-muted flex items-center gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>Edición real garantizada con ISBN</span>
+            </div>
+          </div>
+
+          <!-- Paso 2 -->
+          <div class="reveal-on-scroll glass-card glass-card-hover rounded-3xl p-8 relative flex flex-col border-t-2 border-t-emerald-500">
+            <div class="w-12 h-12 rounded-2xl bg-forest/20 border border-forest/40 text-emerald-400 font-serif text-2xl font-bold flex items-center justify-center mb-6 shadow-sm">
+              2
+            </div>
+            <span class="text-xs font-semibold uppercase text-emerald-400 tracking-wider mb-1">Vendedor</span>
+            <h3 class="font-serif text-2xl font-bold text-bw-text mb-3">Recibe ofertas reales</h3>
+            <p class="text-sm text-bw-muted leading-relaxed mb-6 flex-grow">
+              Los vendedores y librerías que tienen el ejemplar en sus estantes revisan el feed de solicitudes cercanas y envían su oferta con precio claro y descripción del estado del libro.
+            </p>
+            <div class="p-3.5 rounded-xl bg-bw-surface-2 border border-bw-border text-xs text-bw-muted flex items-center gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-terracotta"></span>
+              <span>Sin inventario previo que cargar</span>
+            </div>
+          </div>
+
+          <!-- Paso 3 -->
+          <div class="reveal-on-scroll glass-card glass-card-hover rounded-3xl p-8 relative flex flex-col border-t-2 border-t-reading-amber">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-500/30 text-reading-amber font-serif text-2xl font-bold flex items-center justify-center mb-6 shadow-sm">
+              3
+            </div>
+            <span class="text-xs font-semibold uppercase text-reading-amber tracking-wider mb-1">Conexión</span>
+            <h3 class="font-serif text-2xl font-bold text-bw-text mb-3">Elige y coordina</h3>
+            <p class="text-sm text-bw-muted leading-relaxed mb-6 flex-grow">
+              Comparas las ofertas recibidas en una sola pantalla. Cuando aceptas la que más te conviene, se revelan los datos de contacto para coordinar la entrega en persona o por envío.
+            </p>
+            <div class="p-3.5 rounded-xl bg-bw-surface-2 border border-bw-border text-xs text-bw-muted flex items-center gap-2.5">
+              <span class="w-2 h-2 rounded-full bg-reading-amber"></span>
+              <span>Contacto protegido hasta aceptar</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Banner de llamada intermedia -->
+        <div class="mt-14 text-center reveal-on-scroll">
+          <button onclick="openDemoModal()" class="inline-flex items-center gap-2 text-sm font-semibold text-terracotta hover:text-bw-text transition-colors">
+            <span>¿Quieres ver este flujo en acción con la app real?</span>
+            <span class="underline underline-offset-4">Abrir demostración en video &rarr;</span>
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 4. CARACTERÍSTICAS: ESCAPARATE INTERACTIVO (Solución a P2)       -->
+    <!-- ================================================================= -->
+    <section id="caracteristicas" class="py-24 bg-bw-surface/30 border-t border-bw-border relative">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="max-w-3xl mx-auto text-center mb-16 reveal-on-scroll">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest/20 text-emerald-400 border border-forest/30 text-xs font-semibold uppercase tracking-wider mb-4">
+            PILAR DE PRODUCTO
+          </div>
+          <!-- Titular Oficial Sección 3.1 -->
+          <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-bw-text tracking-tight mb-5">
+            Menos búsqueda. Más encuentro.
+          </h2>
+          <p class="text-base sm:text-lg text-bw-muted">
+            Los cuatro módulos esenciales diseñados para conectar la necesidad exacta del lector con la persona que tiene el libro.
+          </p>
+        </div>
+
+        <!-- Escaparate Interactivo: 4 Módulos Sincronizados con Visor Central -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          <!-- Lista Interactiva de Características (Columna Izquierda 7 cols) -->
+          <div class="lg:col-span-7 space-y-4">
+            
+            <!-- Feature Card 01 -->
+            <div id="featureCard0" onclick="selectShowcaseFeature(0)" class="cursor-pointer glass-card rounded-2xl p-6 border-l-4 border-l-emerald-500 transition-all duration-300 hover:bg-bw-surface-2/90 active:scale-[0.99] ring-1 ring-white/5 feature-card-active">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">BÚSQUEDA CON DATOS REALES</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">01</span>
+              </div>
+              <h3 class="font-serif text-xl sm:text-2xl font-bold text-bw-text mb-2">
+                01 · La edición exacta, no una parecida
+              </h3>
+              <p class="text-sm text-bw-muted leading-relaxed mb-3">
+                Busca por título, autor o ISBN y elige entre portadas y ediciones reales. Los datos vienen de Google Books y Open Library, así que no escribes una ficha a mano ni dudas si es el ejemplar correcto.
+              </p>
+              <div class="text-xs font-medium text-emerald-400 flex items-center gap-2">
+                <span>Beneficio: Encuentras el libro correcto sin escribir una ficha.</span>
+              </div>
+            </div>
+
+            <!-- Feature Card 02 -->
+            <div id="featureCard1" onclick="selectShowcaseFeature(1)" class="cursor-pointer glass-card rounded-2xl p-6 border-l-4 border-l-transparent hover:border-l-terracotta transition-all duration-300 hover:bg-bw-surface-2/90 active:scale-[0.99] ring-1 ring-white/5">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-terracotta">LA SOLICITUD</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-terracotta/20 text-terracotta font-mono">02</span>
+              </div>
+              <h3 class="font-serif text-xl sm:text-2xl font-bold text-bw-text mb-2">
+                02 · Tú pones las condiciones
+              </h3>
+              <p class="text-sm text-bw-muted leading-relaxed mb-3">
+                Fija un precio máximo si quieres, el estado que aceptas, tu comuna y cómo prefieres recibir el libro. Tu búsqueda se publica con tus reglas, y los vendedores saben exactamente qué necesitas.
+              </p>
+              <div class="text-xs font-medium text-terracotta flex items-center gap-2">
+                <span>Beneficio: Pides lo que necesitas, no lo que hay.</span>
+              </div>
+            </div>
+
+            <!-- Feature Card 03 -->
+            <div id="featureCard2" onclick="selectShowcaseFeature(2)" class="cursor-pointer glass-card rounded-2xl p-6 border-l-4 border-l-transparent hover:border-l-reading-amber transition-all duration-300 hover:bg-bw-surface-2/90 active:scale-[0.99] ring-1 ring-white/5">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-reading-amber">LAS OFERTAS</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-reading-amber font-mono">03</span>
+              </div>
+              <h3 class="font-serif text-xl sm:text-2xl font-bold text-bw-text mb-2">
+                03 · Decide con todo a la vista
+              </h3>
+              <p class="text-sm text-bw-muted leading-relaxed mb-3">
+                Cada oferta llega con precio, estado del libro y quién lo vende. Comparas en una sola vista y aceptas cuando te convence: el contacto del vendedor aparece solo en ese momento.
+              </p>
+              <div class="text-xs font-medium text-reading-amber flex items-center gap-2">
+                <span>Beneficio: Eliges con información real; si desistes, las demás ofertas siguen activas.</span>
+              </div>
+            </div>
+
+            <!-- Feature Card 04 -->
+            <div id="featureCard3" onclick="selectShowcaseFeature(3)" class="cursor-pointer glass-card rounded-2xl p-6 border-l-4 border-l-transparent hover:border-l-emerald-400 transition-all duration-300 hover:bg-bw-surface-2/90 active:scale-[0.99] ring-1 ring-white/5">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">PARA QUIEN TIENE LOS LIBROS</span>
+                <span class="text-xs px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">04</span>
+              </div>
+              <h3 class="font-serif text-xl sm:text-2xl font-bold text-bw-text mb-2">
+                04 · Vende sin mantener un catálogo
+              </h3>
+              <p class="text-sm text-bw-muted leading-relaxed mb-3">
+                Mira las solicitudes abiertas, filtra por comuna, presupuesto y condición, y ofrece el libro que ya tienes. Sin inventario que actualizar ni avisos que nadie ve.
+              </p>
+              <div class="text-xs font-medium text-emerald-400 flex items-center gap-2">
+                <span>Beneficio: Cada solicitud ya está buscando lo que tienes cerca de ti.</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Visor Smartphone Sincronizado (Columna Derecha 5 cols) -->
+          <div class="lg:col-span-5 flex flex-col items-center sticky top-28">
+            
+            <!-- Etiqueta de contexto activa -->
+            <div class="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-bw-surface-2 border border-bw-border text-xs text-bw-text">
+              <span id="showcaseIndicatorDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span id="showcaseIndicatorText" class="font-medium">Demostración: Búsqueda exacta de edición</span>
+            </div>
+
+            <!-- Smartphone Frame con GIF interactivo -->
+            <div class="relative w-full max-w-[280px] sm:max-w-[300px]">
+              <div class="absolute -inset-4 bg-terracotta/10 rounded-[3rem] blur-2xl opacity-60 pointer-events-none"></div>
+              
+              <div class="relative rounded-3xl sm:rounded-[2.5rem] border border-slate-700/60 bg-[#121620] p-2.5 shadow-2xl phone-mockup-frame">
+                
+                <!-- Pantalla Bisel Delgado -->
+                <div class="relative overflow-hidden rounded-[1.9rem] bg-black aspect-[526/1056] border border-slate-900">
+                  <div class="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-4 bg-black/90 rounded-full z-20 flex items-center justify-center">
+                    <div class="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
+                  </div>
+                  
+                  <!-- Visor GIF Dinámico -->
+                  <img id="showcaseGif" src="gif/usuario_buscar_libro.gif" alt="Demostración de característica" class="w-full h-full object-cover transition-opacity duration-300" loading="lazy">
+                  
+                  <!-- Reflejo cristal -->
+                  <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none z-10"></div>
+                </div>
+                
+                <div class="w-24 h-1 bg-slate-600/70 rounded-full mx-auto mt-2"></div>
+              </div>
+
+              <!-- Selector de Pestañas Rápidas para móvil -->
+              <div class="flex items-center justify-center gap-2 mt-4 text-xs font-medium">
+                <button onclick="selectShowcaseFeature(0)" id="dotBtn0" class="w-2.5 h-2.5 rounded-full bg-emerald-400 transition-all" aria-label="Ver característica 1"></button>
+                <button onclick="selectShowcaseFeature(1)" id="dotBtn1" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-all" aria-label="Ver característica 2"></button>
+                <button onclick="selectShowcaseFeature(2)" id="dotBtn2" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-all" aria-label="Ver característica 3"></button>
+                <button onclick="selectShowcaseFeature(3)" id="dotBtn3" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-all" aria-label="Ver característica 4"></button>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 5. SECCIÓN VENDEDORES & SIMULADOR DE DEMANDA EN VIVO (Solución P3)-->
+    <!-- ================================================================= -->
+    <section id="vendedores" class="py-24 relative overflow-hidden bg-gradient-to-b from-bw-surface/60 to-bw-bg border-t border-bw-border">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="glass-card rounded-3xl p-8 sm:p-12 lg:p-16 border border-slate-700/60 relative reveal-on-scroll">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+            
+            <div class="lg:col-span-7">
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-terracotta/15 text-terracotta border border-terracotta/30 text-xs font-semibold uppercase tracking-wider mb-4">
+                OPORTUNIDAD PARA VENDEDORES
+              </div>
+              <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-bw-text mb-4">
+                ¿Tienes libros? Alguien ya los está buscando.
+              </h2>
+              <p class="text-base sm:text-lg text-bw-muted mb-8 leading-relaxed max-w-2xl">
+                Deja de publicar avisos que se pierden en grupos de redes sociales. En BookWho? no esperas a que descubran tu catálogo: respondes directamente a solicitudes con lectores listos para comprar cerca de ti.
+              </p>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
+                <div class="flex items-start gap-3.5">
+                  <div class="w-8 h-8 rounded-lg bg-forest/20 text-emerald-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-bw-text text-sm">Filtro por Comuna</h4>
+                    <p class="text-xs text-bw-muted mt-0.5">Identifica solicitudes en tu misma ciudad o comuna para entregas a pie.</p>
+                  </div>
+                </div>
+
+                <div class="flex items-start gap-3.5">
+                  <div class="w-8 h-8 rounded-lg bg-terracotta/20 text-terracotta flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  </div>
+                  <div>
+                    <h4 class="font-semibold text-bw-text text-sm">Cero Comisión</h4>
+                    <p class="text-xs text-bw-muted mt-0.5">Acuerdas el pago directamente con el comprador. El 100% es tuyo.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-4">
+                <button onclick="openDemoModal('vendedor')" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-terracotta hover:bg-terracotta-hover text-bw-text font-semibold text-sm shadow-lg shadow-terracotta/20 transition-all">
+                  <span>Ver solicitudes abiertas</span>
+                  <span>&rarr;</span>
+                </button>
+                <span class="text-xs text-bw-muted">O explora la vista de vendedor en la demo</span>
+              </div>
+            </div>
+
+            <!-- Simulador de Solicitudes en Vivo (Feed Chileno Real) -->
+            <div class="lg:col-span-5 bg-bw-surface-2/90 rounded-2xl p-6 border border-bw-border shadow-inner">
+              <div class="flex items-center justify-between pb-3 border-b border-bw-border mb-4">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span class="text-xs font-semibold uppercase tracking-wider text-bw-text">Solicitudes esperando oferta</span>
+                </div>
+                <span class="text-[11px] text-terracotta font-mono font-medium">107 comunas</span>
+              </div>
+
+              <!-- 3 Solicitudes de Ejemplo Reales -->
+              <div class="space-y-3 text-xs">
+                
+                <div class="p-3 rounded-xl bg-bw-surface border border-bw-border hover:border-terracotta/40 transition-colors">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <span class="font-serif font-bold text-sm text-bw-text block">El Hobbit</span>
+                      <span class="text-bw-muted text-[11px]">J.R.R. Tolkien · Providencia</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-forest/20 text-emerald-400 font-mono font-bold">$15.000</span>
+                  </div>
+                  <div class="mt-2 flex items-center justify-between text-[11px] text-bw-muted-dark">
+                    <span>Acepta: Usado o Nuevo</span>
+                    <span class="text-terracotta font-medium hover:underline cursor-pointer" onclick="openDemoModal('vendedor')">Ofrecer libro &rarr;</span>
+                  </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-bw-surface border border-bw-border hover:border-terracotta/40 transition-colors">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <span class="font-serif font-bold text-sm text-bw-text block">Cien años de soledad</span>
+                      <span class="text-bw-muted text-[11px]">G. García Márquez · Concepción</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-forest/20 text-emerald-400 font-mono font-bold">$12.000</span>
+                  </div>
+                  <div class="mt-2 flex items-center justify-between text-[11px] text-bw-muted-dark">
+                    <span>Acepta: Cualquiera</span>
+                    <span class="text-terracotta font-medium hover:underline cursor-pointer" onclick="openDemoModal('vendedor')">Ofrecer libro &rarr;</span>
+                  </div>
+                </div>
+
+                <div class="p-3 rounded-xl bg-bw-surface border border-bw-border hover:border-terracotta/40 transition-colors">
+                  <div class="flex items-start justify-between gap-2">
+                    <div>
+                      <span class="font-serif font-bold text-sm text-bw-text block">1984</span>
+                      <span class="text-bw-muted text-[11px]">George Orwell · Valparaíso</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded bg-forest/20 text-emerald-400 font-mono font-bold">$10.000</span>
+                  </div>
+                  <div class="mt-2 flex items-center justify-between text-[11px] text-bw-muted-dark">
+                    <span>Acepta: Usado bueno</span>
+                    <span class="text-terracotta font-medium hover:underline cursor-pointer" onclick="openDemoModal('vendedor')">Ofrecer libro &rarr;</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-bw-border text-[11px] text-bw-muted flex items-center justify-between">
+                <span>Responde en menos de 1 minuto</span>
+                <span class="text-terracotta font-medium">Trato directo y sin comisiones</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 6. FRANJA DE CONFIANZA Y SEGURIDAD                               -->
+    <!-- ================================================================= -->
+    <section id="confianza" class="py-24 relative border-t border-bw-border">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="max-w-3xl mx-auto text-center mb-16 reveal-on-scroll">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest/20 text-emerald-400 border border-forest/30 text-xs font-semibold uppercase tracking-wider mb-4">
+            SEGURIDAD Y PRIVACIDAD
+          </div>
+          <!-- Titular Oficial Sección 3.6 -->
+          <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-bw-text tracking-tight mb-5">
+            La confianza también se diseña
+          </h2>
+          <p class="text-base sm:text-lg text-bw-muted">
+            Protegemos la información sensible y aseguramos que el trato sea predecible y seguro en cada etapa.
+          </p>
+        </div>
+
+        <!-- Los 3 Pilares Oficiales de Confianza -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16 stagger-group">
+          
+          <div class="reveal-on-scroll glass-card rounded-2xl p-8 border border-slate-700/60">
+            <div class="w-12 h-12 rounded-xl bg-terracotta/15 text-terracotta flex items-center justify-center mb-6">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            </div>
+            <h3 class="font-serif text-xl font-bold text-bw-text mb-3">Tu contacto, bajo control</h3>
+            <p class="text-sm text-bw-muted leading-relaxed">
+              El teléfono, el correo y el punto de encuentro se revelan únicamente cuando aceptas coordinar con el vendedor. Antes de eso, tus datos personales no están expuestos.
+            </p>
+          </div>
+
+          <div class="reveal-on-scroll glass-card rounded-2xl p-8 border border-slate-700/60">
+            <div class="w-12 h-12 rounded-xl bg-forest/20 text-emerald-400 flex items-center justify-center mb-6">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            </div>
+            <h3 class="font-serif text-xl font-bold text-bw-text mb-3">Moderación con motivo</h3>
+            <p class="text-sm text-bw-muted leading-relaxed">
+              El equipo administrador cuenta con panel para supervisar publicaciones, suspender cuentas inapropiadas y registrar motivos de cancelación para una comunidad respetuosa.
+            </p>
+          </div>
+
+          <div class="reveal-on-scroll glass-card rounded-2xl p-8 border border-slate-700/60">
+            <div class="w-12 h-12 rounded-xl bg-amber-500/15 text-reading-amber flex items-center justify-center mb-6">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            </div>
+            <h3 class="font-serif text-xl font-bold text-bw-text mb-3">Todo a la vista</h3>
+            <p class="text-sm text-bw-muted leading-relaxed">
+              Cada solicitud y cada oferta muestran su estado exacto (Publicada, Con ofertas, Aceptada, Resuelta). Nada de transiciones fantasma ni acuerdos ambiguos.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Matriz de Transparencia: Lo que BookWho? hace y no hace -->
+        <div class="reveal-on-scroll glass-card rounded-3xl p-8 lg:p-10 border border-bw-border max-w-4xl mx-auto">
+          <h4 class="font-serif text-xl font-bold text-bw-text mb-6 text-center">Transparencia sobre el alcance actual</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+            <div class="space-y-3">
+              <div class="flex items-start gap-2.5">
+                <span class="text-emerald-400 font-bold">&check;</span>
+                <span class="text-bw-muted"><strong class="text-bw-text">Conexión directa:</strong> Conectamos a quien necesita el libro con quien lo tiene.</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-emerald-400 font-bold">&check;</span>
+                <span class="text-bw-muted"><strong class="text-bw-text">Datos verificados:</strong> Títulos con ISBN y edición respaldada por APIs.</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-emerald-400 font-bold">&check;</span>
+                <span class="text-bw-muted"><strong class="text-bw-text">Trato libre:</strong> Tú decides con quién hacer trato y en qué condiciones.</span>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <div class="flex items-start gap-2.5">
+                <span class="text-terracotta font-bold">&bull;</span>
+                <span class="text-bw-muted"><strong class="text-bw-text">Pagos:</strong> La compra y pago se coordinan directamente entre ambas partes fuera de la app.</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-terracotta font-bold">&bull;</span>
+                <span class="text-bw-muted"><strong class="text-bw-text">Envíos:</strong> No gestionamos camiones de logística; acuerdan entrega presencial o courier.</span>
+              </div>
+              <div class="flex items-start gap-2.5">
+                <span class="text-terracotta font-bold">&bull;</span>
+                <span class="text-bw-muted"><strong class="text-bw-text">Sin inventario obligatorio:</strong> Los vendedores no requieren cargar catálogos masivos.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 7. DESCARGA DE LA DEMO PARA ANDROID (CTA de instalación)         -->
+    <!-- ================================================================= -->
+    <section id="descargar-app" class="py-24 relative border-t border-bw-border overflow-hidden">
+      <!-- Resplandores ambientales cálidos de fondo -->
+      <div class="absolute top-10 -right-20 w-[26rem] h-[26rem] bg-terracotta/10 rounded-full blur-[90px] pointer-events-none"></div>
+      <div class="absolute -bottom-16 -left-16 w-80 h-80 bg-forest/15 rounded-full blur-[80px] pointer-events-none"></div>
+
+      <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+
+        <div class="reveal-on-scroll glass-card rounded-3xl border border-slate-700/60 p-8 sm:p-10 lg:p-12 bg-gradient-to-br from-bw-surface-2/80 to-bw-surface/60">
+
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+
+            <!-- Columna Izquierda: Invitación y Pasos de Instalación -->
+            <div class="lg:col-span-7">
+
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-terracotta/10 text-terracotta border border-terracotta/30 text-xs font-semibold uppercase tracking-wider mb-4">
+                DEMO PARA ANDROID
+              </div>
+
+              <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-bw-text tracking-tight mb-4">
+                Pruébala en tu teléfono <span class="text-terracotta">ahora mismo.</span>
+              </h2>
+
+              <p class="text-base sm:text-lg text-bw-muted leading-relaxed mb-8 max-w-2xl">
+                Descarga el APK de BookWho? y recorre el flujo completo con tus propios dedos: buscar el libro, publicar la solicitud, ofertar y aceptar la oferta. Sin registro ni configuración, con datos de ejemplo.
+              </p>
+
+              <!-- Pasos de Instalación -->
+              <ol class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 stagger-group">
+                <li class="reveal-on-scroll p-4 rounded-xl bg-bw-surface-2/70 border border-bw-border">
+                  <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-terracotta/15 border border-terracotta/30 text-terracotta font-serif text-sm font-bold mb-2">1</span>
+                  <span class="block text-sm font-semibold text-bw-text mb-1">Descarga el APK</span>
+                  <span class="block text-xs text-bw-muted leading-relaxed">Un archivo de 25,4 MB, directo desde GitHub.</span>
+                </li>
+                <li class="reveal-on-scroll p-4 rounded-xl bg-bw-surface-2/70 border border-bw-border">
+                  <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-terracotta/15 border border-terracotta/30 text-terracotta font-serif text-sm font-bold mb-2">2</span>
+                  <span class="block text-sm font-semibold text-bw-text mb-1">Ábrelo en tu teléfono</span>
+                  <span class="block text-xs text-bw-muted leading-relaxed">Desde Notificaciones o la app Archivos.</span>
+                </li>
+                <li class="reveal-on-scroll p-4 rounded-xl bg-bw-surface-2/70 border border-bw-border">
+                  <span class="flex items-center justify-center w-7 h-7 rounded-lg bg-terracotta/15 border border-terracotta/30 text-terracotta font-serif text-sm font-bold mb-2">3</span>
+                  <span class="block text-sm font-semibold text-bw-text mb-1">Permite la instalación</span>
+                  <span class="block text-xs text-bw-muted leading-relaxed">Android la autoriza desde el navegador de origen.</span>
+                </li>
+              </ol>
+
+              <p class="text-xs text-bw-muted-dark leading-relaxed max-w-2xl">
+                Es una build de demostración académica: Android mostrará el aviso habitual por no venir de Play Store. Todos los libros, ofertas y contactos del APK son ficticios.
+              </p>
+
+            </div>
+
+            <!-- Columna Derecha: Tarjeta de Descarga -->
+            <div class="lg:col-span-5">
+              <div class="rounded-2xl bg-bw-surface-2/90 border border-bw-border p-6 shadow-inner">
+
+                <div class="flex items-center justify-between pb-3 border-b border-bw-border mb-5">
+                  <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span class="text-xs font-semibold uppercase tracking-wider text-bw-text">Build v1.0 disponible</span>
+                  </div>
+                  <span class="text-[11px] text-terracotta font-mono font-medium">25,4 MB</span>
+                </div>
+
+                <a
+                  href="https://github.com/AguileraLeo/Marketplace-de-Libros-/releases/download/v1.0/bookwho.apk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="w-full inline-flex items-center justify-center gap-3 px-6 py-4 rounded-xl bg-terracotta hover:bg-terracotta-hover text-bw-text font-semibold text-base shadow-xl shadow-terracotta/25 hover:shadow-terracotta/35 transition-all duration-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                >
+                  <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+                  <span>Descargar APK</span>
+                </a>
+
+                <p class="mt-4 text-[11px] text-bw-muted text-center leading-relaxed">
+                  Android &middot; Descarga directa desde GitHub Releases
+                </p>
+
+                <div class="mt-4 pt-4 border-t border-bw-border text-center">
+                  <button onclick="openDemoModal()" class="text-xs font-medium text-bw-muted hover:text-bw-text transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-terracotta rounded">
+                    ¿Prefieres verla primero en el navegador? &rarr;
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 8. PREGUNTAS FRECUENTES (FAQ Acordeón Fluido & Accesible)        -->
+    <!-- ================================================================= -->
+    <section id="faq" class="py-24 bg-bw-surface/30 border-t border-bw-border">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div class="text-center mb-16 reveal-on-scroll">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-forest/20 text-emerald-400 border border-forest/30 text-xs font-semibold uppercase tracking-wider mb-4">
+            PREGUNTAS FRECUENTES
+          </div>
+          <h2 class="font-serif text-3xl sm:text-4xl font-bold text-bw-text tracking-tight mb-4">
+            Respuestas honestas y directas
+          </h2>
+          <p class="text-base text-bw-muted">
+            Resolvemos las dudas más comunes sobre la dinámica de BookWho? y el alcance del MVP.
+          </p>
+        </div>
+
+        <div class="space-y-4" id="faqAccordion">
+          
+          <!-- FAQ 1 -->
+          <details class="reveal-on-scroll group glass-card rounded-2xl border border-bw-border overflow-hidden transition-all duration-200">
+            <summary class="flex items-center justify-between p-6 cursor-pointer text-base font-semibold text-bw-text group-hover:text-terracotta transition-colors list-none select-none">
+              <span>1. ¿La plataforma vende los libros?</span>
+              <span class="ml-4 flex-shrink-0 text-bw-muted group-open:rotate-180 transition-transform duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-sm text-bw-muted leading-relaxed border-t border-bw-border/50 pt-4">
+              No. BookWho? es un punto de encuentro que conecta la demanda con la oferta. La compraventa y la entrega se coordinan directamente entre el lector y el vendedor.
+            </div>
+          </details>
+
+          <!-- FAQ 2 -->
+          <details class="reveal-on-scroll group glass-card rounded-2xl border border-bw-border overflow-hidden transition-all duration-200">
+            <summary class="flex items-center justify-between p-6 cursor-pointer text-base font-semibold text-bw-text group-hover:text-terracotta transition-colors list-none select-none">
+              <span>2. ¿Cómo pago por el libro?</span>
+              <span class="ml-4 flex-shrink-0 text-bw-muted group-open:rotate-180 transition-transform duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-sm text-bw-muted leading-relaxed border-t border-bw-border/50 pt-4">
+              Fuera de la app, directo con el vendedor. Esta versión no procesa pagos con tarjeta ni cobra comisiones sobre la transacción. Ambas partes eligen si pagan en efectivo, transferencia u otro medio.
+            </div>
+          </details>
+
+          <!-- FAQ 3 -->
+          <details class="reveal-on-scroll group glass-card rounded-2xl border border-bw-border overflow-hidden transition-all duration-200">
+            <summary class="flex items-center justify-between p-6 cursor-pointer text-base font-semibold text-bw-text group-hover:text-terracotta transition-colors list-none select-none">
+              <span>3. ¿Cómo sé con quién hablo antes de aceptar?</span>
+              <span class="ml-4 flex-shrink-0 text-bw-muted group-open:rotate-180 transition-transform duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-sm text-bw-muted leading-relaxed border-t border-bw-border/50 pt-4">
+              Cada oferta muestra el precio propuesto, el estado físico del libro y las notas del vendedor. Por privacidad mutua, los datos directos (teléfono, correo o punto de encuentro) se revelan una vez que aceptas la oferta.
+            </div>
+          </details>
+
+          <!-- FAQ 4 -->
+          <details class="reveal-on-scroll group glass-card rounded-2xl border border-bw-border overflow-hidden transition-all duration-200">
+            <summary class="flex items-center justify-between p-6 cursor-pointer text-base font-semibold text-bw-text group-hover:text-terracotta transition-colors list-none select-none">
+              <span>4. ¿Puedo vender si soy un lector particular?</span>
+              <span class="ml-4 flex-shrink-0 text-bw-muted group-open:rotate-180 transition-transform duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-sm text-bw-muted leading-relaxed border-t border-bw-border/50 pt-4">
+              Sí. BookWho? está diseñado para que cualquier persona con libros en su hogar pueda responder a solicitudes abiertas sin necesidad de mantener un catálogo ni subir fotos previas.
+            </div>
+          </details>
+
+          <!-- FAQ 5 -->
+          <details class="reveal-on-scroll group glass-card rounded-2xl border border-bw-border overflow-hidden transition-all duration-200">
+            <summary class="flex items-center justify-between p-6 cursor-pointer text-base font-semibold text-bw-text group-hover:text-terracotta transition-colors list-none select-none">
+              <span>5. ¿En qué ciudades funciona?</span>
+              <span class="ml-4 flex-shrink-0 text-bw-muted group-open:rotate-180 transition-transform duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-sm text-bw-muted leading-relaxed border-t border-bw-border/50 pt-4">
+              La demo actual cuenta con un catálogo integrado de 107 comunas de Chile, permitiendo filtrar por cercanía geográfica ("Misma comuna", "Misma región").
+            </div>
+          </details>
+
+          <!-- FAQ 6 -->
+          <details class="reveal-on-scroll group glass-card rounded-2xl border border-bw-border overflow-hidden transition-all duration-200">
+            <summary class="flex items-center justify-between p-6 cursor-pointer text-base font-semibold text-bw-text group-hover:text-terracotta transition-colors list-none select-none">
+              <span>6. ¿Mis datos personales son públicos en el feed?</span>
+              <span class="ml-4 flex-shrink-0 text-bw-muted group-open:rotate-180 transition-transform duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-sm text-bw-muted leading-relaxed border-t border-bw-border/50 pt-4">
+              No. Tu ubicación visible es solo el nombre de la comuna, nunca una dirección exacta. Tu teléfono y correo están resguardados y solo se muestran a la contraparte cuando hay acuerdo de oferta.
+            </div>
+          </details>
+
+          <!-- FAQ 7 -->
+          <details class="reveal-on-scroll group glass-card rounded-2xl border border-bw-border overflow-hidden transition-all duration-200">
+            <summary class="flex items-center justify-between p-6 cursor-pointer text-base font-semibold text-bw-text group-hover:text-terracotta transition-colors list-none select-none">
+              <span>7. ¿Hay chat interno en la aplicación?</span>
+              <span class="ml-4 flex-shrink-0 text-bw-muted group-open:rotate-180 transition-transform duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 text-sm text-bw-muted leading-relaxed border-t border-bw-border/50 pt-4">
+              No en esta fase inicial. Al aceptar la oferta, coordinas por los canales directos que prefieran (WhatsApp, teléfono, correo o reuniéndose en la librería/punto de entrega).
+            </div>
+          </details>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================================================================= -->
+    <!-- 9. CIERRE DE PÁGINA (Final CTA)                                   -->
+    <!-- ================================================================= -->
+    <section class="py-24 relative overflow-hidden bg-gradient-to-b from-bw-bg via-bw-surface-2/40 to-bw-bg border-t border-bw-border text-center">
+      <!-- Glow ambiental centrado -->
+      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[350px] bg-terracotta/15 rounded-full blur-[100px] pointer-events-none"></div>
+
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 reveal-on-scroll">
+        
+        <div class="w-16 h-16 rounded-2xl bg-cream p-2 shadow-2xl mx-auto mb-8 border border-white/20 transform hover:scale-105 transition-transform duration-200">
+          <img src="icon.svg" alt="BookWho? Icon" class="w-full h-full object-contain">
+        </div>
+
+        <!-- Titular Oficial Sección 5.4 -->
+        <h2 class="font-serif text-3xl sm:text-5xl font-bold text-bw-text tracking-tight mb-5 leading-tight">
+          Tu próxima búsqueda empieza publicando.
+        </h2>
+
+        <!-- Subtítulo Oficial -->
+        <p class="text-base sm:text-xl text-bw-muted max-w-xl mx-auto mb-10 leading-relaxed">
+          Cuéntanos qué libro buscas. Del otro lado, alguien puede tenerlo en sus manos listo para ofrecerlo.
+        </p>
+
+        <!-- Botones de Acción Finales -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
+          <button onclick="openDemoModal('lector')" class="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-8 py-4 rounded-xl bg-terracotta hover:bg-terracotta-hover text-bw-text font-semibold text-base shadow-2xl shadow-terracotta/30 hover:shadow-terracotta/40 transition-all duration-200 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-white">
+            <span>Publicar mi búsqueda</span>
+            <span>&rarr;</span>
+          </button>
+          
+          <button onclick="openDemoModal('vendedor')" class="w-full sm:w-auto inline-flex items-center justify-center px-8 py-4 rounded-xl bg-bw-surface hover:bg-bw-surface-2 text-bw-text font-medium text-base border border-bw-border hover:border-bw-border-light transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta">
+            Tengo libros para vender &rarr;
+          </button>
+        </div>
+
+        <p class="text-xs text-bw-muted-dark flex items-center justify-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+          <span>Demostración interactiva en vivo disponible.</span>
+        </p>
+
+        <p class="mt-4 text-xs">
+          <a href="#descargar-app" class="inline-flex items-center gap-1.5 font-semibold text-terracotta hover:text-bw-text underline underline-offset-4 transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-terracotta rounded">
+            <span>O descarga la app para Android</span>
+            <span aria-hidden="true">&rarr;</span>
+          </a>
+        </p>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================================================================= -->
+  <!-- 10. FOOTER INSTITUCIONAL                                          -->
+  <!-- ================================================================= -->
+  <footer class="bg-bw-surface border-t border-bw-border py-14 text-sm text-bw-muted">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-10 items-center justify-between">
+        
+        <!-- Marca y Resumen Oficial -->
+        <div class="md:col-span-6 flex flex-col items-start gap-4">
+          <div class="inline-block bg-cream px-3 py-1.5 rounded-xl shadow-md border border-slate-700/30">
+            <img src="logo.svg" alt="BookWho? Logo Oficial" class="h-8 w-auto">
+          </div>
+          <p class="text-xs text-bw-muted max-w-md leading-relaxed">
+            BookWho? conecta lectores y vendedores. La compra, el pago y la entrega se coordinan directamente entre las partes.
+          </p>
+          <p class="text-[11px] text-bw-muted-dark font-mono">
+            Proyecto académico · Desarrollo Móvil (A+S) · Uso de IA declarado en <a href="../uso_ia.md" class="underline hover:text-bw-text">uso_ia.md</a>.
+          </p>
+        </div>
+
+        <!-- Enlaces Rápidos y Navegación de Pie -->
+        <div class="md:col-span-6 flex flex-col md:items-end gap-3 text-xs">
+          <div class="flex flex-wrap gap-6 text-bw-text font-medium">
+            <a href="#como-funciona" class="hover:text-terracotta transition-colors">Cómo funciona</a>
+            <a href="#caracteristicas" class="hover:text-terracotta transition-colors">Características</a>
+            <a href="#vendedores" class="hover:text-terracotta transition-colors">Vendedores</a>
+            <a href="#confianza" class="hover:text-terracotta transition-colors">Confianza</a>
+            <a href="#faq" class="hover:text-terracotta transition-colors">Preguntas</a>
+            <a href="presentacion.html" class="text-terracotta hover:underline">Ver ficha técnica académica</a>
+          </div>
+          <div class="text-bw-muted-dark text-[11px]">
+            &copy; 2026 BookWho?. Todos los derechos reservados.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </footer>
+
+  <!-- ================================================================= -->
+  <!-- 11. MODAL INTERACTIVO DE DEMO EN VIVO                           -->
+  <!-- ================================================================= -->
+  <div id="demoModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 sm:p-6" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <!-- Backdrop con blur y animación de opacidad -->
+    <div onclick="closeDemoModal()" id="modalBackdrop" class="absolute inset-0 bg-black/85 backdrop-blur-md transition-opacity duration-300 opacity-0"></div>
+    
+    <!-- Modal Window con escala suave -->
+    <div id="modalWindow" class="relative bg-bw-surface rounded-3xl border border-slate-700 shadow-2xl max-w-2xl w-full p-6 sm:p-8 z-10 max-h-[92vh] overflow-y-auto transform scale-95 opacity-0 transition-all duration-300">
+      
+      <!-- Close button -->
+      <button onclick="closeDemoModal()" class="absolute top-5 right-5 text-bw-muted hover:text-bw-text p-2 rounded-xl bg-bw-surface-2 border border-bw-border focus:outline-none focus-visible:ring-2 focus-visible:ring-terracotta" aria-label="Cerrar modal">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+
+      <!-- Modal Header -->
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-xl bg-cream p-1 border border-white/10">
+          <img src="icon.svg" alt="BookWho?" class="w-full h-full object-contain">
+        </div>
+        <div>
+          <h3 id="modalTitle" class="font-serif text-2xl font-bold text-bw-text">Demostración en vivo de BookWho?</h3>
+          <p class="text-xs text-bw-muted">Pipeline completo: de la búsqueda del lector a la oferta y aceptación.</p>
+        </div>
+      </div>
+
+      <!-- Selector de Demostraciones (Tabs en Orden Cronológico Estricto) -->
+      <div class="flex items-center gap-2 p-1.5 bg-bw-surface-2 rounded-2xl border border-bw-border mb-4 overflow-x-auto text-xs font-medium">
+        <button onclick="switchDemoTab('buscar')" id="tabBtnBuscar" class="px-3.5 py-2.5 rounded-xl bg-forest text-bw-text font-semibold flex-1 transition-all whitespace-nowrap flex items-center justify-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-emerald-400/20 text-emerald-400 flex items-center justify-center text-[10px] font-bold">1</span>
+          <span>1. Usuario busca libro</span>
+        </button>
+        <button onclick="switchDemoTab('vendedor')" id="tabBtnVendedor" class="px-3.5 py-2.5 rounded-xl text-bw-muted hover:text-bw-text flex-1 transition-all whitespace-nowrap flex items-center justify-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-slate-700 text-bw-muted flex items-center justify-center text-[10px] font-bold">2</span>
+          <span>2. Vendedor publica oferta</span>
+        </button>
+        <button onclick="switchDemoTab('oferta')" id="tabBtnOferta" class="px-3.5 py-2.5 rounded-xl text-bw-muted hover:text-bw-text flex-1 transition-all whitespace-nowrap flex items-center justify-center gap-2">
+          <span class="w-5 h-5 rounded-full bg-slate-700 text-bw-muted flex items-center justify-center text-[10px] font-bold">3</span>
+          <span>3. Usuario acepta oferta</span>
+        </button>
+      </div>
+
+      <!-- Explicación del paso activo -->
+      <div class="mb-5 p-3.5 rounded-xl bg-bw-surface-2/80 border border-bw-border text-center">
+        <h4 id="demoStepTitle" class="font-serif text-base font-bold text-bw-text mb-0.5">Paso 1: El usuario busca un libro</h4>
+        <p id="demoStepDesc" class="text-xs text-bw-muted max-w-lg mx-auto leading-relaxed">
+          El lector busca por título, autor o ISBN con portadas y datos oficiales de Google Books y Open Library, fijando su comuna y precio máximo.
+        </p>
+      </div>
+
+      <!-- Visor con la PLANTILLA DE CELULAR (Smartphone Chassis) -->
+      <div class="relative w-full max-w-[260px] sm:max-w-[275px] mx-auto mb-5">
+        <!-- Glow ambiental detrás del teléfono -->
+        <div id="modalPhoneGlow" class="absolute -inset-4 bg-forest/20 rounded-[3rem] blur-2xl opacity-70 pointer-events-none transition-colors duration-300"></div>
+
+        <!-- Chasis del Teléfono Móvil -->
+        <div class="relative rounded-3xl sm:rounded-[2.5rem] border border-slate-700/60 bg-[#121620] p-2.5 shadow-2xl phone-mockup-frame">
+          
+          <!-- Pantalla con Bisel Delgado y Aspect Ratio Nativo 526:1056 -->
+          <div class="relative overflow-hidden rounded-[1.9rem] bg-black aspect-[526/1056] border border-slate-900 shadow-inner">
+            
+            <!-- Dynamic Island / Muesca Frontal -->
+            <div class="absolute top-2 left-1/2 -translate-x-1/2 w-20 h-4 bg-black/90 rounded-full z-20 flex items-center justify-center pointer-events-none">
+              <div class="w-1.5 h-1.5 rounded-full bg-slate-800"></div>
+            </div>
+
+            <!-- GIF de la demostración dentro de la pantalla del smartphone -->
+            <img 
+              id="modalDemoGif" 
+              src="gif/usuario_buscar_libro.gif" 
+              alt="Demostración interactiva en smartphone" 
+              class="w-full h-full object-cover select-none transition-opacity duration-200"
+            >
+
+            <!-- Reflejo sutil de cristal -->
+            <div class="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.04] to-transparent pointer-events-none z-10"></div>
+          </div>
+
+          <!-- Barra Home Indicator Inferior -->
+          <div class="w-24 h-1 bg-slate-600/70 rounded-full mx-auto mt-2"></div>
+        </div>
+      </div>
+
+      <!-- Controles de navegación del flujo paso a paso -->
+      <div class="flex items-center justify-between pt-3 border-t border-bw-border">
+        <button id="prevStepBtn" onclick="navigateDemoStep(-1)" class="inline-flex items-center gap-1 text-xs text-bw-muted hover:text-bw-text px-3.5 py-1.5 rounded-lg border border-bw-border hover:border-slate-600 transition-colors disabled:opacity-30 disabled:pointer-events-none">
+          &larr; Anterior
+        </button>
+        <div class="flex items-center gap-2">
+          <span id="stepIndicator1" class="w-2.5 h-2.5 rounded-full bg-emerald-400 scale-125 transition-all"></span>
+          <span id="stepIndicator2" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-all"></span>
+          <span id="stepIndicator3" class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-all"></span>
+        </div>
+        <button id="nextStepBtn" onclick="navigateDemoStep(1)" class="inline-flex items-center gap-1 text-xs font-semibold text-terracotta hover:text-bw-text px-3.5 py-1.5 rounded-lg bg-terracotta/10 border border-terracotta/30 hover:bg-terracotta hover:text-white transition-all">
+          Siguiente &rarr;
+        </button>
+      </div>
+
+      <!-- Invitación a probar el APK en el teléfono -->
+      <div class="mt-5 pt-4 border-t border-bw-border text-center">
+        <a
+          href="https://github.com/AguileraLeo/Marketplace-de-Libros-/releases/download/v1.0/bookwho.apk"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-2 text-xs font-semibold text-terracotta hover:text-bw-text transition-colors focus:outline-none focus-visible:ring-1 focus-visible:ring-terracotta rounded"
+        >
+          <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+          <span>¿Prefieres probarla tú? Descarga el APK para Android</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCRIPT DE INTERACCIÓN, MOTION DESIGN Y ACCESIBILIDAD -->
+  <script>
+    // -------------------------------------------------------------------
+    // 1. Barra de progreso de lectura ligada al scroll
+    // -------------------------------------------------------------------
+    const scrollBar = document.getElementById('scrollProgressBar');
+    window.addEventListener('scroll', () => {
+      const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+      const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+      const scrolled = height > 0 ? winScroll / height : 0;
+      scrollBar.style.transform = `scaleX(${scrolled})`;
+    }, { passive: true });
+
+    // -------------------------------------------------------------------
+    // 2. Scroll Reveal con IntersectionObserver y Stagger
+    // -------------------------------------------------------------------
+    const revealElements = document.querySelectorAll('.reveal-on-scroll');
+    const revealObserver = new IntersectionObserver((entries, observer) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, {
+      rootMargin: '0px 0px -40px 0px',
+      threshold: 0.12
+    });
+    revealElements.forEach(el => revealObserver.observe(el));
+
+    // -------------------------------------------------------------------
+    // 3. Contadores Numéricos Progresivos en Sección El Problema
+    // -------------------------------------------------------------------
+    function animateCounter(el, target, duration = 1200) {
+      let start = 0;
+      const startTime = performance.now();
+      function update(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Easing suave editorial: 1 - Math.pow(1 - progress, 3)
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = (eased * target).toFixed(1).replace('.', ',');
+        el.textContent = current + '%';
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          el.textContent = target.toFixed(1).replace('.', ',') + '%';
+        }
+      }
+      requestAnimationFrame(update);
+    }
+
+    const problemSection = document.getElementById('problema');
+    let countersStarted = false;
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !countersStarted) {
+          countersStarted = true;
+          const c1 = document.getElementById('counterMetric1');
+          const c2 = document.getElementById('counterMetric2');
+          const bar1 = document.getElementById('meterBar1');
+          const bar2 = document.getElementById('meterBar2');
+          if (c1) animateCounter(c1, 94.4);
+          if (c2) animateCounter(c2, 77.8);
+          if (bar1) bar1.style.width = '94.4%';
+          if (bar2) bar2.style.width = '77.8%';
+        }
+      });
+    }, { threshold: 0.25 });
+    if (problemSection) counterObserver.observe(problemSection);
+
+    // -------------------------------------------------------------------
+    // 4. Escaparate Interactivo de Características (Showcase Sincronizado)
+    // -------------------------------------------------------------------
+    const showcaseData = [
+      {
+        gif: 'gif/usuario_buscar_libro.gif',
+        label: 'Demostración: Búsqueda exacta con datos reales',
+        dotColor: 'bg-emerald-400',
+        activeBorder: 'border-l-emerald-500'
+      },
+      {
+        gif: 'gif/usuario_buscar_libro.gif',
+        label: 'Demostración: Definición de condiciones y comuna',
+        dotColor: 'bg-terracotta',
+        activeBorder: 'border-l-terracotta'
+      },
+      {
+        gif: 'gif/usuario_aceptar_oferta.gif',
+        label: 'Demostración: Comparación de ofertas y desbloqueo de contacto',
+        dotColor: 'bg-amber-400',
+        activeBorder: 'border-l-reading-amber'
+      },
+      {
+        gif: 'gif/vendedor_proponer_oferta.gif',
+        label: 'Demostración: Feed de solicitudes y oferta de vendedor',
+        dotColor: 'bg-emerald-400',
+        activeBorder: 'border-l-emerald-400'
+      }
+    ];
+
+    function selectShowcaseFeature(index) {
+      const gifEl = document.getElementById('showcaseGif');
+      const textEl = document.getElementById('showcaseIndicatorText');
+      const dotEl = document.getElementById('showcaseIndicatorDot');
+
+      // Actualizar tarjetas activas
+      for (let i = 0; i < 4; i++) {
+        const card = document.getElementById(`featureCard${i}`);
+        const dotBtn = document.getElementById(`dotBtn${i}`);
+        if (!card) continue;
+        if (i === index) {
+          card.classList.add('bg-bw-surface-2/90', showcaseData[i].activeBorder);
+          card.classList.remove('border-l-transparent');
+          if (dotBtn) {
+            dotBtn.className = `w-2.5 h-2.5 rounded-full ${showcaseData[i].dotColor} transition-all scale-125`;
+          }
+        } else {
+          card.classList.remove('bg-bw-surface-2/90', 'border-l-emerald-500', 'border-l-terracotta', 'border-l-reading-amber', 'border-l-emerald-400');
+          card.classList.add('border-l-transparent');
+          if (dotBtn) {
+            dotBtn.className = 'w-2.5 h-2.5 rounded-full bg-slate-600 transition-all';
+          }
+        }
+      }
+
+      // Transición suave de GIF en el visor
+      if (gifEl) {
+        gifEl.style.opacity = '0.3';
+        setTimeout(() => {
+          gifEl.src = showcaseData[index].gif;
+          gifEl.style.opacity = '1';
+        }, 150);
+      }
+      if (textEl) textEl.textContent = showcaseData[index].label;
+      if (dotEl) dotEl.className = `w-2 h-2 rounded-full ${showcaseData[index].dotColor}`;
+    }
+
+    // -------------------------------------------------------------------
+    // 5. Control de Menú Móvil
+    // -------------------------------------------------------------------
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobileMenu');
+      const closedIcon = document.getElementById('menuIconClosed');
+      const openIcon = document.getElementById('menuIconOpen');
+      const isHidden = menu.classList.contains('hidden');
+      
+      if (isHidden) {
+        menu.classList.remove('hidden');
+        closedIcon.classList.add('hidden');
+        openIcon.classList.remove('hidden');
+      } else {
+        menu.classList.add('hidden');
+        closedIcon.classList.remove('hidden');
+        openIcon.classList.add('hidden');
+      }
+    }
+
+    // -------------------------------------------------------------------
+    // 6. Modal de Demostración con Pipeline Cronológico y Plantilla Celular
+    // -------------------------------------------------------------------
+    const demoSteps = [
+      {
+        id: 'buscar',
+        title: 'Paso 1: El usuario busca un libro',
+        desc: 'El lector busca por título, autor o ISBN con portadas y datos oficiales de Google Books y Open Library, fijando su comuna y precio máximo.',
+        gif: 'gif/usuario_buscar_libro.gif',
+        btnId: 'tabBtnBuscar',
+        activeClass: 'bg-forest text-bw-text',
+        glowClass: 'bg-forest/20'
+      },
+      {
+        id: 'vendedor',
+        title: 'Paso 2: El vendedor publica su oferta',
+        desc: 'El vendedor o librería revisa el feed de solicitudes cercanas en su comuna y envía su oferta con precio claro y estado del ejemplar.',
+        gif: 'gif/vendedor_proponer_oferta.gif',
+        btnId: 'tabBtnVendedor',
+        activeClass: 'bg-terracotta text-bw-text',
+        glowClass: 'bg-terracotta/20'
+      },
+      {
+        id: 'oferta',
+        title: 'Paso 3: El usuario acepta la oferta',
+        desc: 'El lector compara todas las ofertas recibidas en una sola pantalla, acepta la mejor y se desbloquean los datos directos de contacto para coordinar.',
+        gif: 'gif/usuario_aceptar_oferta.gif',
+        btnId: 'tabBtnOferta',
+        activeClass: 'bg-terracotta text-bw-text',
+        glowClass: 'bg-reading-amber/20'
+      }
+    ];
+
+    let currentDemoStepIndex = 0;
+
+    function openDemoModal(role) {
+      const modal = document.getElementById('demoModal');
+      const backdrop = document.getElementById('modalBackdrop');
+      const win = document.getElementById('modalWindow');
+
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+
+      requestAnimationFrame(() => {
+        backdrop.classList.remove('opacity-0');
+        backdrop.classList.add('opacity-100');
+        win.classList.remove('scale-95', 'opacity-0');
+        win.classList.add('scale-100', 'opacity-100');
+      });
+
+      if (role === 'vendedor') {
+        switchDemoStepByIndex(1);
+      } else if (role === 'oferta' || role === 'aceptar') {
+        switchDemoStepByIndex(2);
+      } else {
+        switchDemoStepByIndex(0); // Por defecto: 1. Usuario busca un libro
+      }
+    }
+
+    function closeDemoModal() {
+      const modal = document.getElementById('demoModal');
+      const backdrop = document.getElementById('modalBackdrop');
+      const win = document.getElementById('modalWindow');
+
+      backdrop.classList.remove('opacity-100');
+      backdrop.classList.add('opacity-0');
+      win.classList.remove('scale-100', 'opacity-100');
+      win.classList.add('scale-95', 'opacity-0');
+
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }, 250);
+    }
+
+    function switchDemoTab(tabId) {
+      const idx = demoSteps.findIndex(s => s.id === tabId);
+      if (idx !== -1) {
+        switchDemoStepByIndex(idx);
+      }
+    }
+
+    function navigateDemoStep(direction) {
+      const newIndex = currentDemoStepIndex + direction;
+      if (newIndex >= 0 && newIndex < demoSteps.length) {
+        switchDemoStepByIndex(newIndex);
+      }
+    }
+
+    function switchDemoStepByIndex(index) {
+      currentDemoStepIndex = index;
+      const step = demoSteps[index];
+
+      const img = document.getElementById('modalDemoGif');
+      const titleEl = document.getElementById('demoStepTitle');
+      const descEl = document.getElementById('demoStepDesc');
+      const glowEl = document.getElementById('modalPhoneGlow');
+      const prevBtn = document.getElementById('prevStepBtn');
+      const nextBtn = document.getElementById('nextStepBtn');
+
+      // Actualizar estado de tabs
+      demoSteps.forEach((s, i) => {
+        const btn = document.getElementById(s.btnId);
+        const indicator = document.getElementById(`stepIndicator${i + 1}`);
+        if (btn) {
+          if (i === index) {
+            btn.className = `px-3.5 py-2.5 rounded-xl ${s.activeClass} font-semibold flex-1 transition-all whitespace-nowrap flex items-center justify-center gap-2 shadow-sm`;
+            const badge = btn.querySelector('span');
+            if (badge) badge.className = 'w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px] font-bold';
+          } else {
+            btn.className = 'px-3.5 py-2.5 rounded-xl text-bw-muted hover:text-bw-text flex-1 transition-all whitespace-nowrap flex items-center justify-center gap-2';
+            const badge = btn.querySelector('span');
+            if (badge) badge.className = 'w-5 h-5 rounded-full bg-slate-700 text-bw-muted flex items-center justify-center text-[10px] font-bold';
+          }
+        }
+        if (indicator) {
+          indicator.className = i === index ? 'w-2.5 h-2.5 rounded-full bg-emerald-400 scale-125 transition-all' : 'w-2.5 h-2.5 rounded-full bg-slate-600 transition-all';
+        }
+      });
+
+      // Deshabilitar botones en extremos
+      if (prevBtn) prevBtn.disabled = index === 0;
+      if (nextBtn) {
+        if (index === demoSteps.length - 1) {
+          nextBtn.innerHTML = 'Reiniciar demo &circlearrowright;';
+          nextBtn.onclick = () => switchDemoStepByIndex(0);
+        } else {
+          nextBtn.innerHTML = 'Siguiente &rarr;';
+          nextBtn.onclick = () => navigateDemoStep(1);
+        }
+      }
+
+      // Animación suave de cambio de GIF
+      if (img) {
+        img.style.opacity = '0.2';
+        setTimeout(() => {
+          img.src = step.gif;
+          img.style.opacity = '1';
+        }, 120);
+      }
+
+      if (titleEl) titleEl.textContent = step.title;
+      if (descEl) descEl.textContent = step.desc;
+      if (glowEl) glowEl.className = `absolute -inset-4 ${step.glowClass} rounded-[3rem] blur-2xl opacity-70 pointer-events-none transition-colors duration-300`;
+    }
+
+    // Cierre con Escape
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeDemoModal();
+      }
+    });
+  </script>
+
+</body>
+</html>
