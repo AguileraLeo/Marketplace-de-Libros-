@@ -4,8 +4,8 @@ package.name = bookwho
 package.domain = cl.uct
 source.dir = .
 source.include_exts = py,kv,ttf,png,jpg,json
-source.exclude_dirs = .venv,tests,screenshots,.cache,bin,.buildozer,__pycache__
-source.exclude_patterns = data.json
+source.exclude_dirs = .venv,tests,assets/screenshots,docs,.cache,bin,.buildozer,data/user,__pycache__
+source.exclude_patterns = data.json,data.json.tmp,data.json.corrupto
 version = 1.0
 # ponytail: KivyMD 2.0 no está en PyPI; sin materialshapes/pycairo porque la app no usa FitImage
 requirements = python3,kivy==2.3.1,https://github.com/kivymd/KivyMD/archive/master.zip,materialyoucolor==3.0.4,asynckivy==0.6.4,asyncgui==0.6.3,exceptiongroup,pillow,plyer==2.1.0,certifi,filetype,charset_normalizer
