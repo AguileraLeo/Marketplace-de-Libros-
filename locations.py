@@ -8,142 +8,23 @@ Permite:
 
 from __future__ import annotations
 
+import json
 import unicodedata
-from typing import Optional
+from pathlib import Path
 
-# Catálogo oficial normalizado de regiones y comunas
-CHILE_LOCATIONS: list[dict[str, str]] = [
-    # Arica y Parinacota
-    {"comuna": "Arica", "region": "Arica y Parinacota"},
-    {"comuna": "Camarones", "region": "Arica y Parinacota"},
-    {"comuna": "Putre", "region": "Arica y Parinacota"},
-    {"comuna": "General Lagos", "region": "Arica y Parinacota"},
-    # Tarapacá
-    {"comuna": "Iquique", "region": "Tarapacá"},
-    {"comuna": "Alto Hospicio", "region": "Tarapacá"},
-    {"comuna": "Pozo Almonte", "region": "Tarapacá"},
-    {"comuna": "Pica", "region": "Tarapacá"},
-    # Antofagasta
-    {"comuna": "Antofagasta", "region": "Antofagasta"},
-    {"comuna": "Calama", "region": "Antofagasta"},
-    {"comuna": "Tocopilla", "region": "Antofagasta"},
-    {"comuna": "Mejillones", "region": "Antofagasta"},
-    {"comuna": "San Pedro de Atacama", "region": "Antofagasta"},
-    # Atacama
-    {"comuna": "Copiapó", "region": "Atacama"},
-    {"comuna": "Vallenar", "region": "Atacama"},
-    {"comuna": "Caldera", "region": "Atacama"},
-    {"comuna": "Chañaral", "region": "Atacama"},
-    # Coquimbo
-    {"comuna": "La Serena", "region": "Coquimbo"},
-    {"comuna": "Coquimbo", "region": "Coquimbo"},
-    {"comuna": "Ovalle", "region": "Coquimbo"},
-    {"comuna": "Illapel", "region": "Coquimbo"},
-    {"comuna": "Vicuña", "region": "Coquimbo"},
-    {"comuna": "Salamanca", "region": "Coquimbo"},
-    # Valparaíso
-    {"comuna": "Valparaíso", "region": "Valparaíso"},
-    {"comuna": "Viña del Mar", "region": "Valparaíso"},
-    {"comuna": "Quilpué", "region": "Valparaíso"},
-    {"comuna": "Villa Alemana", "region": "Valparaíso"},
-    {"comuna": "Concón", "region": "Valparaíso"},
-    {"comuna": "Quillota", "region": "Valparaíso"},
-    {"comuna": "San Antonio", "region": "Valparaíso"},
-    {"comuna": "Los Andes", "region": "Valparaíso"},
-    {"comuna": "San Felipe", "region": "Valparaíso"},
-    # Región Metropolitana de Santiago
-    {"comuna": "Santiago", "region": "Metropolitana"},
-    {"comuna": "Providencia", "region": "Metropolitana"},
-    {"comuna": "Las Condes", "region": "Metropolitana"},
-    {"comuna": "Ñuñoa", "region": "Metropolitana"},
-    {"comuna": "La Florida", "region": "Metropolitana"},
-    {"comuna": "Maipú", "region": "Metropolitana"},
-    {"comuna": "Puente Alto", "region": "Metropolitana"},
-    {"comuna": "San Miguel", "region": "Metropolitana"},
-    {"comuna": "Vitacura", "region": "Metropolitana"},
-    {"comuna": "Lo Barnechea", "region": "Metropolitana"},
-    {"comuna": "La Reina", "region": "Metropolitana"},
-    {"comuna": "Macul", "region": "Metropolitana"},
-    {"comuna": "Peñalolén", "region": "Metropolitana"},
-    {"comuna": "Estación Central", "region": "Metropolitana"},
-    {"comuna": "Recoleta", "region": "Metropolitana"},
-    {"comuna": "Independencia", "region": "Metropolitana"},
-    {"comuna": "Quinta Normal", "region": "Metropolitana"},
-    {"comuna": "San Bernardo", "region": "Metropolitana"},
-    {"comuna": "Colina", "region": "Metropolitana"},
-    {"comuna": "Melipilla", "region": "Metropolitana"},
-    {"comuna": "Talagante", "region": "Metropolitana"},
-    # O'Higgins
-    {"comuna": "Rancagua", "region": "O'Higgins"},
-    {"comuna": "Machalí", "region": "O'Higgins"},
-    {"comuna": "Rengo", "region": "O'Higgins"},
-    {"comuna": "San Fernando", "region": "O'Higgins"},
-    {"comuna": "Santa Cruz", "region": "O'Higgins"},
-    {"comuna": "Pichilemu", "region": "O'Higgins"},
-    # Maule
-    {"comuna": "Talca", "region": "Maule"},
-    {"comuna": "Curicó", "region": "Maule"},
-    {"comuna": "Linares", "region": "Maule"},
-    {"comuna": "Constitución", "region": "Maule"},
-    {"comuna": "Cauquenes", "region": "Maule"},
-    {"comuna": "Molina", "region": "Maule"},
-    {"comuna": "San Javier", "region": "Maule"},
-    # Ñuble
-    {"comuna": "Chillán", "region": "Ñuble"},
-    {"comuna": "Chillán Viejo", "region": "Ñuble"},
-    {"comuna": "San Carlos", "region": "Ñuble"},
-    {"comuna": "Bulnes", "region": "Ñuble"},
-    {"comuna": "Yungay", "region": "Ñuble"},
-    # Biobío
-    {"comuna": "Concepción", "region": "Biobío"},
-    {"comuna": "San Pedro de la Paz", "region": "Biobío"},
-    {"comuna": "Talcahuano", "region": "Biobío"},
-    {"comuna": "Chiguayante", "region": "Biobío"},
-    {"comuna": "Hualpén", "region": "Biobío"},
-    {"comuna": "Coronel", "region": "Biobío"},
-    {"comuna": "Lota", "region": "Biobío"},
-    {"comuna": "Tomé", "region": "Biobío"},
-    {"comuna": "Penco", "region": "Biobío"},
-    {"comuna": "Los Ángeles", "region": "Biobío"},
-    # La Araucanía
-    {"comuna": "Temuco", "region": "La Araucanía"},
-    {"comuna": "Padre Las Casas", "region": "La Araucanía"},
-    {"comuna": "Villarrica", "region": "La Araucanía"},
-    {"comuna": "Pucón", "region": "La Araucanía"},
-    {"comuna": "Angol", "region": "La Araucanía"},
-    {"comuna": "Victoria", "region": "La Araucanía"},
-    # Los Ríos
-    {"comuna": "Valdivia", "region": "Los Ríos"},
-    {"comuna": "La Unión", "region": "Los Ríos"},
-    {"comuna": "Río Bueno", "region": "Los Ríos"},
-    {"comuna": "Panguipulli", "region": "Los Ríos"},
-    # Los Lagos
-    {"comuna": "Puerto Montt", "region": "Los Lagos"},
-    {"comuna": "Puerto Varas", "region": "Los Lagos"},
-    {"comuna": "Osorno", "region": "Los Lagos"},
-    {"comuna": "Castro", "region": "Los Lagos"},
-    {"comuna": "Ancud", "region": "Los Lagos"},
-    {"comuna": "Frutillar", "region": "Los Lagos"},
-    # Aysén
-    {"comuna": "Coyhaique", "region": "Aysén"},
-    {"comuna": "Puerto Aysén", "region": "Aysén"},
-    {"comuna": "Chile Chico", "region": "Aysén"},
-    # Magallanes
-    {"comuna": "Punta Arenas", "region": "Magallanes"},
-    {"comuna": "Puerto Natales", "region": "Magallanes"},
-    {"comuna": "Porvenir", "region": "Magallanes"},
-]
 
-POPULAR_LOCATIONS: list[str] = [
-    "Concepción",
-    "Santiago",
-    "Valparaíso",
-    "Viña del Mar",
-    "La Serena",
-    "Temuco",
-    "Antofagasta",
-    "Puerto Montt",
-]
+def _load_locations() -> list[dict[str, str]]:
+    """Carga las comunas y regiones desde el recurso local del proyecto."""
+    data_path = Path(__file__).resolve().with_name("comunas.json")
+    with data_path.open(encoding="utf-8") as file:
+        data = json.load(file)
+    return [
+        {"comuna": item["name"], "region": item["region_name"]}
+        for item in data["data"]
+    ]
+
+
+CHILE_LOCATIONS: list[dict[str, str]] = _load_locations()
 
 
 def _normalize_text(text: str) -> str:
