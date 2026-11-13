@@ -14,7 +14,7 @@ Documentos relacionados:
 
 Plataforma de libros **bajo demanda**: un lector publica el libro que busca, los vendedores responden con ofertas y, cuando el lector acepta una, ambos coordinan la compra por fuera (teléfono, correo o punto de encuentro). En el MVP no hay pagos, envíos ni chat.
 
-## 2. Estado actual (septiembre 2026)
+## 2. Estado actual (noviembre 2026)
 
 Hay un **demo funcional de punta a punta** hecho en Python + KivyMD 2.0. Cubre el happy path del MVP:
 
@@ -31,15 +31,15 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Vendedor: feed con filtros (excluye solicitudes ya ofertadas), detalle, crear/cancelar oferta, mis ofertas | Hecho |
 | Admin: panel de métricas con accesos rápidos y subpantallas de solicitudes, usuarios, ofertas y auditoría | Hecho |
 | Admin: búsqueda y exportación de logs de actividad a `.log` | Hecho |
-| Máquinas de estado de solicitud y oferta (estados intermedios) | Hecho, en `store.py` |
+| Máquinas de estado de solicitud y oferta (estados intermedios) | Hecho, en `models/store.py` |
 | Permisos por rol en la capa de dominio (no solo en la UI) | Hecho |
-| Pruebas automatizadas (30 tests) | Pasan |
-| Fundamentación UX/UI con encuesta real (18 respuestas) | Hecho, en `FUNDAMENTACION-UX-UI.md` |
-| Persistencia (base de datos o archivo) | **No existe**: todo vive en memoria (excepto caché de portadas en `.cache/covers/`) |
-| Documentación SDD en `docs/` (specs, casos de uso, ADR) | **Pendiente** |
+| Pruebas automatizadas (34 tests) | Pasan |
+| Fundamentación UX/UI con encuesta real (18 respuestas) | Hecho, en `docs/01-requirements/FUNDAMENTACION-UX-UI.md` |
+| Persistencia JSON | Hecha en `services/persistence.py`; escritorio usa `data/user/data.json` y Android su directorio privado |
+| Documentación SDD en `docs/` | ADR y specs de MVC y estructura creados; otras specs de producto siguen pendientes |
 | Reportes, auditoría formal, notificaciones | Fuera del demo |
 
-### Pantallas implementadas (`main.py` + `libros.kv`)
+### Pantallas implementadas (`controllers/screen_controllers.py` + `views/libros.kv`)
 
 - **Comunes:** Login, Registro.
 - **Lector:** Inicio, Buscar libro, Crear solicitud, Solicitud publicada, Mis solicitudes, Detalle de solicitud, Detalle de oferta, Oferta aceptada.
@@ -49,18 +49,23 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 ## 3. Arquitectura del demo
 
 ```text
-libros.kv      UI declarativa (KV language)
+main.py                         Punto de entrada y configuración inicial de ventana.
    │
-main.py        Pantallas y navegación. No contiene reglas de negocio.
+controllers/app_controller.py   Ciclo de vida, navegación y coordinación de servicios.
+controllers/screen_controllers.py
+                                Eventos y estado de las pantallas Kivy.
    │
-store.py       Dominio: entidades, estados, validaciones, permisos.
-   │           Repositorio en memoria + datos de ejemplo (build_demo_store).
+views/libros.kv                 Vistas declarativas (layout y estilo).
+views/components.py             Widgets visuales reutilizables.
    │
-books_api.py   Proveedores externos de libros con fallback y caché en disco.
-locations.py   Catálogo y normalizador de comunas/ciudades.
+models/store.py                 Modelo/dominio: entidades, reglas, permisos y estados.
+                                Store en memoria + datos de ejemplo.
+services/                       Persistencia, notificaciones, búsqueda y ubicaciones.
+data/                           Catálogo de comunas y configuración remota.
+assets/                         Fuentes tipográficas y capturas.
 ```
 
-Regla: **toda regla de negocio y todo chequeo de permisos va en `store.py`**, y la UI solo llama a sus métodos. Así se puede probar sin interfaz y cambiar la UI o la persistencia sin romper el dominio.
+Regla: **toda regla de negocio y todo chequeo de permisos va en `models/store.py`**, y la UI solo llama a sus métodos. Así se puede probar sin interfaz y cambiar la UI o la persistencia sin romper el dominio.
 
 ### Estados
 
@@ -85,7 +90,7 @@ Se tomaron para que el demo funcionara y se actualizaron con las Fases 1 a 4 del
 6. El vendedor puede ofertar cualquier condición (nuevo o usado) y método de entrega; el lector evalúa la oferta al revisarla.
 7. Un vendedor tiene como máximo una oferta activa por solicitud.
 8. Cada cuenta tiene un solo rol. Un usuario suspendido no puede iniciar sesión ni operar.
-9. No hay base de datos: los usuarios de demo están hardcodeados y los datos se pierden al cerrar la app.
+9. No hay base de datos; la app persiste datos en JSON local. Las cuentas demo se cargan al iniciar si todavía no existe un archivo persistido.
 10. Stack del demo: Python 3.10/3.11 + Kivy 2.3.1 + KivyMD 2.0.1.dev0.
 11. El feed del vendedor excluye las solicitudes donde ya tiene una oferta activa; esas se gestionan desde "Mis ofertas".
 12. El admin consulta la actividad en una subpantalla dedicada (con búsqueda) y puede exportarla a un archivo `.log`.
@@ -94,11 +99,10 @@ Se tomaron para que el demo funcionara y se actualizaron con las Fases 1 a 4 del
 
 En orden aproximado (ajustar en equipo):
 
-1. Crear la estructura `docs/` de AGENTS.md §13 y pasar las decisiones de la sección 4 a `BUSINESS_RULES.md` y `STATE_MACHINES.md`.
-2. Decidir la persistencia (JSON local, SQLite u otra) y registrarla en un ADR.
-3. Escribir specs pequeñas (`SPEC-00X`) para cada cambio antes de implementarlo.
-4. Definir la política de privacidad de datos de contacto y el significado exacto de `RESUELTA`.
-5. Prototipo en Figma de las pantallas prioritarias (AGENTS.md §15).
+1. Pasar las decisiones de la sección 4 a `BUSINESS_RULES.md` y `STATE_MACHINES.md`.
+2. Escribir specs pequeñas (`SPEC-00X`) para cada cambio antes de implementarlo.
+3. Definir la política de privacidad de datos de contacto y el significado exacto de `RESUELTA`.
+4. Prototipo en Figma de las pantallas prioritarias (AGENTS.md §15).
 
 ## 6. Cómo trabajar en equipo
 

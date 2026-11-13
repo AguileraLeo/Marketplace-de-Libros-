@@ -38,7 +38,9 @@ SEARCH_MODES = {
 }
 
 # Directorio de caché local persistente para portadas
-CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache", "covers")
+CACHE_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".cache", "covers"
+)
 os.makedirs(CACHE_DIR, exist_ok=True)
 
 
