@@ -72,6 +72,8 @@ También puedes registrar nuevas cuentas de lector o vendedor desde la app.
 | `libros.kv`          | Toda la interfaz y el estilo (KV language) |
 | `store.py`           | Entidades, máquinas de estado, reglas de negocio y permisos; repositorio en memoria y datos de ejemplo |
 | `books_api.py`       | Búsqueda de libros: Google Books, luego Open Library y, sin conexión, un catálogo local |
+| `locations.py`       | Búsqueda, normalización y cercanía de ubicaciones, cargadas desde `comunas.json` |
+| `comunas.json`       | Catálogo de comunas y regiones de Chile |
 | `tests/test_store.py`| Pruebas del flujo crítico, validaciones y permisos |
 
 ```bash

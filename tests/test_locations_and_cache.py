@@ -23,7 +23,11 @@ from locations import (
 
 class LocationsTest(unittest.TestCase):
     def test_locations_catalog_not_empty(self):
-        self.assertGreater(len(CHILE_LOCATIONS), 50)
+        self.assertEqual(len(CHILE_LOCATIONS), 346)
+
+    def test_search_includes_communes_from_resource(self):
+        self.assertIn("La Estrella (O'Higgins)", search_locations("la estrella"))
+        self.assertIn("Ancud (Los Lagos)", search_locations("ancud"))
 
     def test_search_locations_case_and_accent_insensitive(self):
         # Búsqueda con y sin tilde

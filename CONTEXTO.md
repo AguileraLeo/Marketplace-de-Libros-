@@ -33,7 +33,7 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Admin: búsqueda y exportación de logs de actividad a `.log` | Hecho |
 | Máquinas de estado de solicitud y oferta (estados intermedios) | Hecho, en `store.py` |
 | Permisos por rol en la capa de dominio (no solo en la UI) | Hecho |
-| Pruebas automatizadas (30 tests) | Pasan |
+| Pruebas automatizadas (31 tests) | Pasan |
 | Fundamentación UX/UI con encuesta real (18 respuestas) | Hecho, en `FUNDAMENTACION-UX-UI.md` |
 | Persistencia (base de datos o archivo) | **No existe**: todo vive en memoria (excepto caché de portadas en `.cache/covers/`) |
 | Documentación SDD en `docs/` (specs, casos de uso, ADR) | **Pendiente** |
@@ -57,7 +57,8 @@ store.py       Dominio: entidades, estados, validaciones, permisos.
    │           Repositorio en memoria + datos de ejemplo (build_demo_store).
    │
 books_api.py   Proveedores externos de libros con fallback y caché en disco.
-locations.py   Catálogo y normalizador de comunas/ciudades.
+locations.py   Búsqueda, normalización y cercanía de ubicaciones.
+comunas.json   Recurso con el catálogo de comunas y regiones de Chile.
 ```
 
 Regla: **toda regla de negocio y todo chequeo de permisos va en `store.py`**, y la UI solo llama a sus métodos. Así se puede probar sin interfaz y cambiar la UI o la persistencia sin romper el dominio.
