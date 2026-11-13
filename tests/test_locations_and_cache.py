@@ -6,14 +6,14 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from books_api import (
+from services.books_api import (
     CACHE_DIR,
     get_cover_cache_path,
     is_cover_cached,
     prefetch_covers,
     search_books,
 )
-from locations import (
+from services.locations import (
     CHILE_LOCATIONS,
     normalize_location_name,
     proximity_label,

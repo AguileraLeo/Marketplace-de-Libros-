@@ -15,4 +15,9 @@ Solicitud publicada.pdf
 # Build Android
 .buildozer/
 bin/
-data.json
+/data.json
+/data.json.tmp
+/data.json.corrupto
+/data/user/data.json
+/data/user/data.json.tmp
+/data/user/data.json.corrupto

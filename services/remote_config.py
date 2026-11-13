@@ -10,7 +10,7 @@ import time
 import certifi
 from kivy.network.urlrequest import UrlRequest
 
-URL = "https://raw.githubusercontent.com/AguileraLeo/Marketplace-de-Libros-/main/remote_config.json"
+URL = "https://raw.githubusercontent.com/AguileraLeo/Marketplace-de-Libros-/main/data/remote_config.json"
 
 DEFAULTS = {
     "banner": "Modo sin conexión: mostrando la configuración local.",
