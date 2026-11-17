@@ -24,7 +24,7 @@ from models.store import (
 from services.books_api import search_books
 from services.locations import normalize_location_name, search_locations
 from services import notifications
-from views.components import BookResultCard, EmptyState, InfoRow, ItemCard, fmt_date
+from views.components import STATUS_LABELS, BookResultCard, EmptyState, InfoRow, ItemCard, fmt_date
 
 
 class BaseScreen(MDScreen):

@@ -39,17 +39,15 @@ from models.store import (
     Condition,
     Delivery,
     DomainError,
-    OfferStatus,
     RequestStatus,
     Role,
-    UserStatus,
     build_demo_store,
     format_price,
 )
 from services.books_api import catalog_lookup
 from services import notifications, persistence, remote_config
 from services.locations import proximity_label
-from views.components import ACCENT, PAPER, STATUS_LABELS, RequestRow, fmt_date
+from views.components import ACCENT, PAPER, RequestRow, fmt_date
 
 BASE_DIR = str(Path(__file__).resolve().parents[1])
 KV_FILE = os.path.join(BASE_DIR, "views", "libros.kv")

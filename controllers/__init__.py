@@ -1,1 +1,1 @@
-"""Controladores de la aplicaci?n BookWho."""
+"""Controladores de la aplicación BookWho."""
