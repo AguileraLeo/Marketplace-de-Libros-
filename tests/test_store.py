@@ -11,8 +11,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from books_api import catalog_lookup  # noqa: E402
-from store import (  # noqa: E402
+from models.store import (  # noqa: E402
     Condition,
     Delivery,
     InvalidTransition,
@@ -24,6 +23,7 @@ from store import (  # noqa: E402
     ValidationError,
     build_demo_store,
 )
+from services.books_api import catalog_lookup  # noqa: E402
 
 
 class StoreTestCase(unittest.TestCase):

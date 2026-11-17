@@ -15,7 +15,7 @@ from pathlib import Path
 
 def _load_locations() -> list[dict[str, str]]:
     """Carga las comunas y regiones desde el recurso local del proyecto."""
-    data_path = Path(__file__).resolve().with_name("comunas.json")
+    data_path = Path(__file__).resolve().parents[1] / "data" / "comunas.json"
     with data_path.open(encoding="utf-8") as file:
         data = json.load(file)
     return [

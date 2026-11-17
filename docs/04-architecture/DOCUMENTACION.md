@@ -6,10 +6,10 @@ evalúe el proyecto) entienda el sistema completo sin tener que leer todo el có
 
 Documentos relacionados en este repositorio:
 
-- [`README.md`](README.md) — instalación rápida, cuentas de demo, capturas.
-- [`AGENTS.md`](AGENTS.md) — visión de producto y reglas de trabajo (fuente de verdad original).
-- [`CONTEXTO.md`](CONTEXTO.md) — estado del proyecto y cómo trabajar en equipo.
-- [`USO_IA.md`](USO_IA.md) — declaración de uso de Inteligencia Artificial.
+- [`README.md`](../../README.md) — instalación rápida, cuentas de demo, capturas.
+- [`AGENTS.md`](../../AGENTS.md) — visión de producto y reglas de trabajo (fuente de verdad original).
+- [`CONTEXTO.md`](../../CONTEXTO.md) — estado del proyecto y cómo trabajar en equipo.
+- [`USO_IA.md`](../06-process/USO_IA.md) — declaración de uso de Inteligencia Artificial.
 
 ---
 
@@ -152,7 +152,7 @@ abierta y ofrécele el libro que buscan").
 
 ## 3. Modelo de dominio
 
-### 3.1 Entidades (definidas en `store.py`)
+### 3.1 Entidades (definidas en `models/store.py`)
 
 | Entidad | Campos clave | Qué representa |
 |---|---|---|
@@ -200,11 +200,11 @@ Reglas importantes:
   con lo que el lector prefería; la UI se lo destaca al lector, pero no lo bloquea (se
   flexibilizó a propósito para no perder ofertas válidas).
 - Los datos de contacto del vendedor **solo se revelan** cuando la oferta entra en
-  `POR_CONCRETAR` o `ACEPTADA` (`offer_contact()` en `store.py`).
+  `POR_CONCRETAR` o `ACEPTADA` (`offer_contact()` en `models/store.py`).
 
 ### 3.4 Reglas de permisos (autorización)
 
-Todas las reglas de negocio y de permisos viven en `store.py`, **no en la interfaz**: cada
+Todas las reglas de negocio y de permisos viven en `models/store.py`, **no en la interfaz**: cada
 método del `Store` vuelve a validar el rol, la propiedad del recurso y el estado, sin confiar
 en lo que mande la UI. Algunos ejemplos:
 
@@ -219,58 +219,59 @@ en lo que mande la UI. Algunos ejemplos:
 ## 4. Arquitectura del código
 
 ```
-libros.kv        Interfaz declarativa (KV language): toda la UI y el estilo visual.
+views/libros.kv  Interfaz declarativa (KV language): toda la UI y el estilo visual.
    |
-main.py          Pantallas (ScreenManager) y navegación. NO contiene reglas de negocio,
-   |              solo llama a métodos del Store y reacciona a errores.
-store.py         Dominio: entidades, máquinas de estado, validaciones, permisos.
+main.py          Punto de entrada y configuración inicial de ventana.
+   |
+controllers/     Controladores de aplicación y de pantalla Kivy.
+   |
+views/           Widgets reutilizables para las vistas KV.
+   |
+models/store.py  Dominio: entidades, máquinas de estado, validaciones, permisos.
    |              Repositorio en memoria + datos de ejemplo (build_demo_store).
    |
-books_api.py     Búsqueda de libros: Google Books -> Open Library -> catálogo local,
+services/        Persistencia, notificaciones y configuración remota.
+   |
+services/books_api.py
+                 Búsqueda de libros: Google Books -> Open Library -> catálogo local,
    |              con caché de portadas en disco.
-locations.py     Catálogo y normalizador de comunas/ciudades de Chile + cercanía
+services/locations.py
+                 Catálogo y normalizador de comunas/ciudades de Chile + cercanía
                   aproximada entre vendedor y solicitud.
+data/            Catálogo de comunas y configuración remota.
+assets/          Fuentes tipográficas y capturas.
 ```
 
 Regla de separación (definida en `CONTEXTO.md` y respetada en todo el código): **toda regla de
-negocio y todo chequeo de permisos va en `store.py`**, y la interfaz (`main.py` + `libros.kv`)
-solo la invoca y muestra el resultado. Esto permite probar el dominio sin interfaz (ver §6) y
-cambiar la UI sin tocar las reglas.
+negocio y todo chequeo de permisos va en `models/store.py`**. Los controladores orquestan acciones y
+la interfaz (`views/libros.kv` y `views/`) presenta el resultado. Esto permite probar el dominio sin
+interfaz (ver §6) y cambiar la UI sin tocar las reglas.
 
-### 4.1 Explicación de `main.py`
+### 4.1 Organización MVC
 
-Es el punto de entrada (`python main.py`) y define:
+La aplicación se reorganizó de forma incremental, sin cambiar sus flujos:
 
-- **Configuración de ventana**: en escritorio simula el tamaño de un teléfono (420×860). En
-  Android/iOS no aplica ese ajuste.
-- **Registro de las tipografías "SourceSerif" y "IBMPlexSans"** vía `LabelBase.register(...)`
-  y de los colores de marca `ACCENT` y `PAPER` (ver §7).
-- **Widgets reutilizables** (su apariencia vive en `libros.kv`, su lógica acá):
-  - `BookCover`: portada de un libro, con carga desde caché en disco y *placeholder* mientras
-    descarga.
-  - `StatusChip`: el estado de una solicitud/oferta/usuario, como punto de color más texto
-    (colores en `STATUS_COLORS`).
-  - `WideButton` / `PrimaryButton`: botón a todo el ancho.
-  - `SegmentedRow` / `SegmentButton`: control segmentado de selección única (modo de búsqueda,
-    condición, rol, entrega, filtros).
-  - `RequestRow`, `ItemCard`, `BookResultCard`, `StatTile`, `InfoRow`, `EmptyState`: filas y
-    tarjetas reutilizadas en casi todas las pantallas.
-- **Pantallas** (una clase por pantalla, todas heredan de `BaseScreen`): `LoginScreen`,
-  `RegisterScreen`, `ReaderHomeScreen`, `BookSearchScreen`, `CreateRequestScreen`,
-  `RequestPublishedScreen`, `ReaderRequestsScreen`, `ReaderRequestDetailScreen`,
-  `OfferDetailScreen`, `OfferAcceptedScreen`, `SellerHomeScreen`, `SellerRequestDetailScreen`,
-  `CreateOfferScreen`, `SellerOffersScreen`, `AdminHomeScreen`, `AdminRequestsScreen`,
-  `AdminUsersScreen`, `AdminOffersScreen`, `AdminActivityScreen`. Cada una implementa
-  `refresh()`, que se llama automáticamente al entrar a la pantalla (`on_pre_enter`).
-- **`DemoLibrosApp`** (clase principal, `MDApp`): arma el tema (paleta de color, tipografía),
-  crea el `Store` de demo, maneja la navegación (`go`, `back`, `go_home`, historial tipo pila),
-  el login/logout, diálogos de confirmación/información, *snackbars* de error, y helpers
-  compartidos entre pantallas (`request_card`, `request_info_rows`, `fill_book_header`, etc.).
-- **`app.safe(fn, *args)`**: envoltorio que llama a un método del `Store` y, si lanza un
-  `DomainError`, muestra el mensaje en un *snackbar* en vez de romper la app. Así ningún error
-  de negocio se ve como un *crash*.
+- **Punto de entrada — `main.py`**: configura el tamaño de ventana en escritorio e inicia
+  `DemoLibrosApp`.
+- **Controlador de aplicación — `controllers/app_controller.py`**: `DemoLibrosApp` gestiona el
+  ciclo de vida, el tema, la navegación, sesión, diálogos y coordinación con servicios.
+- **Controladores de pantalla — `controllers/screen_controllers.py`**: las clases Kivy reciben
+  eventos definidos en KV, actualizan el estado visual y llaman a `Store` o servicios.
+- **Vistas — `views/libros.kv`**: contiene layouts, estilos y enlaces de eventos para las 19 pantallas.
+- **Componentes de vista — `views/components.py`**: widgets Kivy reutilizables, formato de
+  fecha y estilos de estado.
+- **Modelo/dominio — `models/store.py`**: conserva entidades, validaciones, permisos y transiciones.
+  Los controladores no duplican esas reglas.
+- **Servicios**: `services/` encapsula persistencia,
+  notificaciones, configuración remota y acceso a datos externos.
 
-### 4.2 Explicación de `libros.kv`
+La separación MVC y la organización del repositorio se registran en
+[`SPEC-001-mvc-refactor.md`](../05-specs/SPEC-001-mvc-refactor.md),
+[`SPEC-002-reorganizar-estructura.md`](../05-specs/SPEC-002-reorganizar-estructura.md),
+[`ADR-001-mvc-incremental.md`](./ADR-001-mvc-incremental.md) y
+[`ADR-002-estructura-del-repositorio.md`](./ADR-002-estructura-del-repositorio.md).
+
+### 4.2 Explicación de `views/libros.kv`
 
 Es un archivo [KV language](https://kivy.org/doc/stable/guide/lang.html) de ~1500 líneas.
 Contiene **toda** la interfaz: layout, estilos, colores por estado, tipografía y navegación
@@ -284,6 +285,9 @@ entre pantallas. Se divide en:
 2. **`MDScreenManager`**: la lista de las 19 pantallas de la app.
 3. **Una regla `<NombreDePantalla>:` por pantalla**, con su layout completo.
 
+Los nombres de widgets y controladores Kivy deben importarse antes de cargar el archivo KV;
+`controllers/app_controller.py` importa los controladores de pantalla para registrar esas clases.
+
 Detalle técnico importante encontrado y corregido en esta sesión: en KivyMD 2.0, un
 `MDCard` **ignora** cualquier `md_bg_color` personalizado a menos que también se le declare
 `theme_bg_color: "Custom"` (si no, usa el color que le asigna el tema automáticamente). Esto
@@ -291,7 +295,7 @@ afectaba a `Panel` y a `StatTile`, y hacía que las tarjetas de métricas del ad
 paneles destacados se vieran todas del mismo color en vez de sus colores distintos — se
 corrigió agregando esa línea en ambos.
 
-### 4.3 Explicación de `store.py`
+### 4.3 Explicación de `models/store.py`
 
 Ya cubierto en detalle en la sección 3 (modelo de dominio). Estructuralmente:
 
@@ -311,7 +315,7 @@ Ya cubierto en detalle en la sección 3 (modelo de dominio). Estructuralmente:
 - `build_demo_store()` + `DEMO_USERS`: arma un `Store` con las 5 cuentas de demo y algunos
   libros/solicitudes/ofertas de ejemplo, para que la app no arranque vacía.
 
-### 4.4 Explicación de `books_api.py`
+### 4.4 Explicación de `services/books_api.py`
 
 Resuelve la búsqueda de libros con **tres niveles de respaldo**, en orden:
 
@@ -330,9 +334,9 @@ archivo derivado del hash MD5 de la URL): la primera vez que se ve una portada s
 un hilo aparte y se guarda; las siguientes veces se lee directo del disco, sin volver a pedirla
 por red — esto evita el problema original de portadas que "a veces cargan y a veces no".
 
-### 4.5 Explicación de `locations.py`
+### 4.5 Explicación de `services/locations.py`
 
-- `CHILE_LOCATIONS`: catálogo de 107 comunas de Chile con su región.
+- `CHILE_LOCATIONS`: catálogo de 346 comunas cargado desde `data/comunas.json`.
 - `search_locations(query)`: autocompletado tolerante a tildes/mayúsculas (usado en el campo
   de ubicación al crear una solicitud y al registrar un vendedor).
 - `normalize_location_name(text)`: convierte lo que escribe el usuario al formato estándar
@@ -353,9 +357,9 @@ python -m unittest discover -s tests -v
   de otro, etc.), validaciones de formularios, y las máquinas de estado (incluida la
   negociación/desistimiento de un trato y la moderación administrativa).
 - `tests/test_locations_and_cache.py`: catálogo de ubicaciones, búsqueda tolerante a tildes,
-  normalización, la nueva `proximity_label`, y la caché de portadas de `books_api.py`.
+  normalización, `proximity_label` y la caché de portadas de `services/books_api.py`.
 
-Actualmente hay **30 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
+Actualmente hay **34 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
 para asegurar que nada se rompió.
 
 ---
@@ -444,11 +448,12 @@ python -m unittest discover -s tests -v
 ### 7.1 Paleta de color
 
 KivyMD 2.0 genera un esquema Material You completo a partir de un solo color "semilla"
-(`theme_cls.primary_palette`, definido en `main.py`). Se probaron varias familias de color
+(`theme_cls.primary_palette`, definido en `controllers/app_controller.py`). Se probaron varias familias de color
 (marrón/rojiza, azul/índigo, dorada) y se descartó la familia roja porque su tono resultante
 chocaba visualmente con el color ya usado para el estado "cancelada". Primero se usó
 `"darkgoldenrod"`. Luego, siguiendo la maqueta "BookWho — Rediseño editorial", se cambió a un
-**verde oscuro `#1F4D3A`** (`ACCENT` en `main.py`) con fondo **crema `#FBFAF7`** (`PAPER`).
+**verde oscuro `#1F4D3A`** (`ACCENT` en `views/components.py`) con fondo **crema `#FBFAF7`**
+(`PAPER`).
 El acento es la semilla del esquema Material You. Como Material You ajusta levemente el tono,
 `_apply_brand_colors()` fija exactos el color primario y el fondo cada vez que se regenera el
 esquema. Los colores de estado (`STATUS_COLORS`) no cambiaron.
@@ -458,9 +463,9 @@ esquema. Los colores de estado (`STATUS_COLORS`) no cambiaron.
 Siguiendo la misma maqueta, los estilos "Display", "Headline" y "Title" de KivyMD usan
 **Source Serif 4** (seminegrita) y los estilos "Body" y "Label" (texto, botones y campos)
 usan **IBM Plex Sans**. Ambas fuentes tienen licencia OFL; los `.ttf` estáticos y sus
-licencias están en `fonts/`. Kivy no lee `woff2`, el formato que traía la maqueta, por eso se
+licencias están en `assets/fonts/`. Kivy no lee `woff2`, el formato que traía la maqueta, por eso se
 usan los `.ttf` oficiales de Adobe e IBM. Se aplica modificando `theme_cls.font_styles` una
-sola vez en `main.py`, sin tocar cada pantalla.
+sola vez en `controllers/app_controller.py`, sin tocar cada pantalla.
 
 ### 7.3 Estilo editorial en todas las pantallas
 
@@ -490,7 +495,7 @@ restilizaron los componentes compartidos:
 - **Botones** con esquinas de 6 dp; campos de texto con borde gris cálido y foco verde; barras
   superiores con una línea fina abajo.
 - Los tonos neutros del diseño (`INK`, `MUTED`, `FAINT`, `RULE`, `FIELD_LINE`, `TRACK`) están
-  al inicio de `libros.kv`.
+  al inicio de `views/libros.kv`.
 
 Ajustes tipográficos: los títulos en serif usan interlineado 1,15, como la maqueta (los valores
 de KivyMD están pensados para Roboto), y todas las etiquetas usan `font_hinting: None`, porque el
@@ -506,7 +511,7 @@ junto a las ofertas, porque la app no registra qué ofertas ya vio el lector.
 ### 7.4 Marca (`BrandMark`)
 
 En vez de un ícono genérico de Material Icons, se armó un logo propio combinando dos
-elementos superpuestos (definido como componente reutilizable en `libros.kv`): un cuadrado
+elementos superpuestos (definido como componente reutilizable en `views/libros.kv`): un cuadrado
 redondeado con un ícono de libro, y una insignia circular con un signo de interrogación
 superpuesta en la esquina — literalmente "BookWho?" convertido en símbolo.
 
@@ -516,7 +521,7 @@ superpuesta en la esquina — literalmente "BookWho?" convertido en símbolo.
 
 | Criterio | Peso | Estado |
 |---|---|---|
-| A — Fundamentación UX/UI con evidencia de usuarios | 30% | Cubierto: encuesta en Google Forms con 18 respuestas, analizada en [`FUNDAMENTACION-UX-UI.md`](FUNDAMENTACION-UX-UI.md) (metodología, resultados, matriz hallazgo → decisión, estructura y accesibilidad). |
+| A — Fundamentación UX/UI con evidencia de usuarios | 30% | Cubierto: encuesta en Google Forms con 18 respuestas, analizada en [`FUNDAMENTACION-UX-UI.md`](../01-requirements/FUNDAMENTACION-UX-UI.md) (metodología, resultados, matriz hallazgo → decisión, estructura y accesibilidad). |
 | B — Maqueta funcional Kivy + KivyMD | 30% | Cubierto: la app ejecuta sin errores, usa componentes KivyMD con coherencia Material Design. |
 | C — Estructura del proyecto y navegación | 25% | Cubierto: separación `.py`/`.kv`, `ScreenManager` con 19 pantallas, validaciones, proyecto ordenado. |
 | D — Presentación oral y demo en vivo | 15% | Depende de la presentación misma. |

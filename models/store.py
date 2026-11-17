@@ -1,6 +1,7 @@
 """
 Capa de dominio del MVP: entidades, máquinas de estado, permisos y un
-repositorio en memoria que services/persistence.py guarda en data.json.
+repositorio en memoria que services/persistence.py guarda en data/user/data.json
+en escritorio y en el directorio privado de la app en Android.
 
 Toda regla de negocio y de autorización vive aquí, NO en la interfaz:
 la UI solo oculta/deshabilita acciones, pero cada método del Store vuelve

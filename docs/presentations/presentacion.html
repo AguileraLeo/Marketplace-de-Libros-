@@ -228,12 +228,12 @@ footer p{color:var(--muted);font-size:13px;margin:0}
         </div>
         <div class="stat-row">
           <div class="stat"><b>19</b><span>Pantallas</span></div>
-          <div class="stat"><b>30</b><span>Pruebas automatizadas</span></div>
+          <div class="stat"><b>32</b><span>Pruebas automatizadas</span></div>
           <div class="stat"><b>3</b><span>Roles: lector, vendedor, admin</span></div>
-          <div class="stat"><b>107</b><span>Comunas en el catálogo</span></div>
+          <div class="stat"><b>346</b><span>Comunas en el catálogo</span></div>
         </div>
       </div>
-      <div class="phone"><img src="screenshots/login.png" alt="Pantalla de inicio de sesión de BookWho?"></div>
+      <div class="phone"><img src="../../assets/screenshots/login.png" alt="Pantalla de inicio de sesión de BookWho?"></div>
     </div>
   </section>
 
@@ -399,9 +399,9 @@ footer p{color:var(--muted);font-size:13px;margin:0}
     <p class="eyebrow">Capturas</p>
     <h2>La app, en pantalla</h2>
     <div class="gallery">
-      <figure class="shot"><img src="screenshots/reader_home.png" alt="Inicio del lector"><figcaption>Inicio del lector</figcaption></figure>
-      <figure class="shot"><img src="screenshots/seller_home.png" alt="Solicitudes disponibles para el vendedor"><figcaption>Inicio del vendedor</figcaption></figure>
-      <figure class="shot"><img src="screenshots/admin_home.png" alt="Panel de administración"><figcaption>Administración</figcaption></figure>
+      <figure class="shot"><img src="../../assets/screenshots/reader_home.png" alt="Inicio del lector"><figcaption>Inicio del lector</figcaption></figure>
+      <figure class="shot"><img src="../../assets/screenshots/seller_home.png" alt="Solicitudes disponibles para el vendedor"><figcaption>Inicio del vendedor</figcaption></figure>
+      <figure class="shot"><img src="../../assets/screenshots/admin_home.png" alt="Panel de administración"><figcaption>Administración</figcaption></figure>
     </div>
   </section>
 
@@ -416,14 +416,14 @@ footer p{color:var(--muted);font-size:13px;margin:0}
       <span class="chip">Google Books API</span>
       <span class="chip">Open Library API</span>
     </div>
-    <div class="arch"><b>libros.kv</b>    interfaz declarativa (KV language): toda la UI y el estilo
+    <div class="arch"><b>views/libros.kv</b> interfaz declarativa (KV language): toda la UI y el estilo
    │
-<b>main.py</b>      pantallas y navegación — sin reglas de negocio
+<b>controllers/</b> controladores y navegación
    │
-<b>store.py</b>     dominio: entidades, máquinas de estado, permisos (repositorio en memoria)
+<b>models/store.py</b> dominio: entidades, estados y permisos (repositorio en memoria)
    │
-<b>books_api.py</b> búsqueda externa de libros con caché de portadas
-<b>locations.py</b> catálogo de comunas + cercanía vendedor–lector</div>
+<b>services/</b>   búsqueda externa, persistencia, configuración y ubicaciones
+<b>data/</b>       catálogos y configuración · <b>assets/</b> fuentes y capturas</div>
   </section>
 
   <section id="estado">
@@ -436,7 +436,7 @@ footer p{color:var(--muted);font-size:13px;margin:0}
       </div>
       <div class="status-row"><span class="dot ok"></span>
         <span class="label">Estructura y pruebas</span>
-        <span class="desc">Separación interfaz/dominio, 30 pruebas automatizadas en verde.</span>
+        <span class="desc">Separación interfaz/dominio, 34 pruebas automatizadas en verde.</span>
       </div>
       <div class="status-row"><span class="dot mid"></span>
         <span class="label"><a href="#evidencia" style="color:inherit;text-decoration:none">Fundamentación UX/UI</a></span>

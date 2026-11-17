@@ -24,19 +24,19 @@ Buscar libro -> crear solicitud -> publicar -> vendedor encuentra solicitud
 
 Incluye además la experiencia de administrador (estadísticas, usuarios, solicitudes, ofertas, moderación y actividad).
 
-La fundamentación del diseño a partir de la encuesta a usuarios está en [`FUNDAMENTACION-UX-UI.md`](FUNDAMENTACION-UX-UI.md).
+La fundamentación del diseño a partir de la encuesta a usuarios está en [`docs/01-requirements/FUNDAMENTACION-UX-UI.md`](docs/01-requirements/FUNDAMENTACION-UX-UI.md).
 
-> **¿Recién clonas el repo?** Lee primero [`CONTEXTO.md`](CONTEXTO.md) (estado del proyecto y cómo trabajar en equipo) y [`AGENTS.md`](AGENTS.md) (visión y reglas del producto). Si usas IA, [`CLAUDE.md`](CLAUDE.md) tiene las instrucciones para el asistente, y [`USO_IA.md`](USO_IA.md) registra su uso real en este proyecto.
+> **¿Recién clonas el repo?** Lee primero [`CONTEXTO.md`](CONTEXTO.md) (estado del proyecto y cómo trabajar en equipo) y [`AGENTS.md`](AGENTS.md) (visión y reglas del producto). Si usas IA, [`CLAUDE.md`](CLAUDE.md) tiene las instrucciones para el asistente, y [`docs/06-process/USO_IA.md`](docs/06-process/USO_IA.md) registra su uso real en este proyecto.
 
 ## Capturas
 
 | Login | Inicio (lector) |
 |---|---|
-| ![Login](screenshots/login.png) | ![Inicio lector](screenshots/reader_home.png) |
+| ![Login](assets/screenshots/login.png) | ![Inicio lector](assets/screenshots/reader_home.png) |
 
 | Inicio (vendedor) | Administración |
 |---|---|
-| ![Inicio vendedor](screenshots/seller_home.png) | ![Administración](screenshots/admin_home.png) |
+| ![Inicio vendedor](assets/screenshots/seller_home.png) | ![Administración](assets/screenshots/admin_home.png) |
 
 ## Descargar para Android
 
@@ -75,30 +75,37 @@ docker run --rm -v ~/.buildozer:/home/user/.buildozer -v "$PWD":/home/user/hostc
 
 También puedes registrar nuevas cuentas de lector o vendedor desde la app.
 
-Los datos se guardan en `data.json`. Para volver a los datos de demo, cierra la app y borra ese archivo.
+En escritorio, los datos se guardan en `data/user/data.json`; en Android se usa el directorio privado de la app. Para volver a los datos de demo, cierra la app y borra el archivo correspondiente. Si encuentra el antiguo `data.json` en la raíz, la app lo migra sin sobrescribir un destino existente.
 
 ## Servicios implementados (y dónde están)
 
 | Servicio | Qué hace | Dónde está |
 |---|---|---|
-| **Autenticación** | Registro con validación (nombre, correo, clave de 4+ caracteres, comuna si es vendedor) y login. La contraseña se guarda como hash SHA-256, nunca en texto plano. Las cuentas suspendidas no pueden entrar. | `store.py`: `hash_password()`, `register()`, `authenticate()` · `main.py`: `LoginScreen.do_login()`, `RegisterScreen.do_register()` |
-| **Persistencia JSON** | Usuarios, libros, solicitudes, ofertas, contactos y actividad se guardan en `data.json` y se recuperan al reabrir. Se guarda tras cada acción exitosa, al pausar (Android) y al cerrar. Si el archivo no existe se cargan los datos de demo; si está corrupto se respalda como `data.json.corrupto`. | `services/persistence.py`: `save_store()`, `load_store()` · `main.py`: `build()`, `save()`, `safe()`, `on_pause()`, `on_stop()` |
-| **Notificaciones locales** (plyer) | Se disparan **al publicar una oferta** (vendedor) y **al iniciar sesión un lector que tiene ofertas activas** por revisar. Son locales: las genera el dispositivo, sin servidor. En Android 13+ se pide el permiso al iniciar. | `services/notifications.py`: `send()`, `TIMEOUT` · `main.py`: `CreateOfferScreen.publish()`, `login()`, `on_start()` |
-| **Configuración remota** | Al iniciar, se descarga [`remote_config.json`](remote_config.json) desde la rama `main` de GitHub sin bloquear la UI (`UrlRequest`). El texto `banner` se muestra bajo el título del login. Sin red, o si el JSON viene mal, se usa el valor por defecto (`DEFAULTS`). Para cambiarlo basta editar `remote_config.json` en GitHub (la caché de GitHub puede tardar ~5 min). | `services/remote_config.py`: `URL`, `DEFAULTS`, `fetch()` · `main.py`: `on_start()`, `apply_remote_config()` · `libros.kv`: `text: app.banner` |
+| **Autenticación** | Registro con validación (nombre, correo, clave de 4+ caracteres, comuna si es vendedor) y login. La contraseña se guarda como hash SHA-256, nunca en texto plano. Las cuentas suspendidas no pueden entrar. | `models/store.py`: `hash_password()`, `register()`, `authenticate()` · `controllers/screen_controllers.py`: `LoginScreen`, `RegisterScreen` |
+| **Persistencia JSON** | Usuarios, libros, solicitudes, ofertas, contactos y actividad se guardan en `data/user/data.json` (escritorio) o en el directorio privado de la app (Android), y se recuperan al reabrir. Se guarda tras cada acción exitosa, al pausar (Android) y al cerrar. Si el archivo no existe se cargan los datos de demo; si está corrupto se respalda con el sufijo `.corrupto`. | `services/persistence.py`: `save_store()`, `load_store()` · `controllers/app_controller.py`: ciclo de vida y coordinación |
+| **Notificaciones locales** (plyer) | Se disparan **al publicar una oferta** (vendedor) y **al iniciar sesión un lector que tiene ofertas activas** por revisar. Son locales: las genera el dispositivo, sin servidor. En Android 13+ se pide el permiso al iniciar. | `services/notifications.py`: `send()`, `TIMEOUT` · `controllers/screen_controllers.py`, `controllers/app_controller.py` |
+| **Configuración remota** | Al iniciar, se descarga [`data/remote_config.json`](data/remote_config.json) desde la rama `main` de GitHub sin bloquear la UI (`UrlRequest`). El texto `banner` se muestra bajo el título del login. Sin red, o si el JSON viene mal, se usa el valor por defecto (`DEFAULTS`). Para cambiarlo basta editar `data/remote_config.json` en GitHub (la caché de GitHub puede tardar ~5 min). | `services/remote_config.py`: `URL`, `DEFAULTS`, `fetch()` · `controllers/app_controller.py` · `views/libros.kv`: `text: app.banner` |
 
 ## Estructura
 
 | Archivo              | Contenido |
 |----------------------|-----------|
-| `main.py`            | App, pantallas, navegación y widgets reutilizables; conecta los servicios |
-| `libros.kv`          | Toda la interfaz y el estilo (KV language) |
-| `store.py`           | Entidades (dataclasses), máquinas de estado, reglas de negocio, permisos y autenticación; datos de ejemplo. No importa Kivy |
-| `services/persistence.py` | Guardar/cargar el `Store` en `data.json` |
+| `main.py`            | Punto de entrada; configura la ventana y ejecuta la aplicación |
+| `controllers/app_controller.py` | Ciclo de vida, navegación y coordinación de servicios |
+| `controllers/screen_controllers.py` | Controladores de pantalla; conectan eventos Kivy con el modelo |
+| `views/components.py` | Widgets y formato visual reutilizable |
+| `views/libros.kv`    | Toda la interfaz y el estilo (KV language) |
+| `models/store.py`    | Entidades (dataclasses), máquinas de estado, reglas de negocio, permisos y autenticación; datos de ejemplo. No importa Kivy |
+| `services/persistence.py` | Guardar/cargar el `Store` en JSON local |
 | `services/notifications.py` | Notificaciones locales con plyer |
 | `services/remote_config.py` | Configuración remota con valores por defecto |
-| `remote_config.json` | La configuración que la app lee desde GitHub |
-| `books_api.py`       | Búsqueda de libros: Google Books, luego Open Library y, sin conexión, un catálogo local |
-| `locations.py`       | Comunas de Chile y cercanía vendedor–lector |
+| `data/remote_config.json` | La configuración que la app lee desde GitHub |
+| `services/books_api.py` | Búsqueda de libros: Google Books, luego Open Library y, sin conexión, un catálogo local |
+| `services/locations.py` | Comunas de Chile y cercanía vendedor–lector |
+| `data/comunas.json`   | Catálogo de comunas y regiones consumido por `services/locations.py` |
+| `assets/fonts/`       | Fuentes tipográficas de la aplicación |
+| `assets/screenshots/` | Capturas de la aplicación |
+| `docs/`               | Especificaciones, arquitectura, planificación y documentación |
 | `buildozer.spec`     | Configuración para compilar el APK de Android |
 | `tests/`             | Pruebas del flujo crítico, permisos y persistencia |
 
@@ -123,9 +130,9 @@ Opcional: define `GOOGLE_BOOKS_API_KEY` para usar Google Books. Sin clave, Googl
 
 - **Guardar objetos en JSON:** `json.dump` no sabe guardar `datetime` ni dataclasses. Convertimos cada entidad con `asdict()` y las fechas a texto ISO; al cargar las reconstruimos con `datetime.fromisoformat()`.
 - **Ids repetidos al reabrir:** los contadores de id partían de 1 y chocaban con los guardados. Ahora siguen desde el mayor id que hay en el JSON.
-- **No perder datos:** escribimos primero a `data.json.tmp` y después lo reemplazamos (`os.replace`), así un cierre a mitad de guardado no deja el archivo a medias. En Android también se guarda en `on_pause`, porque el sistema puede matar la app sin llamar `on_stop`.
-- **Contraseñas en disco:** al persistir, las claves en texto plano quedarían legibles en `data.json`, así que pasamos a guardar un hash SHA-256.
-- **HTTPS en Android:** el teléfono no trae los certificados raíz para Python, así que la búsqueda de libros y la config remota fallaban. Se resolvió usando `certifi` (`ssl_context` en `books_api.py` y `ca_file` en `UrlRequest`).
+- **No perder datos:** escribimos primero a un archivo `.tmp` junto al JSON y después lo reemplazamos (`os.replace`), así un cierre a mitad de guardado no deja el archivo a medias. En Android también se guarda en `on_pause`, porque el sistema puede matar la app sin llamar `on_stop`.
+- **Contraseñas en disco:** al persistir, las claves en texto plano quedarían legibles en el JSON, así que pasamos a guardar un hash SHA-256.
+- **HTTPS en Android:** el teléfono no trae los certificados raíz para Python, así que la búsqueda de libros y la config remota fallaban. Se resolvió usando `certifi` (`ssl_context` en `services/books_api.py` y `ca_file` en `UrlRequest`).
 - **GitHub responde la config como texto:** `raw.githubusercontent.com` envía `text/plain`, así que `UrlRequest` no la convierte sola a diccionario; la parseamos con `json.loads` y validamos claves y tipos antes de usarla.
 - **KivyMD 2.0 en Android:** no está en PyPI, así que en `buildozer.spec` se instala desde el zip de GitHub. Se dejó fuera `materialshapes`/`pycairo` porque la app no usa `FitImage`.
 
