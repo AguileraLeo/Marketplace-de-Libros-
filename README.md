@@ -59,9 +59,13 @@ python main.py
 Para generar el APK (Linux, con Docker):
 
 ```bash
-docker run --rm -v ~/.buildozer:/home/user/.buildozer -v "$PWD":/home/user/hostcwd kivy/buildozer android debug
+docker run --rm -v ~/.buildozer:/home/user/.buildozer \
+  -v ~/.buildozer/android-home:/home/user/.android -e ANDROID_USER_HOME=/home/user/.android \
+  -v "$PWD":/home/user/hostcwd kivy/buildozer android debug
 # el APK queda en bin/
 ```
+
+La segunda línea guarda la llave de firma de depuración fuera del contenedor (`~/.buildozer/android-home/debug.keystore`). Sin ella, cada compilación firma con una llave nueva y el teléfono rechaza la actualización (`INSTALL_FAILED_UPDATE_INCOMPATIBLE`): hay que desinstalar, y eso **borra los datos de la app** (incluido el registro de eventos). Las actualizaciones deben compilarse en el mismo PC (con esa misma llave). Antes de desinstalar una versión con datos, respáldalos: `adb exec-out run-as cl.uct.bookwho cat files/data.json > data_telefono.json`.
 
 ## Cuentas de demo (hardcodeadas)
 
@@ -77,14 +81,17 @@ También puedes registrar nuevas cuentas de lector o vendedor desde la app.
 
 Los datos se guardan en `data.json`. Para volver a los datos de demo, cierra la app y borra ese archivo.
 
+En el APK (Android) el login no muestra el panel de cuentas demo. Las cuentas siguen existiendo con estas contraseñas, así que eso no es una medida de seguridad: para una prueba con usuarios reales, cada participante debe registrar su propia cuenta.
+
 ## Servicios implementados (y dónde están)
 
 | Servicio | Qué hace | Dónde está |
 |---|---|---|
 | **Autenticación** | Registro con validación (nombre, correo, clave de 4+ caracteres, comuna si es vendedor) y login. La contraseña se guarda como hash SHA-256, nunca en texto plano. Las cuentas suspendidas no pueden entrar. | `store.py`: `hash_password()`, `register()`, `authenticate()` · `main.py`: `LoginScreen.do_login()`, `RegisterScreen.do_register()` |
-| **Persistencia JSON** | Usuarios, libros, solicitudes, ofertas, contactos y actividad se guardan en `data.json` y se recuperan al reabrir. Se guarda tras cada acción exitosa, al pausar (Android) y al cerrar. Si el archivo no existe se cargan los datos de demo; si está corrupto se respalda como `data.json.corrupto`. | `services/persistence.py`: `save_store()`, `load_store()` · `main.py`: `build()`, `save()`, `safe()`, `on_pause()`, `on_stop()` |
+| **Persistencia JSON** | Usuarios, libros, solicitudes, ofertas, contactos y actividad se guardan en `data.json` y se recuperan al reabrir. Se guarda tras cada acción exitosa, al pausar (Android) y al cerrar. Si el archivo no existe se cargan los datos de demo; si está corrupto o no tiene la estructura esperada se respalda como `data.json.corrupto`. Si no se puede escribir (disco lleno, sin permisos), la app avisa "No se pudieron guardar los cambios" y vuelve al último estado guardado. | `services/persistence.py`: `save_store()`, `load_store()` · `main.py`: `build()`, `save()`, `safe()`, `on_pause()`, `on_stop()` |
 | **Notificaciones locales** (plyer) | Se disparan **al publicar una oferta** (vendedor) y **al iniciar sesión un lector que tiene ofertas activas** por revisar. Son locales: las genera el dispositivo, sin servidor. En Android 13+ se pide el permiso al iniciar. | `services/notifications.py`: `send()`, `TIMEOUT` · `main.py`: `CreateOfferScreen.publish()`, `login()`, `on_start()` |
 | **Configuración remota** | Al iniciar, se descarga [`remote_config.json`](remote_config.json) desde la rama `main` de GitHub sin bloquear la UI (`UrlRequest`). El texto `banner` se muestra bajo el título del login. Sin red, o si el JSON viene mal, se usa el valor por defecto (`DEFAULTS`). Para cambiarlo basta editar `remote_config.json` en GitHub (la caché de GitHub puede tardar ~5 min). | `services/remote_config.py`: `URL`, `DEFAULTS`, `fetch()` · `main.py`: `on_start()`, `apply_remote_config()` · `libros.kv`: `text: app.banner` |
+| **Analítica (RA3)** | Cada acción relevante queda registrada como evento en `data.json`. En el PC, `analitica.py` calcula los 3 KPIs (tasa de resolución, tasa de respuesta y horas hasta la primera oferta) y genera `kpis.png`, excluyendo las cuentas demo. Detalle, fórmulas y limitaciones en [`DOCUMENTATION.md`](DOCUMENTATION.md). | `store.py`: `_log()` · `analitica.py` |
 
 ## Estructura
 
@@ -100,7 +107,10 @@ Los datos se guardan en `data.json`. Para volver a los datos de demo, cierra la 
 | `books_api.py`       | Búsqueda de libros: Google Books, luego Open Library y, sin conexión, un catálogo local |
 | `locations.py`       | Comunas de Chile y cercanía vendedor–lector |
 | `buildozer.spec`     | Configuración para compilar el APK de Android |
-| `tests/`             | Pruebas del flujo crítico, permisos y persistencia |
+| `analitica.py`       | KPIs de RA3 a partir de `data.json` (se ejecuta en el PC; la app no lo usa) |
+| `DOCUMENTATION.md`   | Medición RA3: eventos, KPIs, método MJV App y limitaciones |
+| `DOCUMENTACION.md`   | Documentación técnica completa del código |
+| `tests/`             | Pruebas del flujo crítico, permisos, persistencia y analítica |
 
 ```bash
 python -m unittest discover -s tests -v
@@ -114,7 +124,7 @@ Opcional: define `GOOGLE_BOOKS_API_KEY` para usar Google Books. Sin clave, Googl
 - Los datos de contacto del vendedor solo son visibles desde que la oferta entra en coordinación.
 - Cancelar una solicitud cancela sus ofertas activas.
 - Un vendedor solo puede tener una oferta activa por solicitud. Puede ofrecer el libro nuevo o usado aunque no coincida con lo que pidió el lector; el lector lo evalúa al revisar la oferta.
-- Si un vendedor cancela su oferta, la solicitud se mantiene en `CON_OFERTAS`, porque la máquina de estados no define la vuelta a `PUBLICADA`.
+- Si un vendedor cancela su última oferta activa, la solicitud vuelve a `PUBLICADA` (antes se quedaba en `CON_OFERTAS` sin ofertas). Una oferta que ya está en coordinación no se cancela como oferta común: el vendedor o el lector desisten del trato.
 - Una cuenta tiene un solo rol. Los usuarios suspendidos no pueden iniciar sesión ni operar.
 - "Recuperar contraseña" es simulado: no se envían correos.
 - Los reportes y la auditoría formal quedan fuera; el panel de admin muestra un registro de actividad simple.
@@ -128,4 +138,5 @@ Opcional: define `GOOGLE_BOOKS_API_KEY` para usar Google Books. Sin clave, Googl
 - **HTTPS en Android:** el teléfono no trae los certificados raíz para Python, así que la búsqueda de libros y la config remota fallaban. Se resolvió usando `certifi` (`ssl_context` en `books_api.py` y `ca_file` en `UrlRequest`).
 - **GitHub responde la config como texto:** `raw.githubusercontent.com` envía `text/plain`, así que `UrlRequest` no la convierte sola a diccionario; la parseamos con `json.loads` y validamos claves y tipos antes de usarla.
 - **KivyMD 2.0 en Android:** no está en PyPI, así que en `buildozer.spec` se instala desde el zip de GitHub. Se dejó fuera `materialshapes`/`pycairo` porque la app no usa `FitImage`.
+- **Buildozer rehacía todo en cada compilación y terminaba fallando:** python-for-android guarda la URL de KivyMD en minúsculas; como el spec decía `KivyMD`, creía que faltaba ese requisito, borraba lo ya compilado y lo rehacía. Al rehacerlo, el entorno de `pip` de `.buildozer/android/platform/build-arm64-v8a/build/venv` quedaba mezclado entre dos versiones y `pip` no arrancaba. Se escribió la URL en minúsculas (es el mismo repositorio) y se borró ese entorno roto, que python-for-android vuelve a crear solo.
 

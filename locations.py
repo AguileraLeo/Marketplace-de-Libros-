@@ -9,7 +9,6 @@ Permite:
 from __future__ import annotations
 
 import unicodedata
-from typing import Optional
 
 # Catálogo oficial normalizado de regiones y comunas
 CHILE_LOCATIONS: list[dict[str, str]] = [

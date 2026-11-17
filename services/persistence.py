@@ -59,6 +59,8 @@ def load_store(path: str) -> Optional[Store]:
     except FileNotFoundError:
         return None  # primera vez que se abre la app
     except (json.JSONDecodeError, UnicodeDecodeError):
+        data = None
+    if not isinstance(data, dict):  # roto, o JSON válido que no es un objeto (lista, número, null…)
         os.replace(path, path + ".corrupto")  # se respalda, no se pisa
         return None
 
@@ -71,7 +73,7 @@ def load_store(path: str) -> Optional[Store]:
                 obj = cls(**_parse_dates(item))
                 table[getattr(obj, key)] = obj
         store.activity = [ActivityEntry(**_parse_dates(a)) for a in data.get("activity", [])]
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, AttributeError):  # AttributeError: un registro que no es objeto
         os.replace(path, path + ".corrupto")
         return None
 

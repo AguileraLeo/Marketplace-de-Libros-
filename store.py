@@ -50,7 +50,7 @@ class RequestStatus:
     TRANSITIONS = {
         DRAFT: {PUBLISHED},
         PUBLISHED: {WITH_OFFERS, CANCELLED},
-        WITH_OFFERS: {IN_DEAL, RESOLVED, CANCELLED},
+        WITH_OFFERS: {IN_DEAL, RESOLVED, CANCELLED, PUBLISHED},  # PUBLISHED: se cancelaron todas sus ofertas
         IN_DEAL: {RESOLVED, WITH_OFFERS, PUBLISHED, CANCELLED},
         RESOLVED: set(),
         CANCELLED: set(),
@@ -207,9 +207,6 @@ class SellerContact:
     phone: str = ""
     email: str = ""
     address_or_meeting_point: str = ""
-
-    def is_empty(self) -> bool:
-        return not (self.phone or self.email or self.address_or_meeting_point)
 
 
 @dataclass
@@ -690,7 +687,14 @@ class Store:
         offer = self._get(self.offers, offer_id, "Oferta")
         if offer.seller_id != seller.id:
             raise PermissionDenied("Solo puedes cancelar tus propias ofertas.")
+        if offer.status == OfferStatus.IN_DEAL:
+            # Cancelarla aquí dejaría la solicitud trabada en coordinación: eso lo resuelve cancel_deal().
+            raise InvalidTransition("Esta oferta está en coordinación: usa «Desistir del trato».")
         self._transition(offer, OfferStatus.CANCELLED, OfferStatus.TRANSITIONS)
+        req = self.requests[offer.request_id]
+        if req.status == RequestStatus.WITH_OFFERS and not self.active_offer_count(req.id):
+            # Sin ofertas vivas ya no está "con ofertas": vuelve a publicada.
+            self._transition(req, RequestStatus.PUBLISHED, RequestStatus.TRANSITIONS)
         self._log(seller, "oferta_cancelada", f"Oferta #{offer.id} cancelada")
         return offer
 

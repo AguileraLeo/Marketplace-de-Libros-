@@ -37,6 +37,7 @@ from kivy.clock import Clock, mainthread
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
 from kivy.lang import Builder
+from kivy.logger import Logger
 from kivy.metrics import dp
 from kivy.properties import (
     BooleanProperty,
@@ -66,7 +67,6 @@ from books_api import (
     catalog_lookup,
     download_and_cache_cover,
     get_cover_cache_path,
-    is_cover_cached,
     search_books,
 )
 from services import notifications, persistence, remote_config
@@ -302,6 +302,14 @@ class BaseScreen(MDScreen):
 
 # --------------------------------------------------------------- acceso
 class LoginScreen(BaseScreen):
+    def on_kv_post(self, base_widget):
+        super().on_kv_post(base_widget)
+        # En el APK no se muestran las cuentas demo (incluida la de admin). Solo se ocultan:
+        # las cuentas siguen existiendo en los datos de demo, no es una medida de seguridad completa.
+        if platform == "android":
+            panel = self.ids.demo_panel
+            panel.parent.remove_widget(panel)
+
     def do_login(self):
         user = self.app.safe(
             self.app.store.authenticate, self.ids.email.text, self.ids.password.text
@@ -803,13 +811,20 @@ class SellerOffersScreen(BaseScreen):
                 meta = "El lector concretó otra oferta."
             else:
                 meta = f"Solicitud #{req.id} · {req.location} · máx. {format_price(req.max_price)}"
+            # En coordinación ya no se cancela como oferta común: se desiste del trato (cancel_deal).
+            if o.status == OfferStatus.IN_DEAL:
+                action_text, action = "Desistir del trato", self.desist
+            elif o.status in (OfferStatus.PUBLISHED, OfferStatus.ON_HOLD):
+                action_text, action = "Cancelar oferta", self.cancel
+            else:
+                action_text, action = "", None
             cards.append(ItemCard(
                 title=store.book(req.book_id).title,
                 subtitle=f"{format_price(o.price)} · {Condition.LABELS[o.book_condition]}",
                 meta=meta,
                 status=o.status, kind="offer",
-                action_text="Cancelar oferta" if o.status in (OfferStatus.PUBLISHED, OfferStatus.ON_HOLD) else "",
-                action_callback=lambda _c, oid=o.id: self.cancel(oid),
+                action_text=action_text,
+                action_callback=(lambda _c, oid=o.id, fn=action: fn(oid)) if action else None,
                 callback=lambda _c, rid=req.id: app.open_seller_request(rid),
             ))
         self.fill(self.ids.list, cards, "No tienes ofertas en esta categoría.", "tag-outline")
@@ -823,6 +838,20 @@ class SellerOffersScreen(BaseScreen):
                 self.refresh()
 
         app.confirm("¿Cancelar oferta?", "El lector ya no podrá aceptarla.", "Cancelar oferta", do_cancel)
+
+    def desist(self, offer_id):
+        app = self.app
+
+        def do_desist():
+            if app.safe(app.store.cancel_deal, app.user, offer_id):
+                app.notify("Desististe del trato. La solicitud vuelve a recibir ofertas.")
+                self.refresh()
+
+        app.confirm(
+            "¿Desistir del trato?",
+            "Tu oferta se cancelará y el lector podrá elegir otra oferta o recibir nuevas.",
+            "Desistir del trato", do_desist,
+        )
 
 
 # ---------------------------------------------------------------- admin
@@ -979,6 +1008,8 @@ class DemoLibrosApp(MDApp):
         self.current_request_id = None
         self.current_offer_id = None
         Window.bind(on_keyboard=self._on_keyboard)
+        # En Android, al enfocar un campo la pantalla se desplaza para que el teclado no lo tape.
+        Window.softinput_mode = "below_target"
         return Builder.load_file(KV_FILE)
 
     def on_start(self):
@@ -988,8 +1019,14 @@ class DemoLibrosApp(MDApp):
     def apply_remote_config(self, config):
         self.banner = config["banner"]
 
-    def save(self):
-        persistence.save_store(self.store, self.data_file)
+    def save(self) -> bool:
+        """Guarda el Store en data.json. Si el disco falla devuelve False en vez de cerrar la app."""
+        try:
+            persistence.save_store(self.store, self.data_file)
+            return True
+        except OSError as exc:  # disco lleno, sin permisos, carpeta inexistente…
+            Logger.error(f"BookWho: no se pudo guardar {self.data_file}: {exc}")
+            return False
 
     def on_pause(self):  # Android puede cerrar la app en segundo plano sin llamar on_stop
         self.save()
@@ -1055,11 +1092,16 @@ class DemoLibrosApp(MDApp):
         """Ejecuta un caso de uso, guarda el JSON si funcionó y muestra los errores de negocio."""
         try:
             result = fn(*args, **kwargs)
-            self.save()
-            return True if result is None else result
         except DomainError as exc:
             self.notify(str(exc))
             return None
+        if not self.save():
+            # Lo que se ve debe ser lo que quedó guardado: se vuelve al último data.json
+            # (así, si la persona reintenta, la acción no queda duplicada).
+            self.store = persistence.load_store(self.data_file) or self.store
+            self.notify("No se pudieron guardar los cambios.")
+            return None
+        return True if result is None else result
 
     def notify(self, text):
         MDSnackbar(
