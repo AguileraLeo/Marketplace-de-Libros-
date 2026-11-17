@@ -5,7 +5,8 @@ package.domain = cl.uct
 source.dir = .
 source.include_exts = py,kv,ttf,png,jpg,json
 source.exclude_dirs = .venv,tests,assets/screenshots,docs,.cache,bin,.buildozer,data/user,__pycache__
-source.exclude_patterns = data.json,data.json.tmp,data.json.corrupto
+# analitica.py se ejecuta en el PC (RA3): la app no lo usa
+source.exclude_patterns = data.json,data.json.tmp,data.json.corrupto,analitica.py
 version = 1.0
 # ponytail: KivyMD 2.0 no está en PyPI; sin materialshapes/pycairo porque la app no usa FitImage
 # URL en minúsculas: python-for-android guarda el requisito así y, si no coincide, rehace todo el dist en cada build

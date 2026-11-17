@@ -300,8 +300,9 @@ La aplicación se reorganizó de forma incremental, sin cambiar sus flujos:
 La separación MVC y la organización del repositorio se registran en
 [`SPEC-001-mvc-refactor.md`](../05-specs/SPEC-001-mvc-refactor.md),
 [`SPEC-002-reorganizar-estructura.md`](../05-specs/SPEC-002-reorganizar-estructura.md),
-[`ADR-001-mvc-incremental.md`](./ADR-001-mvc-incremental.md) y
-[`ADR-002-estructura-del-repositorio.md`](./ADR-002-estructura-del-repositorio.md).
+[`ADR-001-mvc-incremental.md`](./ADR-001-mvc-incremental.md),
+[`ADR-002-estructura-del-repositorio.md`](./ADR-002-estructura-del-repositorio.md) y
+[`ADR-003-integracion-e4.md`](./ADR-003-integracion-e4.md).
 
 ### 4.2 Explicación de `views/libros.kv`
 

@@ -35,8 +35,8 @@ tests/                          Pruebas automatizadas
 
 Los archivos de descubrimiento y configuración de herramientas permanecen en la
 raíz: `AGENTS.md`, `CLAUDE.md`, `CONTEXTO.md`, `README.md`, `.gitignore`,
-`requirements.txt`, `buildozer.spec` y `main.py`. También se conserva `.agents/`
-en su ubicación raíz.
+`requirements.txt`, `buildozer.spec` y `main.py`. ([ADR-003](./ADR-003-integracion-e4.md)
+agrega `analitica.py` y `DOCUMENTATION.md`, y deja de versionar `.agents/`.)
 
 La persistencia de escritorio pasa a `data/user/data.json`. Al iniciar, la
 aplicación migra el antiguo `data.json` raíz únicamente si el nuevo destino no

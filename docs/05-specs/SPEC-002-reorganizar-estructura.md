@@ -23,8 +23,8 @@ compilación.
 Permanecen en la raíz los archivos de descubrimiento, configuración y entrada
 que dependen de esa ubicación: `AGENTS.md`, `CLAUDE.md`, `CONTEXTO.md`,
 `README.md`, `.gitignore`, `requirements.txt`, `buildozer.spec` y `main.py`.
-También permanecen allí `.agents/` (configuración de agentes) y los archivos
-generados/ignorados por herramientas.
+También permanecen allí los archivos generados/ignorados por herramientas
+(`.agents/` dejó de versionarse: ver ADR-003).
 
 ## Alcance
 
