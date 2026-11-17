@@ -7,6 +7,7 @@ from datetime import datetime
 from kivy.clock import Clock, mainthread
 from kivy.metrics import dp
 from kivy.properties import BooleanProperty, NumericProperty, StringProperty
+from kivy.utils import platform
 from kivymd.app import MDApp
 from kivymd.uix.button import MDButton, MDButtonText
 from kivymd.uix.screen import MDScreen
@@ -50,6 +51,14 @@ class BaseScreen(MDScreen):
 
 # --------------------------------------------------------------- acceso
 class LoginScreen(BaseScreen):
+    def on_kv_post(self, base_widget):
+        super().on_kv_post(base_widget)
+        # En el APK no se muestran las cuentas demo (incluida la de admin). Solo se ocultan:
+        # las cuentas siguen existiendo en los datos de demo, no es una medida de seguridad completa.
+        if platform == "android":
+            panel = self.ids.demo_panel
+            panel.parent.remove_widget(panel)
+
     def do_login(self):
         user = self.app.safe(
             self.app.store.authenticate, self.ids.email.text, self.ids.password.text
@@ -551,13 +560,20 @@ class SellerOffersScreen(BaseScreen):
                 meta = "El lector concretó otra oferta."
             else:
                 meta = f"Solicitud #{req.id} · {req.location} · máx. {format_price(req.max_price)}"
+            # En coordinación ya no se cancela como oferta común: se desiste del trato (cancel_deal).
+            if o.status == OfferStatus.IN_DEAL:
+                action_text, action = "Desistir del trato", self.desist
+            elif o.status in (OfferStatus.PUBLISHED, OfferStatus.ON_HOLD):
+                action_text, action = "Cancelar oferta", self.cancel
+            else:
+                action_text, action = "", None
             cards.append(ItemCard(
                 title=store.book(req.book_id).title,
                 subtitle=f"{format_price(o.price)} · {Condition.LABELS[o.book_condition]}",
                 meta=meta,
                 status=o.status, kind="offer",
-                action_text="Cancelar oferta" if o.status in (OfferStatus.PUBLISHED, OfferStatus.ON_HOLD) else "",
-                action_callback=lambda _c, oid=o.id: self.cancel(oid),
+                action_text=action_text,
+                action_callback=(lambda _c, oid=o.id, fn=action: fn(oid)) if action else None,
                 callback=lambda _c, rid=req.id: app.open_seller_request(rid),
             ))
         self.fill(self.ids.list, cards, "No tienes ofertas en esta categoría.", "tag-outline")
@@ -571,6 +587,20 @@ class SellerOffersScreen(BaseScreen):
                 self.refresh()
 
         app.confirm("¿Cancelar oferta?", "El lector ya no podrá aceptarla.", "Cancelar oferta", do_cancel)
+
+    def desist(self, offer_id):
+        app = self.app
+
+        def do_desist():
+            if app.safe(app.store.cancel_deal, app.user, offer_id):
+                app.notify("Desististe del trato. La solicitud vuelve a recibir ofertas.")
+                self.refresh()
+
+        app.confirm(
+            "¿Desistir del trato?",
+            "Tu oferta se cancelará y el lector podrá elegir otra oferta o recibir nuevas.",
+            "Desistir del trato", do_desist,
+        )
 
 
 # ---------------------------------------------------------------- admin

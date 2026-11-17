@@ -19,6 +19,7 @@ except ImportError:
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
 from kivy.lang import Builder
+from kivy.logger import Logger
 from kivy.metrics import dp
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.widget import Widget
@@ -100,6 +101,8 @@ class DemoLibrosApp(MDApp):
         self.current_request_id = None
         self.current_offer_id = None
         Window.bind(on_keyboard=self._on_keyboard)
+        # En Android, al enfocar un campo la pantalla se desplaza para que el teclado no lo tape.
+        Window.softinput_mode = "below_target"
         return Builder.load_file(KV_FILE)
 
     def on_start(self):
@@ -109,8 +112,14 @@ class DemoLibrosApp(MDApp):
     def apply_remote_config(self, config):
         self.banner = config["banner"]
 
-    def save(self):
-        persistence.save_store(self.store, self.data_file)
+    def save(self) -> bool:
+        """Guarda el Store en data.json. Si el disco falla devuelve False en vez de cerrar la app."""
+        try:
+            persistence.save_store(self.store, self.data_file)
+            return True
+        except OSError as exc:  # disco lleno, sin permisos, carpeta inexistente…
+            Logger.error(f"BookWho: no se pudo guardar {self.data_file}: {exc}")
+            return False
 
     def on_pause(self):  # Android puede cerrar la app en segundo plano sin llamar on_stop
         self.save()
@@ -176,11 +185,16 @@ class DemoLibrosApp(MDApp):
         """Ejecuta un caso de uso, guarda el JSON si funcionó y muestra los errores de negocio."""
         try:
             result = fn(*args, **kwargs)
-            self.save()
-            return True if result is None else result
         except DomainError as exc:
             self.notify(str(exc))
             return None
+        if not self.save():
+            # Lo que se ve debe ser lo que quedó guardado: se vuelve al último data.json
+            # (así, si la persona reintenta, la acción no queda duplicada).
+            self.store = persistence.load_store(self.data_file) or self.store
+            self.notify("No se pudieron guardar los cambios.")
+            return None
+        return True if result is None else result
 
     def notify(self, text):
         MDSnackbar(

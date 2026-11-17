@@ -28,16 +28,19 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Login, registro (lector/vendedor), recuperar contraseña (simulado) | Hecho |
 | Búsqueda de libros (Google Books → Open Library → catálogo local) con caché de portadas en disco | Hecho |
 | Lector: crear, ver y cancelar solicitudes; selector de comuna/ciudad; ver, coordinar y aceptar ofertas | Hecho |
-| Vendedor: feed con filtros (excluye solicitudes ya ofertadas), detalle, crear/cancelar oferta, mis ofertas | Hecho |
+| Vendedor: feed con filtros (excluye solicitudes ya ofertadas), detalle, crear/cancelar oferta, desistir de un trato, mis ofertas | Hecho |
 | Admin: panel de métricas con accesos rápidos y subpantallas de solicitudes, usuarios, ofertas y auditoría | Hecho |
 | Admin: búsqueda y exportación de logs de actividad a `.log` | Hecho |
 | Máquinas de estado de solicitud y oferta (estados intermedios) | Hecho, en `models/store.py` |
 | Permisos por rol en la capa de dominio (no solo en la UI) | Hecho |
-| Pruebas automatizadas (34 tests) | Pasan |
+| Pruebas automatizadas (50 tests) | Pasan |
 | Fundamentación UX/UI con encuesta real (18 respuestas) | Hecho, en `docs/01-requirements/FUNDAMENTACION-UX-UI.md` |
-| Persistencia JSON | Hecha en `services/persistence.py`; escritorio usa `data/user/data.json` y Android su directorio privado |
+| Persistencia JSON | Hecha en `services/persistence.py`: escritorio usa `data/user/data.json` y Android su directorio privado; sin base de datos ni servidor |
+| Notificaciones locales (plyer) y configuración remota | Hecho, en `services/` |
+| APK Android (Buildozer) | Hecho, `buildozer.spec` |
+| Registro de eventos y KPIs (RA3) | Hecho: `models/store.py` (`_log`) + `analitica.py`. **Faltan los datos reales** (ver `DOCUMENTATION.md`) |
 | Documentación SDD en `docs/` | ADR y specs de MVC y estructura creados; otras specs de producto siguen pendientes |
-| Reportes, auditoría formal, notificaciones | Fuera del demo |
+| Reportes y auditoría formal | Fuera del demo |
 
 ### Pantallas implementadas (`controllers/screen_controllers.py` + `views/libros.kv`)
 
@@ -58,11 +61,13 @@ controllers/screen_controllers.py
 views/libros.kv                 Vistas declarativas (layout y estilo).
 views/components.py             Widgets visuales reutilizables.
    │
-models/store.py                 Modelo/dominio: entidades, reglas, permisos y estados.
+models/store.py                 Modelo/dominio: entidades, reglas, permisos, estados y registro de eventos.
                                 Store en memoria + datos de ejemplo.
-services/                       Persistencia, notificaciones, búsqueda y ubicaciones.
+services/                       Persistencia, notificaciones, configuración remota, búsqueda y ubicaciones.
 data/                           Catálogo de comunas y configuración remota.
 assets/                         Fuentes tipográficas y capturas.
+
+analitica.py                    Fuera de la app: KPIs de RA3 a partir de data/user/data.json.
 ```
 
 Regla: **toda regla de negocio y todo chequeo de permisos va en `models/store.py`**, y la UI solo llama a sus métodos. Así se puede probar sin interfaz y cambiar la UI o la persistencia sin romper el dominio.
@@ -71,11 +76,14 @@ Regla: **toda regla de negocio y todo chequeo de permisos va en `models/store.py
 
 ```text
 Solicitud:  BORRADOR -> PUBLICADA -> CON_OFERTAS -> EN_COORDINACION -> RESUELTA
+            CON_OFERTAS -> PUBLICADA (se cancelaron todas sus ofertas)
+            EN_COORDINACION -> CON_OFERTAS | PUBLICADA (alguien desiste del trato)
             PUBLICADA | CON_OFERTAS | EN_COORDINACION -> CANCELADA
 
 Oferta:     PUBLICADA -> POR_CONCRETAR -> ACEPTADA
             PUBLICADA -> EN_ESPERA -> RECHAZADA | PUBLICADA
-            PUBLICADA | POR_CONCRETAR | EN_ESPERA -> CANCELADA
+            PUBLICADA | EN_ESPERA -> CANCELADA (el vendedor la cancela)
+            POR_CONCRETAR -> CANCELADA | RECHAZADA (desiste el vendedor | el lector)
 ```
 
 ## 4. Decisiones tomadas para el demo (todavía no son specs)
@@ -90,19 +98,22 @@ Se tomaron para que el demo funcionara y se actualizaron con las Fases 1 a 4 del
 6. El vendedor puede ofertar cualquier condición (nuevo o usado) y método de entrega; el lector evalúa la oferta al revisarla.
 7. Un vendedor tiene como máximo una oferta activa por solicitud.
 8. Cada cuenta tiene un solo rol. Un usuario suspendido no puede iniciar sesión ni operar.
-9. No hay base de datos; la app persiste datos en JSON local. Las cuentas demo se cargan al iniciar si todavía no existe un archivo persistido.
+9. No hay base de datos: la app persiste en JSON local (`data/user/data.json` en escritorio, directorio privado en Android). Las cuentas demo se crean solo la primera vez (si todavía no existe el archivo); en el APK el login no muestra el panel de cuentas demo.
 10. Stack del demo: Python 3.10/3.11 + Kivy 2.3.1 + KivyMD 2.0.1.dev0.
 11. El feed del vendedor excluye las solicitudes donde ya tiene una oferta activa; esas se gestionan desde "Mis ofertas".
 12. El admin consulta la actividad en una subpantalla dedicada (con búsqueda) y puede exportarla a un archivo `.log`.
+13. Si el vendedor cancela la última oferta activa, la solicitud vuelve a `PUBLICADA`. Una oferta `POR_CONCRETAR` no se cancela como oferta común: se desiste del trato (`cancel_deal`).
 
 ## 5. Próximos pasos sugeridos
 
 En orden aproximado (ajustar en equipo):
 
 1. Pasar las decisiones de la sección 4 a `BUSINESS_RULES.md` y `STATE_MACHINES.md`.
-2. Escribir specs pequeñas (`SPEC-00X`) para cada cambio antes de implementarlo.
-3. Definir la política de privacidad de datos de contacto y el significado exacto de `RESUELTA`.
-4. Prototipo en Figma de las pantallas prioritarias (AGENTS.md §15).
+2. Registrar en un ADR la persistencia JSON local ya implementada.
+3. Recolectar datos reales de uso y completar los resultados de `DOCUMENTATION.md` (RA3).
+4. Escribir specs pequeñas (`SPEC-00X`) para cada cambio antes de implementarlo.
+5. Definir la política de privacidad de datos de contacto y el significado exacto de `RESUELTA`.
+6. Prototipo en Figma de las pantallas prioritarias (AGENTS.md §15).
 
 ## 6. Cómo trabajar en equipo
 

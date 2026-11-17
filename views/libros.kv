@@ -337,7 +337,7 @@
             MDButtonText:
                 text: root.action_text
                 theme_text_color: "Custom"
-                text_color: app.theme_cls.errorColor if root.action_text.startswith(("Cancelar", "Suspender")) else app.theme_cls.primaryColor
+                text_color: app.theme_cls.errorColor if root.action_text.startswith(("Cancelar", "Suspender", "Desistir")) else app.theme_cls.primaryColor
 
 <BookResultCard>:
     style: "filled"
@@ -606,7 +606,9 @@ MDScreenManager:
                     on_release: root.forgot_password()
                     MDButtonText:
                         text: "¿Olvidaste tu contraseña?"
+            # Cuentas demo: en Android se quita este panel (LoginScreen.on_kv_post)
             Panel:
+                id: demo_panel
                 Heading:
                     text: "Cuentas de demo"
                     role: "small"
@@ -678,6 +680,9 @@ MDScreenManager:
                     MDTextFieldHelperText:
                         text: "Mínimo 4 caracteres"
                         mode: "persistent"
+                Gap:
+                    # el texto de ayuda se dibuja bajo el campo: este espacio evita que toque la etiqueta
+                    height: dp(4)
                 FieldLabel:
                     text: "¿Cómo usarás la app?"
                 SegmentedRow:
@@ -700,7 +705,7 @@ MDScreenManager:
                         MDTextFieldLeadingIcon:
                             icon: "map-marker-outline"
                         MDTextFieldHintText:
-                            text: "Ej: Concepción, Santiago, Valparaíso…"
+                            text: "Ej: Concepción, Santiago…"
                     ListBox:
                         id: suggestions_box
                 Muted:
@@ -920,6 +925,8 @@ MDScreenManager:
                     MDTextFieldHelperText:
                         text: "Déjalo vacío si no tienes un máximo"
                         mode: "persistent"
+                Gap:
+                    height: dp(4)
                 FieldLabel:
                     text: "¿En qué estado lo aceptas?"
                 SegmentedRow:
@@ -935,10 +942,12 @@ MDScreenManager:
                     MDTextFieldLeadingIcon:
                         icon: "map-marker-outline"
                     MDTextFieldHintText:
-                        text: "Ej: Concepción, Santiago, Valparaíso…"
+                        text: "Ej: Concepción, Santiago…"
                     MDTextFieldHelperText:
                         text: "Escribe para buscar tu comuna o ciudad"
                         mode: "persistent"
+                Gap:
+                    height: dp(4)
                 ListBox:
                     id: suggestions_box
                 MDBoxLayout:
@@ -951,33 +960,22 @@ MDScreenManager:
                         font_style: "Label"
                         role: "small"
                         pos_hint: {"center_y": .5}
-                    MDButton:
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    # WideButton centra el texto: con MDButton de ancho fijo se salía del borde a 360 dp
+                    WideButton:
                         style: "outlined"
                         size_hint_y: None
-                        height: dp(48)
-                        radius: [dp(6)] * 4
                         on_release: root.select_location("Concepción (Biobío)")
                         MDButtonText:
                             text: "Concepción"
-                    MDButton:
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    WideButton:
                         style: "outlined"
                         size_hint_y: None
-                        height: dp(48)
-                        radius: [dp(6)] * 4
                         on_release: root.select_location("Santiago (Metropolitana)")
                         MDButtonText:
                             text: "Santiago"
-                    MDButton:
-                        theme_width: "Custom"
-                        size_hint_x: 1
+                    WideButton:
                         style: "outlined"
                         size_hint_y: None
-                        height: dp(48)
-                        radius: [dp(6)] * 4
                         on_release: root.select_location("Valparaíso (Valparaíso)")
                         MDButtonText:
                             text: "Valparaíso"
@@ -1004,7 +1002,7 @@ MDScreenManager:
                     MDButtonIcon:
                         icon: "send"
                     MDButtonText:
-                        text: "PUBLICAR SOLICITUD"
+                        text: "Publicar solicitud"
 
 
 <RequestPublishedScreen>:
@@ -1265,7 +1263,7 @@ MDScreenManager:
                     MDButtonIcon:
                         icon: "handshake-outline"
                     MDButtonText:
-                        text: "ACEPTAR PARA COORDINAR"
+                        text: "Aceptar para coordinar"
                 PrimaryButton:
                     opacity: 1 if (root.in_deal or root.accepted) else 0
                     disabled: not (root.in_deal or root.accepted)
@@ -1283,7 +1281,7 @@ MDScreenManager:
                     MDButtonIcon:
                         icon: "check-circle-outline"
                     MDButtonText:
-                        text: "CONFIRMAR COMPRA CONCRETADA"
+                        text: "Confirmar compra concretada"
                 WideButton:
                     style: "outlined"
                     opacity: 1 if (root.in_deal and root.is_reader) else 0
@@ -1477,7 +1475,7 @@ MDScreenManager:
                     MDButtonIcon:
                         icon: "hand-extended-outline"
                     MDButtonText:
-                        text: "PUEDO OFRECERLO"
+                        text: "Puedo ofrecerlo"
 
 
 <CreateOfferScreen>:
@@ -1515,7 +1513,7 @@ MDScreenManager:
                     id: description
                     mode: "outlined"
                     MDTextFieldHintText:
-                        text: "Condición (ej: tapas en buen estado, sin subrayar)"
+                        text: "Condición (ej: sin subrayar)"
                 MDTextField:
                     id: notes
                     mode: "outlined"
@@ -1558,7 +1556,7 @@ MDScreenManager:
                     MDButtonIcon:
                         icon: "send"
                     MDButtonText:
-                        text: "PUBLICAR OFERTA"
+                        text: "Publicar oferta"
 
 
 <SellerOffersScreen>:

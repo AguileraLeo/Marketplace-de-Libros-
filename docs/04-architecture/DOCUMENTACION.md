@@ -10,6 +10,7 @@ Documentos relacionados en este repositorio:
 - [`AGENTS.md`](../../AGENTS.md) — visión de producto y reglas de trabajo (fuente de verdad original).
 - [`CONTEXTO.md`](../../CONTEXTO.md) — estado del proyecto y cómo trabajar en equipo.
 - [`USO_IA.md`](../06-process/USO_IA.md) — declaración de uso de Inteligencia Artificial.
+- [`DOCUMENTATION.md`](../../DOCUMENTATION.md) — medición RA3: registro de eventos, KPIs, método MJV App y `analitica.py`.
 
 ---
 
@@ -45,7 +46,8 @@ tiene, sino que anuncia lo que necesita y espera a que aparezca.
 - No hay chat interno (se usan los datos de contacto que el vendedor decide compartir).
 - El vendedor no mantiene un catálogo/inventario propio (ver §2.4 más abajo — esto se
   conversó explícitamente durante el desarrollo y se decidió mantenerlo así).
-- No hay persistencia real: todo vive en memoria mientras la app está abierta.
+- No hay servidor ni sincronización: cada dispositivo guarda sus propios datos en un archivo
+  `data.json` local (ver §4.7).
 
 ---
 
@@ -121,7 +123,9 @@ Ver detalle de una solicitud (incluye la cercanía: "Misma comuna" / "Misma regi
 Oferta publicada -> aparece en "Mis ofertas" (activa / por concretar / en espera / aceptada / finalizada)
 ```
 
-El vendedor puede **cancelar** su propia oferta mientras esté activa o en espera.
+El vendedor puede **cancelar** su propia oferta mientras esté activa o en espera. Si la oferta
+ya está en coordinación, en "Mis ofertas" aparece **Desistir del trato** (`cancel_deal`): su
+oferta se cancela y la solicitud vuelve a recibir ofertas.
 
 ### 2.3 Flujo del administrador
 
@@ -161,7 +165,7 @@ abierta y ofrécele el libro que buscan").
 | `BookRequest` | `id, reader_id, book_id, max_price, accepted_condition, location, delivery_preference, notes, status, canceled_by_role, cancellation_reason` | La "solicitud" de un lector: qué libro busca y en qué condiciones. |
 | `Offer` | `id, request_id, seller_id, price, book_condition, condition_description, notes, status` | La respuesta de un vendedor a una solicitud. |
 | `SellerContact` | `seller_id, phone, email, address_or_meeting_point` | Datos de contacto del vendedor, se revelan solo al coordinar/aceptar. |
-| `ActivityEntry` | `at, actor_id, action, detail` | Un evento de auditoría (para el panel de admin). |
+| `ActivityEntry` | `at, actor_id, action, detail` | Un evento: lo usan el panel de auditoría del admin y la analítica RA3 ([`DOCUMENTATION.md`](../../DOCUMENTATION.md)). |
 
 **Libro y solicitud son entidades distintas**: un mismo libro (por ejemplo "El Hobbit") puede
 estar asociado a muchas solicitudes de distintos lectores.
@@ -177,6 +181,8 @@ BORRADOR -> PUBLICADA -> CON_OFERTAS -> EN_COORDINACION -> RESUELTA
 - `BORRADOR -> PUBLICADA`: ocurre automáticamente al crear la solicitud (no hay un paso
   intermedio visible para el usuario).
 - `PUBLICADA -> CON_OFERTAS`: cuando llega la primera oferta.
+- `CON_OFERTAS -> PUBLICADA`: si los vendedores cancelan todas sus ofertas activas
+  (`cancel_offer`), la solicitud deja de mostrarse "con ofertas".
 - `CON_OFERTAS/EN_COORDINACION -> EN_COORDINACION`: cuando el lector acepta una oferta para
   coordinar (`accept_offer`).
 - `EN_COORDINACION -> RESUELTA`: cuando el lector confirma el trato (`confirm_deal`).
@@ -190,8 +196,14 @@ BORRADOR -> PUBLICADA -> CON_OFERTAS -> EN_COORDINACION -> RESUELTA
 PUBLICADA (activa) --acepta el lector--> POR_CONCRETAR --confirma el lector--> ACEPTADA
 PUBLICADA --el lector acepta OTRA oferta--> EN_ESPERA --esa otra se desiste--> PUBLICADA
                                                         --esa otra se confirma--> RECHAZADA
-Cualquier estado activo (PUBLICADA/POR_CONCRETAR/EN_ESPERA) --el vendedor cancela--> CANCELADA
+PUBLICADA o EN_ESPERA --el vendedor cancela (cancel_offer)--> CANCELADA
+POR_CONCRETAR --el vendedor desiste (cancel_deal)--> CANCELADA
+POR_CONCRETAR --el lector desiste (cancel_deal)--> RECHAZADA
 ```
+
+Una oferta `POR_CONCRETAR` no se puede cancelar como una oferta común (`cancel_offer` lo
+rechaza): hay que desistir del trato, para que la solicitud salga de `EN_COORDINACION` y las
+ofertas en espera se reactiven.
 
 Reglas importantes:
 
@@ -227,10 +239,10 @@ controllers/     Controladores de aplicación y de pantalla Kivy.
    |
 views/           Widgets reutilizables para las vistas KV.
    |
-models/store.py  Dominio: entidades, máquinas de estado, validaciones, permisos.
-   |              Repositorio en memoria + datos de ejemplo (build_demo_store).
+models/store.py  Dominio: entidades, máquinas de estado, validaciones, permisos y registro
+   |              de eventos. Repositorio en memoria + datos de ejemplo (build_demo_store).
    |
-services/        Persistencia, notificaciones y configuración remota.
+services/        Persistencia (data.json), notificaciones y configuración remota.
    |
 services/books_api.py
                  Búsqueda de libros: Google Books -> Open Library -> catálogo local,
@@ -240,6 +252,8 @@ services/locations.py
                   aproximada entre vendedor y solicitud.
 data/            Catálogo de comunas y configuración remota.
 assets/          Fuentes tipográficas y capturas.
+
+analitica.py     Fuera de la app: calcula los KPIs de RA3 desde data.json (DOCUMENTATION.md).
 ```
 
 Regla de separación (definida en `CONTEXTO.md` y respetada en todo el código): **toda regla de
@@ -251,15 +265,33 @@ interfaz (ver §6) y cambiar la UI sin tocar las reglas.
 
 La aplicación se reorganizó de forma incremental, sin cambiar sus flujos:
 
-- **Punto de entrada — `main.py`**: configura el tamaño de ventana en escritorio e inicia
-  `DemoLibrosApp`.
-- **Controlador de aplicación — `controllers/app_controller.py`**: `DemoLibrosApp` gestiona el
-  ciclo de vida, el tema, la navegación, sesión, diálogos y coordinación con servicios.
-- **Controladores de pantalla — `controllers/screen_controllers.py`**: las clases Kivy reciben
-  eventos definidos en KV, actualizan el estado visual y llaman a `Store` o servicios.
+- **Punto de entrada — `main.py`**: en escritorio fija una ventana de 420×860 (simula un
+  teléfono; en Android/iOS no aplica) e inicia `DemoLibrosApp`.
+- **Controlador de aplicación — `controllers/app_controller.py`**: `DemoLibrosApp` (`MDApp`)
+  registra las tipografías, arma el tema, crea o carga el `Store`, y gestiona el ciclo de vida,
+  la navegación (`go`, `back`, `go_home`, historial tipo pila), la sesión, los diálogos y la
+  coordinación con servicios.
+  - **`app.safe(fn, *args)`**: llama a un caso de uso del `Store` y, si lanza un `DomainError`,
+    muestra el mensaje en un *snackbar* en vez de romper la app. Si la acción funcionó, guarda
+    `data.json`; si el disco falla (lleno, sin permisos), muestra "No se pudieron guardar los
+    cambios", no da la acción por exitosa y vuelve al último estado guardado, para que lo que se
+    ve coincida con lo guardado y un reintento no duplique datos.
+- **Controladores de pantalla — `controllers/screen_controllers.py`**: una clase por pantalla,
+  todas heredan de `BaseScreen` (`LoginScreen`, `RegisterScreen`, `ReaderHomeScreen`,
+  `BookSearchScreen`, `CreateRequestScreen`, `RequestPublishedScreen`, `ReaderRequestsScreen`,
+  `ReaderRequestDetailScreen`, `OfferDetailScreen`, `OfferAcceptedScreen`, `SellerHomeScreen`,
+  `SellerRequestDetailScreen`, `CreateOfferScreen`, `SellerOffersScreen`, `AdminHomeScreen`,
+  `AdminRequestsScreen`, `AdminUsersScreen`, `AdminOffersScreen`, `AdminActivityScreen`).
+  Reciben los eventos definidos en KV, implementan `refresh()` (se llama al entrar, en
+  `on_pre_enter`) y llaman a `Store` o a los servicios.
+  - **Cuentas demo en Android**: `LoginScreen.on_kv_post` quita del login el panel de cuentas
+    de demo cuando la app corre en Android. Solo las oculta; las cuentas siguen existiendo.
 - **Vistas — `views/libros.kv`**: contiene layouts, estilos y enlaces de eventos para las 19 pantallas.
-- **Componentes de vista — `views/components.py`**: widgets Kivy reutilizables, formato de
-  fecha y estilos de estado.
+- **Componentes de vista — `views/components.py`**: widgets reutilizables (su apariencia vive en
+  `libros.kv`, su lógica acá): `BookCover` (portada con caché en disco), `StatusChip` (estado
+  como punto de color más texto, colores en `STATUS_COLORS`), `WideButton`, `SegmentedRow` /
+  `SegmentButton`, `RequestRow`, `ItemCard`, `BookResultCard`, `StatTile`, `InfoRow` y
+  `EmptyState`; además los colores de marca (`ACCENT`, `PAPER`) y el formato de fechas.
 - **Modelo/dominio — `models/store.py`**: conserva entidades, validaciones, permisos y transiciones.
   Los controladores no duplican esas reglas.
 - **Servicios**: `services/` encapsula persistencia,
@@ -313,7 +345,8 @@ Ya cubierto en detalle en la sección 3 (modelo de dominio). Estructuralmente:
   de admin, etc.). Cada método público empieza revalidando quién es el actor y si tiene
   permiso, antes de tocar cualquier dato.
 - `build_demo_store()` + `DEMO_USERS`: arma un `Store` con las 5 cuentas de demo y algunos
-  libros/solicitudes/ofertas de ejemplo, para que la app no arranque vacía.
+  libros/solicitudes/ofertas de ejemplo, para que la app no arranque vacía. Se usa solo cuando
+  todavía no existe `data.json` (primera apertura).
 
 ### 4.4 Explicación de `services/books_api.py`
 
@@ -355,12 +388,36 @@ python -m unittest discover -s tests -v
 
 - `tests/test_store.py`: flujo feliz completo, permisos (un lector no puede tocar solicitudes
   de otro, etc.), validaciones de formularios, y las máquinas de estado (incluida la
-  negociación/desistimiento de un trato y la moderación administrativa).
+  negociación/desistimiento de un trato, la cancelación de ofertas y la moderación
+  administrativa).
+- `tests/test_persistence.py`: guardar y recuperar, JSON corrupto o con estructura inesperada,
+  y fallo de escritura (el último guardado queda intacto).
+- `tests/test_analitica.py`: formato del registro de eventos, exclusión de cuentas demo y
+  cálculo de los KPIs (con archivos temporales, nunca con el `data.json` real).
 - `tests/test_locations_and_cache.py`: catálogo de ubicaciones, búsqueda tolerante a tildes,
   normalización, `proximity_label` y la caché de portadas de `services/books_api.py`.
 
-Actualmente hay **34 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
+Actualmente hay **50 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
 para asegurar que nada se rompió.
+
+### 4.7 Servicios: persistencia, notificaciones y configuración remota
+
+- **Persistencia JSON** (`services/persistence.py`): `save_store()` guarda todo el `Store` en
+  `data.json` (en el PC, en la carpeta del proyecto; en Android, en `user_data_dir`, que no se
+  borra al actualizar el APK). Se guarda después de cada acción exitosa (`app.safe`), al pausar
+  la app en Android (`on_pause`) y al cerrarla (`on_stop`). La escritura es atómica: primero a
+  `data.json.tmp` y luego `os.replace`. `load_store()` lo recupera al abrir; si el archivo está
+  roto o no tiene la estructura esperada, lo respalda como `data.json.corrupto` y la app arranca
+  con los datos de demo.
+- **Notificaciones locales** (`services/notifications.py`, con plyer): se envían al publicar una
+  oferta (vendedor) y al iniciar sesión un lector con ofertas activas por revisar. Las genera el
+  propio dispositivo, sin servidor; en Android 13+ se pide el permiso al iniciar la app.
+- **Configuración remota** (`services/remote_config.py`): al iniciar se descarga
+  `remote_config.json` desde GitHub sin bloquear la interfaz; si no hay red, se usa el valor por
+  defecto.
+
+El detalle de cada servicio y dónde se llama está en la tabla "Servicios implementados" del
+[`README.md`](../../README.md).
 
 ---
 
@@ -431,9 +488,13 @@ internet, al catálogo local.
 | Vendedor | pedro@demo.cl | 1234 |
 | Administrador | admin@demo.cl | admin |
 
-También se pueden registrar cuentas nuevas de lector o vendedor desde la app. **Sin base de
-datos:** todo vive en memoria mientras la app está abierta; al cerrarla, los datos vuelven al
-estado inicial (excepto la caché de portadas en `.cache/covers/`, que persiste en disco).
+También se pueden registrar cuentas nuevas de lector o vendedor desde la app. Los datos se
+guardan en `data.json` y se mantienen al cerrar y volver a abrir la app (§4.7). Para volver a
+los datos de demo, cierra la app y borra ese archivo.
+
+En el APK (Android) el login no muestra el panel de cuentas de demo, pero las cuentas siguen
+existiendo con estas contraseñas, que son públicas: no es una medida de seguridad. Los eventos
+generados con estas cuentas se excluyen de los KPIs (`analitica.py`).
 
 ### 6.4 Correr las pruebas
 
@@ -529,3 +590,6 @@ superpuesta en la esquina — literalmente "BookWho?" convertido en símbolo.
 El punto A se completó con la encuesta real. Lo que los usuarios pidieron y quedó fuera del MVP
 (calificaciones de vendedores y reporte de usuarios) está declarado como próximo paso en la
 fundamentación.
+
+Para la Evaluación 4 (RA3: registro de eventos, KPIs y método MJV App) ver
+[`DOCUMENTATION.md`](../../DOCUMENTATION.md).
