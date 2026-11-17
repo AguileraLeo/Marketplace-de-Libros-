@@ -11,8 +11,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from books_api import catalog_lookup  # noqa: E402
-from store import (  # noqa: E402
+from models.store import (  # noqa: E402
     Condition,
     Delivery,
     InvalidTransition,
@@ -24,6 +23,7 @@ from store import (  # noqa: E402
     ValidationError,
     build_demo_store,
 )
+from services.books_api import catalog_lookup  # noqa: E402
 
 
 class StoreTestCase(unittest.TestCase):
@@ -257,6 +257,79 @@ class AdminAuditTest(StoreTestCase):
     def test_only_admin_can_export_activity(self):
         with self.assertRaises(PermissionDenied):
             self.store.export_activity_log(self.reader, "registro.log")
+
+
+class OfferCancellationTest(StoreTestCase):
+    """Auditoría H06 (estado tras cancelar ofertas) y H07 (desistir siendo vendedor)."""
+
+    def offer(self, seller, req, price="1000"):
+        return self.store.create_offer(seller, req.id, price, Condition.NEW, "", "", "1", "", "")
+
+    def test_cancelar_la_ultima_oferta_devuelve_la_solicitud_a_publicada(self):
+        req = self.new_request()
+        offer = self.offer(self.seller, req)
+        self.store.cancel_offer(self.seller, offer.id)
+        self.assertEqual(offer.status, OfferStatus.CANCELLED)
+        self.assertEqual(req.status, RequestStatus.PUBLISHED)  # antes quedaba "Con ofertas" sin ofertas
+        self.assertEqual(self.store.active_offer_count(req.id), 0)
+        self.assertIn(req, self.store.open_requests(self.seller2))  # sigue recibiendo ofertas
+
+    def test_cancelar_una_oferta_entre_varias_mantiene_con_ofertas(self):
+        req = self.new_request()
+        offer1 = self.offer(self.seller, req)
+        self.offer(self.seller2, req, "2000")
+        self.store.cancel_offer(self.seller, offer1.id)
+        self.assertEqual(req.status, RequestStatus.WITH_OFFERS)
+        self.assertEqual(self.store.active_offer_count(req.id), 1)
+
+    def test_cancelar_una_oferta_ya_cancelada_falla_sin_cambiar_nada(self):
+        req = self.new_request()
+        offer = self.offer(self.seller, req)
+        self.store.cancel_offer(self.seller, offer.id)
+        with self.assertRaises(InvalidTransition):
+            self.store.cancel_offer(self.seller, offer.id)
+        self.assertEqual(req.status, RequestStatus.PUBLISHED)
+
+    def test_cancelar_oferta_en_espera_no_rompe_la_coordinacion(self):
+        req = self.new_request()
+        offer1 = self.offer(self.seller, req)
+        offer2 = self.offer(self.seller2, req, "2000")
+        self.store.accept_offer(self.reader, offer1.id)
+        self.store.cancel_offer(self.seller2, offer2.id)  # estaba EN_ESPERA
+        self.assertEqual(req.status, RequestStatus.IN_DEAL)
+        self.assertEqual(offer1.status, OfferStatus.IN_DEAL)
+
+    def test_oferta_en_coordinacion_no_se_cancela_como_oferta_comun(self):
+        req = self.new_request()
+        offer = self.offer(self.seller, req)
+        self.store.accept_offer(self.reader, offer.id)
+        with self.assertRaises(InvalidTransition):  # antes dejaba la solicitud huérfana en coordinación
+            self.store.cancel_offer(self.seller, offer.id)
+        self.assertEqual(offer.status, OfferStatus.IN_DEAL)
+        self.assertEqual(req.status, RequestStatus.IN_DEAL)
+
+    def test_vendedor_desiste_del_trato_y_se_reactivan_las_demas(self):
+        req = self.new_request()
+        offer1 = self.offer(self.seller, req)
+        offer2 = self.offer(self.seller2, req, "2000")
+        self.store.accept_offer(self.reader, offer1.id)
+        self.store.cancel_deal(self.seller, offer1.id)
+        self.assertEqual(offer1.status, OfferStatus.CANCELLED)
+        self.assertEqual(offer2.status, OfferStatus.PUBLISHED)
+        self.assertEqual(req.status, RequestStatus.WITH_OFFERS)
+        self.assertEqual(self.store.activity[-1].action, "trato_desistido")
+        self.store.accept_offer(self.reader, offer2.id)  # el lector puede elegir otra
+        self.assertEqual(req.status, RequestStatus.IN_DEAL)
+
+    def test_vendedor_desiste_de_la_unica_oferta(self):
+        req = self.new_request()
+        offer = self.offer(self.seller, req)
+        self.store.accept_offer(self.reader, offer.id)
+        self.store.cancel_deal(self.seller, offer.id)
+        self.assertEqual(req.status, RequestStatus.PUBLISHED)
+        self.assertIn(req, self.store.open_requests(self.seller2))
+        with self.assertRaises(PermissionDenied):  # otro vendedor no puede desistir por él
+            self.store.cancel_deal(self.seller2, offer.id)
 
 
 if __name__ == "__main__":

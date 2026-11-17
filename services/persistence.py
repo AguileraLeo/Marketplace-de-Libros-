@@ -15,7 +15,7 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Optional
 
-from store import ActivityEntry, Book, BookRequest, Offer, SellerContact, Store, User
+from models.store import ActivityEntry, Book, BookRequest, Offer, SellerContact, Store, User
 
 # tabla del Store -> clase de sus objetos
 TABLES = {
@@ -26,6 +26,15 @@ TABLES = {
     "contacts": SellerContact,
 }
 DATE_FIELDS = ("created_at", "updated_at", "at")
+
+
+def migrate_legacy_data_file(legacy_path: str, data_path: str) -> None:
+    if not os.path.isfile(legacy_path) or os.path.exists(data_path):
+        return
+    data_dir = os.path.dirname(data_path)
+    if data_dir:
+        os.makedirs(data_dir, exist_ok=True)
+    os.replace(legacy_path, data_path)
 
 
 def _to_json(obj):
@@ -59,6 +68,8 @@ def load_store(path: str) -> Optional[Store]:
     except FileNotFoundError:
         return None  # primera vez que se abre la app
     except (json.JSONDecodeError, UnicodeDecodeError):
+        data = None
+    if not isinstance(data, dict):  # roto, o JSON válido que no es un objeto (lista, número, null…)
         os.replace(path, path + ".corrupto")  # se respalda, no se pisa
         return None
 
@@ -71,7 +82,7 @@ def load_store(path: str) -> Optional[Store]:
                 obj = cls(**_parse_dates(item))
                 table[getattr(obj, key)] = obj
         store.activity = [ActivityEntry(**_parse_dates(a)) for a in data.get("activity", [])]
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, AttributeError):  # AttributeError: un registro que no es objeto
         os.replace(path, path + ".corrupto")
         return None
 

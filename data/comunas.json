@@ -1,0 +1,3467 @@
+{
+  "data": [
+    {
+      "code": "01101",
+      "name": "Iquique",
+      "region_id": 1,
+      "region_name": "Tarapacá",
+      "province_name": "Iquique",
+      "lat": -20.2141,
+      "lng": -70.1524,
+      "population": 191000
+    },
+    {
+      "code": "01107",
+      "name": "Alto Hospicio",
+      "region_id": 1,
+      "region_name": "Tarapacá",
+      "province_name": "Iquique",
+      "lat": -20.269,
+      "lng": -70.1006,
+      "population": 130000
+    },
+    {
+      "code": "01401",
+      "name": "Pozo Almonte",
+      "region_id": 1,
+      "region_name": "Tarapacá",
+      "province_name": "Tamarugal",
+      "lat": -20.2594,
+      "lng": -69.7856,
+      "population": 17000
+    },
+    {
+      "code": "01402",
+      "name": "Camiña",
+      "region_id": 1,
+      "region_name": "Tarapacá",
+      "province_name": "Tamarugal",
+      "lat": -19.3142,
+      "lng": -69.4233,
+      "population": 1500
+    },
+    {
+      "code": "01403",
+      "name": "Colchane",
+      "region_id": 1,
+      "region_name": "Tarapacá",
+      "province_name": "Tamarugal",
+      "lat": -19.2756,
+      "lng": -68.6378,
+      "population": 1700
+    },
+    {
+      "code": "01404",
+      "name": "Huara",
+      "region_id": 1,
+      "region_name": "Tarapacá",
+      "province_name": "Tamarugal",
+      "lat": -19.9964,
+      "lng": -69.7714,
+      "population": 3200
+    },
+    {
+      "code": "01405",
+      "name": "Pica",
+      "region_id": 1,
+      "region_name": "Tarapacá",
+      "province_name": "Tamarugal",
+      "lat": -20.4881,
+      "lng": -69.3286,
+      "population": 11000
+    },
+    {
+      "code": "02101",
+      "name": "Antofagasta",
+      "region_id": 2,
+      "region_name": "Antofagasta",
+      "province_name": "Antofagasta",
+      "lat": -23.65,
+      "lng": -70.4,
+      "population": 361000
+    },
+    {
+      "code": "02102",
+      "name": "Mejillones",
+      "region_id": 2,
+      "region_name": "Antofagasta",
+      "province_name": "Antofagasta",
+      "lat": -23.0989,
+      "lng": -70.4511,
+      "population": 14000
+    },
+    {
+      "code": "02103",
+      "name": "Sierra Gorda",
+      "region_id": 2,
+      "region_name": "Antofagasta",
+      "province_name": "Antofagasta",
+      "lat": -22.8936,
+      "lng": -69.3222,
+      "population": 3500
+    },
+    {
+      "code": "02104",
+      "name": "Taltal",
+      "region_id": 2,
+      "region_name": "Antofagasta",
+      "province_name": "Antofagasta",
+      "lat": -25.4047,
+      "lng": -70.4828,
+      "population": 13500
+    },
+    {
+      "code": "02201",
+      "name": "Calama",
+      "region_id": 2,
+      "region_name": "Antofagasta",
+      "province_name": "El Loa",
+      "lat": -22.4541,
+      "lng": -68.9293,
+      "population": 180000
+    },
+    {
+      "code": "02202",
+      "name": "Ollagüe",
+      "region_id": 2,
+      "region_name": "Antofagasta",
+      "province_name": "El Loa",
+      "lat": -21.2261,
+      "lng": -68.2536,
+      "population": 300
+    },
+    {
+      "code": "02203",
+      "name": "San Pedro de Atacama",
+      "region_id": 2,
+      "region_name": "Antofagasta",
+      "province_name": "El Loa",
+      "lat": -22.9087,
+      "lng": -68.1997,
+      "population": 11000
+    },
+    {
+      "code": "02301",
+      "name": "Tocopilla",
+      "region_id": 2,
+      "region_name": "Antofagasta",
+      "province_name": "Tocopilla",
+      "lat": -22.092,
+      "lng": -70.1979,
+      "population": 28000
+    },
+    {
+      "code": "02302",
+      "name": "María Elena",
+      "region_id": 2,
+      "region_name": "Antofagasta",
+      "province_name": "Tocopilla",
+      "lat": -22.3494,
+      "lng": -69.6592,
+      "population": 6500
+    },
+    {
+      "code": "03101",
+      "name": "Copiapó",
+      "region_id": 3,
+      "region_name": "Atacama",
+      "province_name": "Copiapo",
+      "lat": -27.3668,
+      "lng": -70.3322,
+      "population": 158000
+    },
+    {
+      "code": "03102",
+      "name": "Caldera",
+      "region_id": 3,
+      "region_name": "Atacama",
+      "province_name": "Copiapo",
+      "lat": -27.0654,
+      "lng": -70.8453,
+      "population": 18000
+    },
+    {
+      "code": "03103",
+      "name": "Tierra Amarilla",
+      "region_id": 3,
+      "region_name": "Atacama",
+      "province_name": "Copiapo",
+      "lat": -27.4818,
+      "lng": -70.2764,
+      "population": 14000
+    },
+    {
+      "code": "03201",
+      "name": "Chañaral",
+      "region_id": 3,
+      "region_name": "Atacama",
+      "province_name": "Chanaral",
+      "lat": -26.3464,
+      "lng": -70.6219,
+      "population": 13000
+    },
+    {
+      "code": "03202",
+      "name": "Diego de Almagro",
+      "region_id": 3,
+      "region_name": "Atacama",
+      "province_name": "Chanaral",
+      "lat": -26.3742,
+      "lng": -70.05,
+      "population": 20000
+    },
+    {
+      "code": "03301",
+      "name": "Vallenar",
+      "region_id": 3,
+      "region_name": "Atacama",
+      "province_name": "Huasco",
+      "lat": -28.5711,
+      "lng": -70.7581,
+      "population": 52000
+    },
+    {
+      "code": "03302",
+      "name": "Alto del Carmen",
+      "region_id": 3,
+      "region_name": "Atacama",
+      "province_name": "Huasco",
+      "lat": -28.7561,
+      "lng": -70.4839,
+      "population": 5000
+    },
+    {
+      "code": "03303",
+      "name": "Freirina",
+      "region_id": 3,
+      "region_name": "Atacama",
+      "province_name": "Huasco",
+      "lat": -28.5014,
+      "lng": -71.0744,
+      "population": 7500
+    },
+    {
+      "code": "03304",
+      "name": "Huasco",
+      "region_id": 3,
+      "region_name": "Atacama",
+      "province_name": "Huasco",
+      "lat": -28.4667,
+      "lng": -71.2167,
+      "population": 10000
+    },
+    {
+      "code": "04101",
+      "name": "La Serena",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Elqui",
+      "lat": -29.9027,
+      "lng": -71.2519,
+      "population": 221000
+    },
+    {
+      "code": "04102",
+      "name": "Coquimbo",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Elqui",
+      "lat": -29.9533,
+      "lng": -71.3394,
+      "population": 227000
+    },
+    {
+      "code": "04103",
+      "name": "Andacollo",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Elqui",
+      "lat": -30.2325,
+      "lng": -71.0853,
+      "population": 11000
+    },
+    {
+      "code": "04104",
+      "name": "La Higuera",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Elqui",
+      "lat": -29.4931,
+      "lng": -71.0714,
+      "population": 4500
+    },
+    {
+      "code": "04105",
+      "name": "Paiguano",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Elqui",
+      "lat": -30.0289,
+      "lng": -70.5264,
+      "population": 4500
+    },
+    {
+      "code": "04106",
+      "name": "Vicuña",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Elqui",
+      "lat": -30.0347,
+      "lng": -70.7125,
+      "population": 28000
+    },
+    {
+      "code": "04201",
+      "name": "Illapel",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Choapa",
+      "lat": -31.6333,
+      "lng": -71.1667,
+      "population": 33000
+    },
+    {
+      "code": "04202",
+      "name": "Canela",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Choapa",
+      "lat": -31.3972,
+      "lng": -71.4594,
+      "population": 10000
+    },
+    {
+      "code": "04203",
+      "name": "Los Vilos",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Choapa",
+      "lat": -31.9167,
+      "lng": -71.5119,
+      "population": 22000
+    },
+    {
+      "code": "04204",
+      "name": "Salamanca",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Choapa",
+      "lat": -31.7714,
+      "lng": -70.9703,
+      "population": 27000
+    },
+    {
+      "code": "04301",
+      "name": "Ovalle",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Limari",
+      "lat": -30.5983,
+      "lng": -71.1989,
+      "population": 113000
+    },
+    {
+      "code": "04302",
+      "name": "Combarbalá",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Limari",
+      "lat": -31.1792,
+      "lng": -71.0092,
+      "population": 14000
+    },
+    {
+      "code": "04303",
+      "name": "Monte Patria",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Limari",
+      "lat": -30.6942,
+      "lng": -70.9589,
+      "population": 33000
+    },
+    {
+      "code": "04304",
+      "name": "Punitaqui",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Limari",
+      "lat": -30.8308,
+      "lng": -71.1586,
+      "population": 11000
+    },
+    {
+      "code": "04305",
+      "name": "Río Hurtado",
+      "region_id": 4,
+      "region_name": "Coquimbo",
+      "province_name": "Limari",
+      "lat": -30.4333,
+      "lng": -70.7,
+      "population": 4500
+    },
+    {
+      "code": "05101",
+      "name": "Valparaíso",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Valparaiso",
+      "lat": -33.0472,
+      "lng": -71.6127,
+      "population": 296000
+    },
+    {
+      "code": "05102",
+      "name": "Casablanca",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Valparaiso",
+      "lat": -33.3167,
+      "lng": -71.4058,
+      "population": 30000
+    },
+    {
+      "code": "05103",
+      "name": "Concón",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Valparaiso",
+      "lat": -32.9167,
+      "lng": -71.5167,
+      "population": 46000
+    },
+    {
+      "code": "05104",
+      "name": "Juan Fernández",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Valparaiso",
+      "lat": -33.6167,
+      "lng": -78.8333,
+      "population": 1000
+    },
+    {
+      "code": "05105",
+      "name": "Puchuncaví",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Valparaiso",
+      "lat": -32.7264,
+      "lng": -71.4125,
+      "population": 20000
+    },
+    {
+      "code": "05107",
+      "name": "Quintero",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Valparaiso",
+      "lat": -32.7833,
+      "lng": -71.5167,
+      "population": 30000
+    },
+    {
+      "code": "05109",
+      "name": "Viña del Mar",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Valparaiso",
+      "lat": -33.0153,
+      "lng": -71.55,
+      "population": 334000
+    },
+    {
+      "code": "05201",
+      "name": "Isla de Pascua",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Isla de Pascua",
+      "lat": -27.1127,
+      "lng": -109.3497,
+      "population": 8000
+    },
+    {
+      "code": "05301",
+      "name": "Los Andes",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Los Andes",
+      "lat": -32.8333,
+      "lng": -70.5981,
+      "population": 67000
+    },
+    {
+      "code": "05302",
+      "name": "Calle Larga",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Los Andes",
+      "lat": -32.85,
+      "lng": -70.6333,
+      "population": 14000
+    },
+    {
+      "code": "05303",
+      "name": "Rinconada",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Los Andes",
+      "lat": -32.8361,
+      "lng": -70.7167,
+      "population": 10500
+    },
+    {
+      "code": "05304",
+      "name": "San Esteban",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Los Andes",
+      "lat": -32.8,
+      "lng": -70.5833,
+      "population": 18000
+    },
+    {
+      "code": "05401",
+      "name": "La Ligua",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Petorca",
+      "lat": -32.45,
+      "lng": -71.2333,
+      "population": 35000
+    },
+    {
+      "code": "05402",
+      "name": "Cabildo",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Petorca",
+      "lat": -32.4167,
+      "lng": -71.0667,
+      "population": 21000
+    },
+    {
+      "code": "05403",
+      "name": "Papudo",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Petorca",
+      "lat": -32.51,
+      "lng": -71.45,
+      "population": 6500
+    },
+    {
+      "code": "05404",
+      "name": "Petorca",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Petorca",
+      "lat": -32.2547,
+      "lng": -70.9361,
+      "population": 11000
+    },
+    {
+      "code": "05405",
+      "name": "Zapallar",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Petorca",
+      "lat": -32.55,
+      "lng": -71.4667,
+      "population": 7500
+    },
+    {
+      "code": "05501",
+      "name": "Quillota",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Quillota",
+      "lat": -32.8833,
+      "lng": -71.25,
+      "population": 93000
+    },
+    {
+      "code": "05502",
+      "name": "Calera",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Quillota",
+      "lat": -32.7833,
+      "lng": -71.2,
+      "population": 55000
+    },
+    {
+      "code": "05503",
+      "name": "Hijuelas",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Quillota",
+      "lat": -32.8,
+      "lng": -71.15,
+      "population": 19000
+    },
+    {
+      "code": "05504",
+      "name": "La Cruz",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Quillota",
+      "lat": -32.8167,
+      "lng": -71.2333,
+      "population": 14000
+    },
+    {
+      "code": "05506",
+      "name": "Nogales",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Quillota",
+      "lat": -32.7333,
+      "lng": -71.2167,
+      "population": 25000
+    },
+    {
+      "code": "05601",
+      "name": "San Antonio",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Antonio",
+      "lat": -33.5936,
+      "lng": -71.6214,
+      "population": 96000
+    },
+    {
+      "code": "05602",
+      "name": "Algarrobo",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Antonio",
+      "lat": -33.3667,
+      "lng": -71.6833,
+      "population": 14000
+    },
+    {
+      "code": "05603",
+      "name": "Cartagena",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Antonio",
+      "lat": -33.55,
+      "lng": -71.6,
+      "population": 24000
+    },
+    {
+      "code": "05604",
+      "name": "El Quisco",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Antonio",
+      "lat": -33.3958,
+      "lng": -71.6931,
+      "population": 16000
+    },
+    {
+      "code": "05605",
+      "name": "El Tabo",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Antonio",
+      "lat": -33.45,
+      "lng": -71.6667,
+      "population": 12000
+    },
+    {
+      "code": "05606",
+      "name": "Santo Domingo",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Antonio",
+      "lat": -33.65,
+      "lng": -71.6333,
+      "population": 9500
+    },
+    {
+      "code": "05701",
+      "name": "San Felipe",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Felipe de Aconcagua",
+      "lat": -32.75,
+      "lng": -70.7167,
+      "population": 78000
+    },
+    {
+      "code": "05702",
+      "name": "Catemu",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Felipe de Aconcagua",
+      "lat": -32.7833,
+      "lng": -71.05,
+      "population": 14000
+    },
+    {
+      "code": "05703",
+      "name": "Llaillay",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Felipe de Aconcagua",
+      "lat": -32.85,
+      "lng": -70.9667,
+      "population": 25000
+    },
+    {
+      "code": "05704",
+      "name": "Panquehue",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Felipe de Aconcagua",
+      "lat": -32.7833,
+      "lng": -70.8333,
+      "population": 8500
+    },
+    {
+      "code": "05705",
+      "name": "Putaendo",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Felipe de Aconcagua",
+      "lat": -32.6333,
+      "lng": -70.7167,
+      "population": 17000
+    },
+    {
+      "code": "05706",
+      "name": "Santa María",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "San Felipe de Aconcagua",
+      "lat": -32.75,
+      "lng": -70.6333,
+      "population": 14500
+    },
+    {
+      "code": "05801",
+      "name": "Quilpué",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Marga Marga",
+      "lat": -33.05,
+      "lng": -71.45,
+      "population": 160000
+    },
+    {
+      "code": "05802",
+      "name": "Limache",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Marga Marga",
+      "lat": -33,
+      "lng": -71.2667,
+      "population": 45000
+    },
+    {
+      "code": "05803",
+      "name": "Olmué",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Marga Marga",
+      "lat": -32.9972,
+      "lng": -71.2,
+      "population": 18000
+    },
+    {
+      "code": "05804",
+      "name": "Villa Alemana",
+      "region_id": 5,
+      "region_name": "Valparaíso",
+      "province_name": "Marga Marga",
+      "lat": -33.05,
+      "lng": -71.3667,
+      "population": 140000
+    },
+    {
+      "code": "06101",
+      "name": "Rancagua",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.1708,
+      "lng": -70.7406,
+      "population": 241000
+    },
+    {
+      "code": "06102",
+      "name": "Codegua",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.0333,
+      "lng": -70.6667,
+      "population": 14000
+    },
+    {
+      "code": "06103",
+      "name": "Coinco",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.2667,
+      "lng": -70.9667,
+      "population": 7500
+    },
+    {
+      "code": "06104",
+      "name": "Coltauco",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.2833,
+      "lng": -71.1,
+      "population": 19000
+    },
+    {
+      "code": "06105",
+      "name": "Doñihue",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.2333,
+      "lng": -70.95,
+      "population": 18500
+    },
+    {
+      "code": "06106",
+      "name": "Graneros",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.0667,
+      "lng": -70.7333,
+      "population": 32000
+    },
+    {
+      "code": "06107",
+      "name": "Las Cabras",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.3,
+      "lng": -71.3,
+      "population": 24000
+    },
+    {
+      "code": "06108",
+      "name": "Machalí",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.1833,
+      "lng": -70.65,
+      "population": 50000
+    },
+    {
+      "code": "06109",
+      "name": "Malloa",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.4333,
+      "lng": -70.95,
+      "population": 15000
+    },
+    {
+      "code": "06110",
+      "name": "Mostazal",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -33.9833,
+      "lng": -70.7167,
+      "population": 30000
+    },
+    {
+      "code": "06111",
+      "name": "Olivar",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.2,
+      "lng": -70.8167,
+      "population": 15000
+    },
+    {
+      "code": "06112",
+      "name": "Peumo",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.3833,
+      "lng": -71.1667,
+      "population": 15000
+    },
+    {
+      "code": "06113",
+      "name": "Pichidegua",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.3667,
+      "lng": -71.2833,
+      "population": 19000
+    },
+    {
+      "code": "06114",
+      "name": "Quinta de Tilcoco",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.3667,
+      "lng": -71.0333,
+      "population": 13000
+    },
+    {
+      "code": "06115",
+      "name": "Rengo",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.4,
+      "lng": -70.8667,
+      "population": 62000
+    },
+    {
+      "code": "06116",
+      "name": "Requínoa",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.3,
+      "lng": -70.8167,
+      "population": 28000
+    },
+    {
+      "code": "06117",
+      "name": "San Vicente",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cachapoal",
+      "lat": -34.4333,
+      "lng": -71.0833,
+      "population": 47000
+    },
+    {
+      "code": "06201",
+      "name": "Pichilemu",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cardenal Caro",
+      "lat": -34.3833,
+      "lng": -72,
+      "population": 15000
+    },
+    {
+      "code": "06202",
+      "name": "La Estrella",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cardenal Caro",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "06203",
+      "name": "Litueche",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cardenal Caro",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "06204",
+      "name": "Marchihue",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cardenal Caro",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "06205",
+      "name": "Navidad",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cardenal Caro",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "06206",
+      "name": "Paredones",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Cardenal Caro",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "06301",
+      "name": "San Fernando",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.5833,
+      "lng": -71,
+      "population": 76000
+    },
+    {
+      "code": "06302",
+      "name": "Chépica",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.7333,
+      "lng": -71.2833,
+      "population": 15000
+    },
+    {
+      "code": "06303",
+      "name": "Chimbarongo",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.7333,
+      "lng": -71.05,
+      "population": 36000
+    },
+    {
+      "code": "06304",
+      "name": "Lolol",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.7333,
+      "lng": -71.6333,
+      "population": 7000
+    },
+    {
+      "code": "06305",
+      "name": "Nancagua",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.6667,
+      "lng": -71.1833,
+      "population": 18000
+    },
+    {
+      "code": "06306",
+      "name": "Palmilla",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.6,
+      "lng": -71.3667,
+      "population": 12000
+    },
+    {
+      "code": "06307",
+      "name": "Peralillo",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.4833,
+      "lng": -71.4667,
+      "population": 10500
+    },
+    {
+      "code": "06308",
+      "name": "Placilla",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.6167,
+      "lng": -71.0833,
+      "population": 9500
+    },
+    {
+      "code": "06309",
+      "name": "Pumanque",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.6,
+      "lng": -71.65,
+      "population": 3500
+    },
+    {
+      "code": "06310",
+      "name": "Santa Cruz",
+      "region_id": 6,
+      "region_name": "O'Higgins",
+      "province_name": "Colchagua",
+      "lat": -34.6333,
+      "lng": -71.3667,
+      "population": 38000
+    },
+    {
+      "code": "07101",
+      "name": "Talca",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.4264,
+      "lng": -71.6554,
+      "population": 220000
+    },
+    {
+      "code": "07102",
+      "name": "Constitución",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.3333,
+      "lng": -72.4167,
+      "population": 50000
+    },
+    {
+      "code": "07103",
+      "name": "Curepto",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.0833,
+      "lng": -71.8833,
+      "population": 11500
+    },
+    {
+      "code": "07104",
+      "name": "Empedrado",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.5833,
+      "lng": -72.2667,
+      "population": 4500
+    },
+    {
+      "code": "07105",
+      "name": "Maule",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.5167,
+      "lng": -71.6833,
+      "population": 18000
+    },
+    {
+      "code": "07106",
+      "name": "Pelarco",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.3833,
+      "lng": -71.45,
+      "population": 8500
+    },
+    {
+      "code": "07107",
+      "name": "Pencahue",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.3833,
+      "lng": -71.8167,
+      "population": 9500
+    },
+    {
+      "code": "07108",
+      "name": "Río Claro",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.2833,
+      "lng": -71.2833,
+      "population": 14000
+    },
+    {
+      "code": "07109",
+      "name": "San Clemente",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.55,
+      "lng": -71.4833,
+      "population": 42000
+    },
+    {
+      "code": "07110",
+      "name": "San Rafael",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Talca",
+      "lat": -35.3,
+      "lng": -71.5167,
+      "population": 8500
+    },
+    {
+      "code": "07201",
+      "name": "Cauquenes",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Cauquenes",
+      "lat": -35.9667,
+      "lng": -72.3167,
+      "population": 42000
+    },
+    {
+      "code": "07202",
+      "name": "Chanco",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Cauquenes",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "07203",
+      "name": "Pelluhue",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Cauquenes",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "07301",
+      "name": "Curicó",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Curico",
+      "lat": -34.9833,
+      "lng": -71.2333,
+      "population": 144000
+    },
+    {
+      "code": "07302",
+      "name": "Hualañé",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Curico",
+      "lat": -34.9667,
+      "lng": -71.8,
+      "population": 11500
+    },
+    {
+      "code": "07303",
+      "name": "Licantén",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Curico",
+      "lat": -34.9833,
+      "lng": -72.0167,
+      "population": 9000
+    },
+    {
+      "code": "07304",
+      "name": "Molina",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Curico",
+      "lat": -35.1167,
+      "lng": -71.2833,
+      "population": 46000
+    },
+    {
+      "code": "07305",
+      "name": "Rauco",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Curico",
+      "lat": -34.9333,
+      "lng": -71.3167,
+      "population": 11000
+    },
+    {
+      "code": "07306",
+      "name": "Romeral",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Curico",
+      "lat": -34.9667,
+      "lng": -71.15,
+      "population": 14500
+    },
+    {
+      "code": "07307",
+      "name": "Sagrada Familia",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Curico",
+      "lat": -34.9833,
+      "lng": -71.3833,
+      "population": 18000
+    },
+    {
+      "code": "07308",
+      "name": "Teno",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Curico",
+      "lat": -34.8667,
+      "lng": -71.1667,
+      "population": 29000
+    },
+    {
+      "code": "07309",
+      "name": "Vichuquén",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Curico",
+      "lat": -34.8333,
+      "lng": -72,
+      "population": 5000
+    },
+    {
+      "code": "07401",
+      "name": "Linares",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Linares",
+      "lat": -35.85,
+      "lng": -71.6,
+      "population": 95000
+    },
+    {
+      "code": "07402",
+      "name": "Colbún",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Linares",
+      "lat": -35.7,
+      "lng": -71.4167,
+      "population": 22000
+    },
+    {
+      "code": "07403",
+      "name": "Longaví",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Linares",
+      "lat": -35.9667,
+      "lng": -71.6833,
+      "population": 30000
+    },
+    {
+      "code": "07404",
+      "name": "Parral",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Linares",
+      "lat": -36.15,
+      "lng": -71.8333,
+      "population": 40000
+    },
+    {
+      "code": "07405",
+      "name": "Retiro",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Linares",
+      "lat": -36.05,
+      "lng": -71.7667,
+      "population": 20000
+    },
+    {
+      "code": "07406",
+      "name": "San Javier",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Linares",
+      "lat": -35.6,
+      "lng": -71.7333,
+      "population": 39000
+    },
+    {
+      "code": "07407",
+      "name": "Villa Alegre",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Linares",
+      "lat": -35.6833,
+      "lng": -71.7333,
+      "population": 16000
+    },
+    {
+      "code": "07408",
+      "name": "Yerbas Buenas",
+      "region_id": 7,
+      "region_name": "Maule",
+      "province_name": "Linares",
+      "lat": -35.75,
+      "lng": -71.5667,
+      "population": 19000
+    },
+    {
+      "code": "08101",
+      "name": "Concepción",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -36.827,
+      "lng": -73.0503,
+      "population": 223000
+    },
+    {
+      "code": "08102",
+      "name": "Coronel",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -37.0333,
+      "lng": -73.15,
+      "population": 116000
+    },
+    {
+      "code": "08103",
+      "name": "Chiguayante",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -36.9167,
+      "lng": -73.0333,
+      "population": 96000
+    },
+    {
+      "code": "08104",
+      "name": "Florida",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -36.8167,
+      "lng": -72.6667,
+      "population": 11000
+    },
+    {
+      "code": "08105",
+      "name": "Hualqui",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -36.9667,
+      "lng": -72.9333,
+      "population": 25000
+    },
+    {
+      "code": "08106",
+      "name": "Lota",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -37.0833,
+      "lng": -73.1667,
+      "population": 46000
+    },
+    {
+      "code": "08107",
+      "name": "Penco",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -36.7333,
+      "lng": -72.9833,
+      "population": 52000
+    },
+    {
+      "code": "08108",
+      "name": "Talcahuano",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -36.7167,
+      "lng": -73.1167,
+      "population": 170000
+    },
+    {
+      "code": "08109",
+      "name": "Tomé",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -36.6167,
+      "lng": -72.95,
+      "population": 55000
+    },
+    {
+      "code": "08110",
+      "name": "Hualpén",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -36.7833,
+      "lng": -73.1167,
+      "population": 95000
+    },
+    {
+      "code": "08111",
+      "name": "San Pedro de la Paz",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -36.85,
+      "lng": -73.1167,
+      "population": 135000
+    },
+    {
+      "code": "08112",
+      "name": "Santa Juana",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Concepcion",
+      "lat": -37.1667,
+      "lng": -72.9333,
+      "population": 14000
+    },
+    {
+      "code": "08201",
+      "name": "Los Ángeles",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobio",
+      "lat": -37.4692,
+      "lng": -72.3528,
+      "population": 202000
+    },
+    {
+      "code": "08202",
+      "name": "Arauco",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Arauco",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08203",
+      "name": "Cañete",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Arauco",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08204",
+      "name": "Contulmo",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Arauco",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08205",
+      "name": "Curanilahue",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Arauco",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08206",
+      "name": "Los Álamos",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Arauco",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08207",
+      "name": "Tirúa",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Arauco",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08301",
+      "name": "Lebu",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Arauco",
+      "lat": -37.6167,
+      "lng": -73.65,
+      "population": 27000
+    },
+    {
+      "code": "08302",
+      "name": "Antuco",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08303",
+      "name": "Cabrero",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08304",
+      "name": "Laja",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08305",
+      "name": "Mulchén",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08306",
+      "name": "Nacimiento",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08307",
+      "name": "Negrete",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08308",
+      "name": "Quilaco",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08309",
+      "name": "Quilleco",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08310",
+      "name": "San Rosendo",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08311",
+      "name": "Santa Bárbara",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08312",
+      "name": "Tucapel",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08313",
+      "name": "Yumbel",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "08314",
+      "name": "Alto Biobío",
+      "region_id": 8,
+      "region_name": "Biobío",
+      "province_name": "Biobío",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "09101",
+      "name": "Temuco",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.7359,
+      "lng": -72.5904,
+      "population": 282000
+    },
+    {
+      "code": "09102",
+      "name": "Carahue",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.7167,
+      "lng": -73.1667,
+      "population": 28000
+    },
+    {
+      "code": "09103",
+      "name": "Cunco",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.9333,
+      "lng": -72.0333,
+      "population": 18000
+    },
+    {
+      "code": "09104",
+      "name": "Curarrehue",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -39.3563,
+      "lng": -71.5872,
+      "population": 7500
+    },
+    {
+      "code": "09105",
+      "name": "Freire",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.95,
+      "lng": -72.6167,
+      "population": 28000
+    },
+    {
+      "code": "09106",
+      "name": "Galvarino",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.4,
+      "lng": -72.7833,
+      "population": 13000
+    },
+    {
+      "code": "09107",
+      "name": "Gorbea",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -39.1,
+      "lng": -72.6667,
+      "population": 15000
+    },
+    {
+      "code": "09108",
+      "name": "Lautaro",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.5333,
+      "lng": -72.4333,
+      "population": 37000
+    },
+    {
+      "code": "09109",
+      "name": "Loncoche",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -39.3667,
+      "lng": -72.6333,
+      "population": 24000
+    },
+    {
+      "code": "09110",
+      "name": "Melipeuco",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.85,
+      "lng": -71.6833,
+      "population": 6500
+    },
+    {
+      "code": "09111",
+      "name": "Nueva Imperial",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.7333,
+      "lng": -72.95,
+      "population": 38000
+    },
+    {
+      "code": "09112",
+      "name": "Padre Las Casas",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.7667,
+      "lng": -72.5833,
+      "population": 76000
+    },
+    {
+      "code": "09113",
+      "name": "Perquenco",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.4167,
+      "lng": -72.3833,
+      "population": 7000
+    },
+    {
+      "code": "09114",
+      "name": "Pitrufquén",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.9833,
+      "lng": -72.65,
+      "population": 26000
+    },
+    {
+      "code": "09115",
+      "name": "Pucón",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -39.2822,
+      "lng": -71.9544,
+      "population": 28000
+    },
+    {
+      "code": "09116",
+      "name": "Saavedra",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.7833,
+      "lng": -73.3833,
+      "population": 15000
+    },
+    {
+      "code": "09117",
+      "name": "Teodoro Schmidt",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.9667,
+      "lng": -73.0833,
+      "population": 16000
+    },
+    {
+      "code": "09118",
+      "name": "Toltén",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -39.2167,
+      "lng": -73.2167,
+      "population": 12000
+    },
+    {
+      "code": "09119",
+      "name": "Vilcún",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.6667,
+      "lng": -72.2333,
+      "population": 28000
+    },
+    {
+      "code": "09120",
+      "name": "Villarrica",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -39.2856,
+      "lng": -72.2269,
+      "population": 56000
+    },
+    {
+      "code": "09121",
+      "name": "Cholchol",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Cautin",
+      "lat": -38.6,
+      "lng": -72.85,
+      "population": 11000
+    },
+    {
+      "code": "09201",
+      "name": "Angol",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -37.7956,
+      "lng": -72.7089,
+      "population": 53000
+    },
+    {
+      "code": "09202",
+      "name": "Collipulli",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -37.95,
+      "lng": -72.4333,
+      "population": 24000
+    },
+    {
+      "code": "09203",
+      "name": "Curacautín",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -38.4333,
+      "lng": -71.8833,
+      "population": 17000
+    },
+    {
+      "code": "09204",
+      "name": "Ercilla",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -38.0667,
+      "lng": -72.4167,
+      "population": 10000
+    },
+    {
+      "code": "09205",
+      "name": "Lonquimay",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -38.4333,
+      "lng": -71.2333,
+      "population": 11000
+    },
+    {
+      "code": "09206",
+      "name": "Los Sauces",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -37.9667,
+      "lng": -72.8333,
+      "population": 8000
+    },
+    {
+      "code": "09207",
+      "name": "Lumaco",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -38.1667,
+      "lng": -72.9167,
+      "population": 12000
+    },
+    {
+      "code": "09208",
+      "name": "Purén",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -38.0167,
+      "lng": -73.0833,
+      "population": 13000
+    },
+    {
+      "code": "09209",
+      "name": "Renaico",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -37.6667,
+      "lng": -72.5667,
+      "population": 10000
+    },
+    {
+      "code": "09210",
+      "name": "Traiguén",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -38.25,
+      "lng": -72.6667,
+      "population": 20000
+    },
+    {
+      "code": "09211",
+      "name": "Victoria",
+      "region_id": 9,
+      "region_name": "La Araucanía",
+      "province_name": "Malleco",
+      "lat": -38.2333,
+      "lng": -72.3333,
+      "population": 37000
+    },
+    {
+      "code": "10101",
+      "name": "Puerto Montt",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Llanquihue",
+      "lat": -41.4693,
+      "lng": -72.9424,
+      "population": 245000
+    },
+    {
+      "code": "10102",
+      "name": "Calbuco",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Llanquihue",
+      "lat": -41.7667,
+      "lng": -73.1333,
+      "population": 34000
+    },
+    {
+      "code": "10103",
+      "name": "Cochamó",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Llanquihue",
+      "lat": -41.5,
+      "lng": -72.3167,
+      "population": 4500
+    },
+    {
+      "code": "10104",
+      "name": "Fresia",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Llanquihue",
+      "lat": -41.15,
+      "lng": -73.4167,
+      "population": 13000
+    },
+    {
+      "code": "10105",
+      "name": "Frutillar",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Llanquihue",
+      "lat": -41.1167,
+      "lng": -73.05,
+      "population": 18000
+    },
+    {
+      "code": "10106",
+      "name": "Los Muermos",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Llanquihue",
+      "lat": -41.4,
+      "lng": -73.4667,
+      "population": 18000
+    },
+    {
+      "code": "10107",
+      "name": "Llanquihue",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Llanquihue",
+      "lat": -41.25,
+      "lng": -73,
+      "population": 18000
+    },
+    {
+      "code": "10108",
+      "name": "Maullín",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Llanquihue",
+      "lat": -41.6167,
+      "lng": -73.6,
+      "population": 16000
+    },
+    {
+      "code": "10109",
+      "name": "Puerto Varas",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Llanquihue",
+      "lat": -41.3167,
+      "lng": -72.9833,
+      "population": 44000
+    },
+    {
+      "code": "10201",
+      "name": "Castro",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloe",
+      "lat": -42.4833,
+      "lng": -73.7667,
+      "population": 44000
+    },
+    {
+      "code": "10202",
+      "name": "Ancud",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloé",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10203",
+      "name": "Chonchi",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloé",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10204",
+      "name": "Curaco de Vélez",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloé",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10205",
+      "name": "Dalcahue",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloé",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10206",
+      "name": "Puqueldón",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloé",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10207",
+      "name": "Queilén",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloé",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10208",
+      "name": "Quellón",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloé",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10209",
+      "name": "Quemchi",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloé",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10210",
+      "name": "Quinchao",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Chiloé",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10301",
+      "name": "Osorno",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Osorno",
+      "lat": -40.5725,
+      "lng": -73.1333,
+      "population": 161000
+    },
+    {
+      "code": "10302",
+      "name": "Puerto Octay",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Osorno",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10303",
+      "name": "Purranque",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Osorno",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10304",
+      "name": "Puyehue",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Osorno",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10305",
+      "name": "Río Negro",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Osorno",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10306",
+      "name": "San Juan de la Costa",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Osorno",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10307",
+      "name": "San Pablo",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Osorno",
+      "lat": null,
+      "lng": null,
+      "population": null
+    },
+    {
+      "code": "10401",
+      "name": "Palena",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Palena",
+      "lat": -43.6167,
+      "lng": -71.8,
+      "population": 2000
+    },
+    {
+      "code": "10402",
+      "name": "Chaitén",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Palena",
+      "lat": -42.9167,
+      "lng": -72.7167,
+      "population": 3500
+    },
+    {
+      "code": "10403",
+      "name": "Futaleufú",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Palena",
+      "lat": -43.1833,
+      "lng": -71.8667,
+      "population": 2500
+    },
+    {
+      "code": "10404",
+      "name": "Hualaihué",
+      "region_id": 10,
+      "region_name": "Los Lagos",
+      "province_name": "Palena",
+      "lat": -42,
+      "lng": -72.6167,
+      "population": 9000
+    },
+    {
+      "code": "11101",
+      "name": "Coyhaique",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "Coyhaique",
+      "lat": -45.5712,
+      "lng": -72.0686,
+      "population": 57000
+    },
+    {
+      "code": "11102",
+      "name": "Lago Verde",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "Coyhaique",
+      "lat": -44.2333,
+      "lng": -71.85,
+      "population": 1000
+    },
+    {
+      "code": "11201",
+      "name": "Aysén",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "Aysen",
+      "lat": -45.4,
+      "lng": -72.7,
+      "population": 24000
+    },
+    {
+      "code": "11202",
+      "name": "Cisnes",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "Aysen",
+      "lat": -44.7333,
+      "lng": -72.6833,
+      "population": 6000
+    },
+    {
+      "code": "11203",
+      "name": "Guaitecas",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "Aysen",
+      "lat": -43.8833,
+      "lng": -73.75,
+      "population": 2000
+    },
+    {
+      "code": "11301",
+      "name": "Chile Chico",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "General Carrera",
+      "lat": -46.5333,
+      "lng": -71.7333,
+      "population": 5000
+    },
+    {
+      "code": "11302",
+      "name": "Río Ibáñez",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "General Carrera",
+      "lat": -46.2833,
+      "lng": -71.9333,
+      "population": 3000
+    },
+    {
+      "code": "11401",
+      "name": "Cochrane",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "Capitan Prat",
+      "lat": -47.25,
+      "lng": -72.5833,
+      "population": 3500
+    },
+    {
+      "code": "11402",
+      "name": "O'Higgins",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "Capitan Prat",
+      "lat": -48.4667,
+      "lng": -72.5667,
+      "population": 500
+    },
+    {
+      "code": "11403",
+      "name": "Tortel",
+      "region_id": 11,
+      "region_name": "Aysén",
+      "province_name": "Capitan Prat",
+      "lat": -47.8,
+      "lng": -73.5333,
+      "population": 600
+    },
+    {
+      "code": "12101",
+      "name": "Punta Arenas",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Magallanes",
+      "lat": -53.1548,
+      "lng": -70.9113,
+      "population": 131000
+    },
+    {
+      "code": "12102",
+      "name": "Laguna Blanca",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Magallanes",
+      "lat": -52.35,
+      "lng": -71.2333,
+      "population": 300
+    },
+    {
+      "code": "12103",
+      "name": "Río Verde",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Magallanes",
+      "lat": -52.5333,
+      "lng": -71.5,
+      "population": 300
+    },
+    {
+      "code": "12104",
+      "name": "San Gregorio",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Magallanes",
+      "lat": -52.3167,
+      "lng": -70.0667,
+      "population": 900
+    },
+    {
+      "code": "12201",
+      "name": "Cabo de Hornos",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Antartica Chilena",
+      "lat": -54.9333,
+      "lng": -67.6167,
+      "population": 2300
+    },
+    {
+      "code": "12202",
+      "name": "Antártica",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Antartica Chilena",
+      "lat": -62,
+      "lng": -58,
+      "population": 200
+    },
+    {
+      "code": "12301",
+      "name": "Porvenir",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Tierra del Fuego",
+      "lat": -53.2833,
+      "lng": -70.35,
+      "population": 7000
+    },
+    {
+      "code": "12302",
+      "name": "Primavera",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Tierra del Fuego",
+      "lat": -52.75,
+      "lng": -69.25,
+      "population": 1000
+    },
+    {
+      "code": "12303",
+      "name": "Timaukel",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Tierra del Fuego",
+      "lat": -54,
+      "lng": -69.6,
+      "population": 400
+    },
+    {
+      "code": "12401",
+      "name": "Natales",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Ultima Esperanza",
+      "lat": -51.7233,
+      "lng": -72.4872,
+      "population": 21000
+    },
+    {
+      "code": "12402",
+      "name": "Torres del Paine",
+      "region_id": 12,
+      "region_name": "Magallanes",
+      "province_name": "Ultima Esperanza",
+      "lat": -51.25,
+      "lng": -72.3333,
+      "population": 1200
+    },
+    {
+      "code": "13101",
+      "name": "Santiago",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4489,
+      "lng": -70.6693,
+      "population": 404000
+    },
+    {
+      "code": "13102",
+      "name": "Cerrillos",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4958,
+      "lng": -70.7125,
+      "population": 88000
+    },
+    {
+      "code": "13103",
+      "name": "Cerro Navia",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.425,
+      "lng": -70.7417,
+      "population": 148000
+    },
+    {
+      "code": "13104",
+      "name": "Conchalí",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.3833,
+      "lng": -70.6667,
+      "population": 133000
+    },
+    {
+      "code": "13105",
+      "name": "El Bosque",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5625,
+      "lng": -70.6736,
+      "population": 175000
+    },
+    {
+      "code": "13106",
+      "name": "Estación Central",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4517,
+      "lng": -70.6997,
+      "population": 147000
+    },
+    {
+      "code": "13107",
+      "name": "Huechuraba",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.3642,
+      "lng": -70.6342,
+      "population": 112000
+    },
+    {
+      "code": "13108",
+      "name": "Independencia",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4167,
+      "lng": -70.6667,
+      "population": 142000
+    },
+    {
+      "code": "13109",
+      "name": "La Cisterna",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5333,
+      "lng": -70.6583,
+      "population": 100000
+    },
+    {
+      "code": "13110",
+      "name": "La Florida",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5167,
+      "lng": -70.5917,
+      "population": 366000
+    },
+    {
+      "code": "13111",
+      "name": "La Granja",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5333,
+      "lng": -70.625,
+      "population": 116000
+    },
+    {
+      "code": "13112",
+      "name": "La Pintana",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5833,
+      "lng": -70.6333,
+      "population": 190000
+    },
+    {
+      "code": "13113",
+      "name": "La Reina",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.45,
+      "lng": -70.55,
+      "population": 100000
+    },
+    {
+      "code": "13114",
+      "name": "Las Condes",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4167,
+      "lng": -70.5833,
+      "population": 294000
+    },
+    {
+      "code": "13115",
+      "name": "Lo Barnechea",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.35,
+      "lng": -70.5167,
+      "population": 124000
+    },
+    {
+      "code": "13116",
+      "name": "Lo Espejo",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5167,
+      "lng": -70.6917,
+      "population": 103000
+    },
+    {
+      "code": "13117",
+      "name": "Lo Prado",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4417,
+      "lng": -70.725,
+      "population": 96000
+    },
+    {
+      "code": "13118",
+      "name": "Macul",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4917,
+      "lng": -70.5917,
+      "population": 130000
+    },
+    {
+      "code": "13119",
+      "name": "Maipú",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5167,
+      "lng": -70.7583,
+      "population": 521000
+    },
+    {
+      "code": "13120",
+      "name": "Ñuñoa",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4583,
+      "lng": -70.6,
+      "population": 243000
+    },
+    {
+      "code": "13121",
+      "name": "Pedro Aguirre Cerda",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4917,
+      "lng": -70.675,
+      "population": 102000
+    },
+    {
+      "code": "13122",
+      "name": "Peñalolén",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4917,
+      "lng": -70.5333,
+      "population": 237000
+    },
+    {
+      "code": "13123",
+      "name": "Providencia",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4333,
+      "lng": -70.6167,
+      "population": 142000
+    },
+    {
+      "code": "13124",
+      "name": "Pudahuel",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4333,
+      "lng": -70.75,
+      "population": 230000
+    },
+    {
+      "code": "13125",
+      "name": "Quilicura",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.3583,
+      "lng": -70.725,
+      "population": 210000
+    },
+    {
+      "code": "13126",
+      "name": "Quinta Normal",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.425,
+      "lng": -70.6917,
+      "population": 110000
+    },
+    {
+      "code": "13127",
+      "name": "Recoleta",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4042,
+      "lng": -70.6417,
+      "population": 190000
+    },
+    {
+      "code": "13128",
+      "name": "Renca",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.4,
+      "lng": -70.7167,
+      "population": 160000
+    },
+    {
+      "code": "13129",
+      "name": "San Joaquín",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5,
+      "lng": -70.6333,
+      "population": 94000
+    },
+    {
+      "code": "13130",
+      "name": "San Miguel",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5,
+      "lng": -70.65,
+      "population": 107000
+    },
+    {
+      "code": "13131",
+      "name": "San Ramón",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.5333,
+      "lng": -70.6417,
+      "population": 86000
+    },
+    {
+      "code": "13132",
+      "name": "Vitacura",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Santiago",
+      "lat": -33.3917,
+      "lng": -70.575,
+      "population": 90000
+    },
+    {
+      "code": "13201",
+      "name": "Puente Alto",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Cordillera",
+      "lat": -33.6117,
+      "lng": -70.5758,
+      "population": 568000
+    },
+    {
+      "code": "13202",
+      "name": "Pirque",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Cordillera",
+      "lat": -33.6667,
+      "lng": -70.5833,
+      "population": 26000
+    },
+    {
+      "code": "13203",
+      "name": "San José de Maipo",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Cordillera",
+      "lat": -33.6333,
+      "lng": -70.35,
+      "population": 18000
+    },
+    {
+      "code": "13301",
+      "name": "San Bernardo",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Maipo",
+      "lat": -33.5917,
+      "lng": -70.7,
+      "population": 301000
+    },
+    {
+      "code": "13302",
+      "name": "Buin",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Maipo",
+      "lat": -33.7333,
+      "lng": -70.7333,
+      "population": 82000
+    },
+    {
+      "code": "13303",
+      "name": "Calera de Tango",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Maipo",
+      "lat": -33.6333,
+      "lng": -70.7667,
+      "population": 26000
+    },
+    {
+      "code": "13304",
+      "name": "Paine",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Maipo",
+      "lat": -33.8167,
+      "lng": -70.7333,
+      "population": 68000
+    },
+    {
+      "code": "13401",
+      "name": "Melipilla",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Melipilla",
+      "lat": -33.6833,
+      "lng": -71.2167,
+      "population": 110000
+    },
+    {
+      "code": "13402",
+      "name": "Alhué",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Melipilla",
+      "lat": -34,
+      "lng": -71.0667,
+      "population": 6000
+    },
+    {
+      "code": "13403",
+      "name": "Curacaví",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Melipilla",
+      "lat": -33.4,
+      "lng": -71.1333,
+      "population": 32000
+    },
+    {
+      "code": "13404",
+      "name": "María Pinto",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Melipilla",
+      "lat": -33.5167,
+      "lng": -71.1167,
+      "population": 13000
+    },
+    {
+      "code": "13405",
+      "name": "San Pedro",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Melipilla",
+      "lat": -33.8833,
+      "lng": -71.45,
+      "population": 10000
+    },
+    {
+      "code": "13501",
+      "name": "Talagante",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Talagante",
+      "lat": -33.6667,
+      "lng": -70.9333,
+      "population": 72000
+    },
+    {
+      "code": "13502",
+      "name": "El Monte",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Talagante",
+      "lat": -33.6833,
+      "lng": -71,
+      "population": 37000
+    },
+    {
+      "code": "13503",
+      "name": "Isla de Maipo",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Talagante",
+      "lat": -33.75,
+      "lng": -70.9,
+      "population": 33000
+    },
+    {
+      "code": "13504",
+      "name": "Padre Hurtado",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Talagante",
+      "lat": -33.5667,
+      "lng": -70.8333,
+      "population": 55000
+    },
+    {
+      "code": "13505",
+      "name": "Peñaflor",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Talagante",
+      "lat": -33.6,
+      "lng": -70.8833,
+      "population": 92000
+    },
+    {
+      "code": "13601",
+      "name": "Colina",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Chacabuco",
+      "lat": -33.2,
+      "lng": -70.6667,
+      "population": 146000
+    },
+    {
+      "code": "13602",
+      "name": "Lampa",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Chacabuco",
+      "lat": -33.2833,
+      "lng": -70.8833,
+      "population": 105000
+    },
+    {
+      "code": "13603",
+      "name": "Tiltil",
+      "region_id": 13,
+      "region_name": "Metropolitana",
+      "province_name": "Chacabuco",
+      "lat": -33.0833,
+      "lng": -70.9167,
+      "population": 18000
+    },
+    {
+      "code": "14101",
+      "name": "Valdivia",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Valdivia",
+      "lat": -39.8142,
+      "lng": -73.2459,
+      "population": 166000
+    },
+    {
+      "code": "14102",
+      "name": "Corral",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Valdivia",
+      "lat": -39.8833,
+      "lng": -73.4333,
+      "population": 5500
+    },
+    {
+      "code": "14103",
+      "name": "Lanco",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Valdivia",
+      "lat": -39.45,
+      "lng": -72.7833,
+      "population": 17000
+    },
+    {
+      "code": "14104",
+      "name": "Los Lagos",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Valdivia",
+      "lat": -39.85,
+      "lng": -72.8167,
+      "population": 22000
+    },
+    {
+      "code": "14105",
+      "name": "Máfil",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Valdivia",
+      "lat": -39.6667,
+      "lng": -72.95,
+      "population": 8000
+    },
+    {
+      "code": "14106",
+      "name": "Mariquina",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Valdivia",
+      "lat": -39.5167,
+      "lng": -72.9667,
+      "population": 19000
+    },
+    {
+      "code": "14107",
+      "name": "Paillaco",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Valdivia",
+      "lat": -40.0667,
+      "lng": -72.8667,
+      "population": 20000
+    },
+    {
+      "code": "14108",
+      "name": "Panguipulli",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Valdivia",
+      "lat": -39.6333,
+      "lng": -72.3333,
+      "population": 35000
+    },
+    {
+      "code": "14201",
+      "name": "La Unión",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Ranco",
+      "lat": -40.2833,
+      "lng": -73.0833,
+      "population": 40000
+    },
+    {
+      "code": "14202",
+      "name": "Futrono",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Ranco",
+      "lat": -40.1333,
+      "lng": -72.4,
+      "population": 16000
+    },
+    {
+      "code": "14203",
+      "name": "Lago Ranco",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Ranco",
+      "lat": -40.3167,
+      "lng": -72.4833,
+      "population": 11000
+    },
+    {
+      "code": "14204",
+      "name": "Río Bueno",
+      "region_id": 14,
+      "region_name": "Los Ríos",
+      "province_name": "Ranco",
+      "lat": -40.3333,
+      "lng": -72.95,
+      "population": 34000
+    },
+    {
+      "code": "15101",
+      "name": "Arica",
+      "region_id": 15,
+      "region_name": "Arica y Parinacota",
+      "province_name": "Arica",
+      "lat": -18.4746,
+      "lng": -70.2979,
+      "population": 222000
+    },
+    {
+      "code": "15102",
+      "name": "Camarones",
+      "region_id": 15,
+      "region_name": "Arica y Parinacota",
+      "province_name": "Arica",
+      "lat": -19.0094,
+      "lng": -69.9017,
+      "population": 1200
+    },
+    {
+      "code": "15201",
+      "name": "Putre",
+      "region_id": 15,
+      "region_name": "Arica y Parinacota",
+      "province_name": "Parinacota",
+      "lat": -18.1953,
+      "lng": -69.5584,
+      "population": 2500
+    },
+    {
+      "code": "15202",
+      "name": "General Lagos",
+      "region_id": 15,
+      "region_name": "Arica y Parinacota",
+      "province_name": "Parinacota",
+      "lat": -17.8203,
+      "lng": -69.6461,
+      "population": 800
+    },
+    {
+      "code": "16101",
+      "name": "Chillán",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Diguillin",
+      "lat": -36.6066,
+      "lng": -72.1034,
+      "population": 184000
+    },
+    {
+      "code": "16102",
+      "name": "Bulnes",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Diguillin",
+      "lat": -36.7333,
+      "lng": -72.3,
+      "population": 22000
+    },
+    {
+      "code": "16103",
+      "name": "Chillán Viejo",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Diguillin",
+      "lat": -36.6333,
+      "lng": -72.1333,
+      "population": 35000
+    },
+    {
+      "code": "16104",
+      "name": "El Carmen",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Diguillin",
+      "lat": -36.9,
+      "lng": -72.0333,
+      "population": 13000
+    },
+    {
+      "code": "16105",
+      "name": "Pemuco",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Diguillin",
+      "lat": -36.9833,
+      "lng": -72.1,
+      "population": 9000
+    },
+    {
+      "code": "16106",
+      "name": "Pinto",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Diguillin",
+      "lat": -36.6833,
+      "lng": -71.9,
+      "population": 11000
+    },
+    {
+      "code": "16107",
+      "name": "Quillón",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Diguillin",
+      "lat": -36.7333,
+      "lng": -72.4667,
+      "population": 16000
+    },
+    {
+      "code": "16108",
+      "name": "San Ignacio",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Diguillin",
+      "lat": -36.8,
+      "lng": -71.9833,
+      "population": 16000
+    },
+    {
+      "code": "16109",
+      "name": "Yungay",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Diguillin",
+      "lat": -37.1167,
+      "lng": -72.0167,
+      "population": 18000
+    },
+    {
+      "code": "16201",
+      "name": "Quirihue",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Itata",
+      "lat": -36.2833,
+      "lng": -72.5333,
+      "population": 12000
+    },
+    {
+      "code": "16202",
+      "name": "Cobquecura",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Itata",
+      "lat": -36.1333,
+      "lng": -72.7833,
+      "population": 6000
+    },
+    {
+      "code": "16203",
+      "name": "Coelemu",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Itata",
+      "lat": -36.4833,
+      "lng": -72.7,
+      "population": 17000
+    },
+    {
+      "code": "16204",
+      "name": "Ninhue",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Itata",
+      "lat": -36.3833,
+      "lng": -72.3833,
+      "population": 6000
+    },
+    {
+      "code": "16205",
+      "name": "Portezuelo",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Itata",
+      "lat": -36.5333,
+      "lng": -72.4333,
+      "population": 5500
+    },
+    {
+      "code": "16206",
+      "name": "Ránquil",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Itata",
+      "lat": -36.6167,
+      "lng": -72.5667,
+      "population": 6000
+    },
+    {
+      "code": "16207",
+      "name": "Trehuaco",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Itata",
+      "lat": -36.4333,
+      "lng": -72.6667,
+      "population": 5500
+    },
+    {
+      "code": "16301",
+      "name": "San Carlos",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Punilla",
+      "lat": -36.4167,
+      "lng": -71.95,
+      "population": 55000
+    },
+    {
+      "code": "16302",
+      "name": "Coihueco",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Punilla",
+      "lat": -36.6167,
+      "lng": -71.8333,
+      "population": 26000
+    },
+    {
+      "code": "16303",
+      "name": "Ñiquén",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Punilla",
+      "lat": -36.2833,
+      "lng": -71.9,
+      "population": 12000
+    },
+    {
+      "code": "16304",
+      "name": "San Fabián",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Punilla",
+      "lat": -36.55,
+      "lng": -71.5333,
+      "population": 4000
+    },
+    {
+      "code": "16305",
+      "name": "San Nicolás",
+      "region_id": 16,
+      "region_name": "Ñuble",
+      "province_name": "Punilla",
+      "lat": -36.5,
+      "lng": -72.2167,
+      "population": 11000
+    }
+  ],
+  "total": 346,
+  "source": "INE - Instituto Nacional de Estadísticas",
+  "source_url": "https://www.ine.gob.cl/"
+}

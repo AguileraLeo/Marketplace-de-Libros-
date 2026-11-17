@@ -6,10 +6,11 @@ evalúe el proyecto) entienda el sistema completo sin tener que leer todo el có
 
 Documentos relacionados en este repositorio:
 
-- [`README.md`](README.md) — instalación rápida, cuentas de demo, capturas.
-- [`AGENTS.md`](AGENTS.md) — visión de producto y reglas de trabajo (fuente de verdad original).
-- [`CONTEXTO.md`](CONTEXTO.md) — estado del proyecto y cómo trabajar en equipo.
-- [`USO_IA.md`](USO_IA.md) — declaración de uso de Inteligencia Artificial.
+- [`README.md`](../../README.md) — instalación rápida, cuentas de demo, capturas.
+- [`AGENTS.md`](../../AGENTS.md) — visión de producto y reglas de trabajo (fuente de verdad original).
+- [`CONTEXTO.md`](../../CONTEXTO.md) — estado del proyecto y cómo trabajar en equipo.
+- [`USO_IA.md`](../06-process/USO_IA.md) — declaración de uso de Inteligencia Artificial.
+- [`DOCUMENTATION.md`](../../DOCUMENTATION.md) — medición RA3: registro de eventos, KPIs, método MJV App y `analitica.py`.
 
 ---
 
@@ -45,7 +46,8 @@ tiene, sino que anuncia lo que necesita y espera a que aparezca.
 - No hay chat interno (se usan los datos de contacto que el vendedor decide compartir).
 - El vendedor no mantiene un catálogo/inventario propio (ver §2.4 más abajo — esto se
   conversó explícitamente durante el desarrollo y se decidió mantenerlo así).
-- No hay persistencia real: todo vive en memoria mientras la app está abierta.
+- No hay servidor ni sincronización: cada dispositivo guarda sus propios datos en un archivo
+  `data.json` local (ver §4.7).
 
 ---
 
@@ -121,7 +123,9 @@ Ver detalle de una solicitud (incluye la cercanía: "Misma comuna" / "Misma regi
 Oferta publicada -> aparece en "Mis ofertas" (activa / por concretar / en espera / aceptada / finalizada)
 ```
 
-El vendedor puede **cancelar** su propia oferta mientras esté activa o en espera.
+El vendedor puede **cancelar** su propia oferta mientras esté activa o en espera. Si la oferta
+ya está en coordinación, en "Mis ofertas" aparece **Desistir del trato** (`cancel_deal`): su
+oferta se cancela y la solicitud vuelve a recibir ofertas.
 
 ### 2.3 Flujo del administrador
 
@@ -152,7 +156,7 @@ abierta y ofrécele el libro que buscan").
 
 ## 3. Modelo de dominio
 
-### 3.1 Entidades (definidas en `store.py`)
+### 3.1 Entidades (definidas en `models/store.py`)
 
 | Entidad | Campos clave | Qué representa |
 |---|---|---|
@@ -161,7 +165,7 @@ abierta y ofrécele el libro que buscan").
 | `BookRequest` | `id, reader_id, book_id, max_price, accepted_condition, location, delivery_preference, notes, status, canceled_by_role, cancellation_reason` | La "solicitud" de un lector: qué libro busca y en qué condiciones. |
 | `Offer` | `id, request_id, seller_id, price, book_condition, condition_description, notes, status` | La respuesta de un vendedor a una solicitud. |
 | `SellerContact` | `seller_id, phone, email, address_or_meeting_point` | Datos de contacto del vendedor, se revelan solo al coordinar/aceptar. |
-| `ActivityEntry` | `at, actor_id, action, detail` | Un evento de auditoría (para el panel de admin). |
+| `ActivityEntry` | `at, actor_id, action, detail` | Un evento: lo usan el panel de auditoría del admin y la analítica RA3 ([`DOCUMENTATION.md`](../../DOCUMENTATION.md)). |
 
 **Libro y solicitud son entidades distintas**: un mismo libro (por ejemplo "El Hobbit") puede
 estar asociado a muchas solicitudes de distintos lectores.
@@ -177,6 +181,8 @@ BORRADOR -> PUBLICADA -> CON_OFERTAS -> EN_COORDINACION -> RESUELTA
 - `BORRADOR -> PUBLICADA`: ocurre automáticamente al crear la solicitud (no hay un paso
   intermedio visible para el usuario).
 - `PUBLICADA -> CON_OFERTAS`: cuando llega la primera oferta.
+- `CON_OFERTAS -> PUBLICADA`: si los vendedores cancelan todas sus ofertas activas
+  (`cancel_offer`), la solicitud deja de mostrarse "con ofertas".
 - `CON_OFERTAS/EN_COORDINACION -> EN_COORDINACION`: cuando el lector acepta una oferta para
   coordinar (`accept_offer`).
 - `EN_COORDINACION -> RESUELTA`: cuando el lector confirma el trato (`confirm_deal`).
@@ -190,8 +196,14 @@ BORRADOR -> PUBLICADA -> CON_OFERTAS -> EN_COORDINACION -> RESUELTA
 PUBLICADA (activa) --acepta el lector--> POR_CONCRETAR --confirma el lector--> ACEPTADA
 PUBLICADA --el lector acepta OTRA oferta--> EN_ESPERA --esa otra se desiste--> PUBLICADA
                                                         --esa otra se confirma--> RECHAZADA
-Cualquier estado activo (PUBLICADA/POR_CONCRETAR/EN_ESPERA) --el vendedor cancela--> CANCELADA
+PUBLICADA o EN_ESPERA --el vendedor cancela (cancel_offer)--> CANCELADA
+POR_CONCRETAR --el vendedor desiste (cancel_deal)--> CANCELADA
+POR_CONCRETAR --el lector desiste (cancel_deal)--> RECHAZADA
 ```
+
+Una oferta `POR_CONCRETAR` no se puede cancelar como una oferta común (`cancel_offer` lo
+rechaza): hay que desistir del trato, para que la solicitud salga de `EN_COORDINACION` y las
+ofertas en espera se reactiven.
 
 Reglas importantes:
 
@@ -200,11 +212,11 @@ Reglas importantes:
   con lo que el lector prefería; la UI se lo destaca al lector, pero no lo bloquea (se
   flexibilizó a propósito para no perder ofertas válidas).
 - Los datos de contacto del vendedor **solo se revelan** cuando la oferta entra en
-  `POR_CONCRETAR` o `ACEPTADA` (`offer_contact()` en `store.py`).
+  `POR_CONCRETAR` o `ACEPTADA` (`offer_contact()` en `models/store.py`).
 
 ### 3.4 Reglas de permisos (autorización)
 
-Todas las reglas de negocio y de permisos viven en `store.py`, **no en la interfaz**: cada
+Todas las reglas de negocio y de permisos viven en `models/store.py`, **no en la interfaz**: cada
 método del `Store` vuelve a validar el rol, la propiedad del recurso y el estado, sin confiar
 en lo que mande la UI. Algunos ejemplos:
 
@@ -219,58 +231,80 @@ en lo que mande la UI. Algunos ejemplos:
 ## 4. Arquitectura del código
 
 ```
-libros.kv        Interfaz declarativa (KV language): toda la UI y el estilo visual.
+views/libros.kv  Interfaz declarativa (KV language): toda la UI y el estilo visual.
    |
-main.py          Pantallas (ScreenManager) y navegación. NO contiene reglas de negocio,
-   |              solo llama a métodos del Store y reacciona a errores.
-store.py         Dominio: entidades, máquinas de estado, validaciones, permisos.
-   |              Repositorio en memoria + datos de ejemplo (build_demo_store).
+main.py          Punto de entrada y configuración inicial de ventana.
    |
-books_api.py     Búsqueda de libros: Google Books -> Open Library -> catálogo local,
+controllers/     Controladores de aplicación y de pantalla Kivy.
+   |
+views/           Widgets reutilizables para las vistas KV.
+   |
+models/store.py  Dominio: entidades, máquinas de estado, validaciones, permisos y registro
+   |              de eventos. Repositorio en memoria + datos de ejemplo (build_demo_store).
+   |
+services/        Persistencia (data.json), notificaciones y configuración remota.
+   |
+services/books_api.py
+                 Búsqueda de libros: Google Books -> Open Library -> catálogo local,
    |              con caché de portadas en disco.
-locations.py     Catálogo y normalizador de comunas/ciudades de Chile + cercanía
+services/locations.py
+                 Catálogo y normalizador de comunas/ciudades de Chile + cercanía
                   aproximada entre vendedor y solicitud.
+data/            Catálogo de comunas y configuración remota.
+assets/          Fuentes tipográficas y capturas.
+
+analitica.py     Fuera de la app: calcula los KPIs de RA3 desde data.json (DOCUMENTATION.md).
 ```
 
 Regla de separación (definida en `CONTEXTO.md` y respetada en todo el código): **toda regla de
-negocio y todo chequeo de permisos va en `store.py`**, y la interfaz (`main.py` + `libros.kv`)
-solo la invoca y muestra el resultado. Esto permite probar el dominio sin interfaz (ver §6) y
-cambiar la UI sin tocar las reglas.
+negocio y todo chequeo de permisos va en `models/store.py`**. Los controladores orquestan acciones y
+la interfaz (`views/libros.kv` y `views/`) presenta el resultado. Esto permite probar el dominio sin
+interfaz (ver §6) y cambiar la UI sin tocar las reglas.
 
-### 4.1 Explicación de `main.py`
+### 4.1 Organización MVC
 
-Es el punto de entrada (`python main.py`) y define:
+La aplicación se reorganizó de forma incremental, sin cambiar sus flujos:
 
-- **Configuración de ventana**: en escritorio simula el tamaño de un teléfono (420×860). En
-  Android/iOS no aplica ese ajuste.
-- **Registro de las tipografías "SourceSerif" y "IBMPlexSans"** vía `LabelBase.register(...)`
-  y de los colores de marca `ACCENT` y `PAPER` (ver §7).
-- **Widgets reutilizables** (su apariencia vive en `libros.kv`, su lógica acá):
-  - `BookCover`: portada de un libro, con carga desde caché en disco y *placeholder* mientras
-    descarga.
-  - `StatusChip`: el estado de una solicitud/oferta/usuario, como punto de color más texto
-    (colores en `STATUS_COLORS`).
-  - `WideButton` / `PrimaryButton`: botón a todo el ancho.
-  - `SegmentedRow` / `SegmentButton`: control segmentado de selección única (modo de búsqueda,
-    condición, rol, entrega, filtros).
-  - `RequestRow`, `ItemCard`, `BookResultCard`, `StatTile`, `InfoRow`, `EmptyState`: filas y
-    tarjetas reutilizadas en casi todas las pantallas.
-- **Pantallas** (una clase por pantalla, todas heredan de `BaseScreen`): `LoginScreen`,
-  `RegisterScreen`, `ReaderHomeScreen`, `BookSearchScreen`, `CreateRequestScreen`,
-  `RequestPublishedScreen`, `ReaderRequestsScreen`, `ReaderRequestDetailScreen`,
-  `OfferDetailScreen`, `OfferAcceptedScreen`, `SellerHomeScreen`, `SellerRequestDetailScreen`,
-  `CreateOfferScreen`, `SellerOffersScreen`, `AdminHomeScreen`, `AdminRequestsScreen`,
-  `AdminUsersScreen`, `AdminOffersScreen`, `AdminActivityScreen`. Cada una implementa
-  `refresh()`, que se llama automáticamente al entrar a la pantalla (`on_pre_enter`).
-- **`DemoLibrosApp`** (clase principal, `MDApp`): arma el tema (paleta de color, tipografía),
-  crea el `Store` de demo, maneja la navegación (`go`, `back`, `go_home`, historial tipo pila),
-  el login/logout, diálogos de confirmación/información, *snackbars* de error, y helpers
-  compartidos entre pantallas (`request_card`, `request_info_rows`, `fill_book_header`, etc.).
-- **`app.safe(fn, *args)`**: envoltorio que llama a un método del `Store` y, si lanza un
-  `DomainError`, muestra el mensaje en un *snackbar* en vez de romper la app. Así ningún error
-  de negocio se ve como un *crash*.
+- **Punto de entrada — `main.py`**: en escritorio fija una ventana de 420×860 (simula un
+  teléfono; en Android/iOS no aplica) e inicia `DemoLibrosApp`.
+- **Controlador de aplicación — `controllers/app_controller.py`**: `DemoLibrosApp` (`MDApp`)
+  registra las tipografías, arma el tema, crea o carga el `Store`, y gestiona el ciclo de vida,
+  la navegación (`go`, `back`, `go_home`, historial tipo pila), la sesión, los diálogos y la
+  coordinación con servicios.
+  - **`app.safe(fn, *args)`**: llama a un caso de uso del `Store` y, si lanza un `DomainError`,
+    muestra el mensaje en un *snackbar* en vez de romper la app. Si la acción funcionó, guarda
+    `data.json`; si el disco falla (lleno, sin permisos), muestra "No se pudieron guardar los
+    cambios", no da la acción por exitosa y vuelve al último estado guardado, para que lo que se
+    ve coincida con lo guardado y un reintento no duplique datos.
+- **Controladores de pantalla — `controllers/screen_controllers.py`**: una clase por pantalla,
+  todas heredan de `BaseScreen` (`LoginScreen`, `RegisterScreen`, `ReaderHomeScreen`,
+  `BookSearchScreen`, `CreateRequestScreen`, `RequestPublishedScreen`, `ReaderRequestsScreen`,
+  `ReaderRequestDetailScreen`, `OfferDetailScreen`, `OfferAcceptedScreen`, `SellerHomeScreen`,
+  `SellerRequestDetailScreen`, `CreateOfferScreen`, `SellerOffersScreen`, `AdminHomeScreen`,
+  `AdminRequestsScreen`, `AdminUsersScreen`, `AdminOffersScreen`, `AdminActivityScreen`).
+  Reciben los eventos definidos en KV, implementan `refresh()` (se llama al entrar, en
+  `on_pre_enter`) y llaman a `Store` o a los servicios.
+  - **Cuentas demo en Android**: `LoginScreen.on_kv_post` quita del login el panel de cuentas
+    de demo cuando la app corre en Android. Solo las oculta; las cuentas siguen existiendo.
+- **Vistas — `views/libros.kv`**: contiene layouts, estilos y enlaces de eventos para las 19 pantallas.
+- **Componentes de vista — `views/components.py`**: widgets reutilizables (su apariencia vive en
+  `libros.kv`, su lógica acá): `BookCover` (portada con caché en disco), `StatusChip` (estado
+  como punto de color más texto, colores en `STATUS_COLORS`), `WideButton`, `SegmentedRow` /
+  `SegmentButton`, `RequestRow`, `ItemCard`, `BookResultCard`, `StatTile`, `InfoRow` y
+  `EmptyState`; además los colores de marca (`ACCENT`, `PAPER`) y el formato de fechas.
+- **Modelo/dominio — `models/store.py`**: conserva entidades, validaciones, permisos y transiciones.
+  Los controladores no duplican esas reglas.
+- **Servicios**: `services/` encapsula persistencia,
+  notificaciones, configuración remota y acceso a datos externos.
 
-### 4.2 Explicación de `libros.kv`
+La separación MVC y la organización del repositorio se registran en
+[`SPEC-001-mvc-refactor.md`](../05-specs/SPEC-001-mvc-refactor.md),
+[`SPEC-002-reorganizar-estructura.md`](../05-specs/SPEC-002-reorganizar-estructura.md),
+[`ADR-001-mvc-incremental.md`](./ADR-001-mvc-incremental.md),
+[`ADR-002-estructura-del-repositorio.md`](./ADR-002-estructura-del-repositorio.md) y
+[`ADR-003-integracion-e4.md`](./ADR-003-integracion-e4.md).
+
+### 4.2 Explicación de `views/libros.kv`
 
 Es un archivo [KV language](https://kivy.org/doc/stable/guide/lang.html) de ~1500 líneas.
 Contiene **toda** la interfaz: layout, estilos, colores por estado, tipografía y navegación
@@ -284,6 +318,9 @@ entre pantallas. Se divide en:
 2. **`MDScreenManager`**: la lista de las 19 pantallas de la app.
 3. **Una regla `<NombreDePantalla>:` por pantalla**, con su layout completo.
 
+Los nombres de widgets y controladores Kivy deben importarse antes de cargar el archivo KV;
+`controllers/app_controller.py` importa los controladores de pantalla para registrar esas clases.
+
 Detalle técnico importante encontrado y corregido en esta sesión: en KivyMD 2.0, un
 `MDCard` **ignora** cualquier `md_bg_color` personalizado a menos que también se le declare
 `theme_bg_color: "Custom"` (si no, usa el color que le asigna el tema automáticamente). Esto
@@ -291,7 +328,7 @@ afectaba a `Panel` y a `StatTile`, y hacía que las tarjetas de métricas del ad
 paneles destacados se vieran todas del mismo color en vez de sus colores distintos — se
 corrigió agregando esa línea en ambos.
 
-### 4.3 Explicación de `store.py`
+### 4.3 Explicación de `models/store.py`
 
 Ya cubierto en detalle en la sección 3 (modelo de dominio). Estructuralmente:
 
@@ -309,9 +346,10 @@ Ya cubierto en detalle en la sección 3 (modelo de dominio). Estructuralmente:
   de admin, etc.). Cada método público empieza revalidando quién es el actor y si tiene
   permiso, antes de tocar cualquier dato.
 - `build_demo_store()` + `DEMO_USERS`: arma un `Store` con las 5 cuentas de demo y algunos
-  libros/solicitudes/ofertas de ejemplo, para que la app no arranque vacía.
+  libros/solicitudes/ofertas de ejemplo, para que la app no arranque vacía. Se usa solo cuando
+  todavía no existe `data.json` (primera apertura).
 
-### 4.4 Explicación de `books_api.py`
+### 4.4 Explicación de `services/books_api.py`
 
 Resuelve la búsqueda de libros con **tres niveles de respaldo**, en orden:
 
@@ -330,9 +368,9 @@ archivo derivado del hash MD5 de la URL): la primera vez que se ve una portada s
 un hilo aparte y se guarda; las siguientes veces se lee directo del disco, sin volver a pedirla
 por red — esto evita el problema original de portadas que "a veces cargan y a veces no".
 
-### 4.5 Explicación de `locations.py`
+### 4.5 Explicación de `services/locations.py`
 
-- `CHILE_LOCATIONS`: catálogo de 107 comunas de Chile con su región.
+- `CHILE_LOCATIONS`: catálogo de 346 comunas cargado desde `data/comunas.json`.
 - `search_locations(query)`: autocompletado tolerante a tildes/mayúsculas (usado en el campo
   de ubicación al crear una solicitud y al registrar un vendedor).
 - `normalize_location_name(text)`: convierte lo que escribe el usuario al formato estándar
@@ -351,12 +389,36 @@ python -m unittest discover -s tests -v
 
 - `tests/test_store.py`: flujo feliz completo, permisos (un lector no puede tocar solicitudes
   de otro, etc.), validaciones de formularios, y las máquinas de estado (incluida la
-  negociación/desistimiento de un trato y la moderación administrativa).
+  negociación/desistimiento de un trato, la cancelación de ofertas y la moderación
+  administrativa).
+- `tests/test_persistence.py`: guardar y recuperar, JSON corrupto o con estructura inesperada,
+  y fallo de escritura (el último guardado queda intacto).
+- `tests/test_analitica.py`: formato del registro de eventos, exclusión de cuentas demo y
+  cálculo de los KPIs (con archivos temporales, nunca con el `data.json` real).
 - `tests/test_locations_and_cache.py`: catálogo de ubicaciones, búsqueda tolerante a tildes,
-  normalización, la nueva `proximity_label`, y la caché de portadas de `books_api.py`.
+  normalización, `proximity_label` y la caché de portadas de `services/books_api.py`.
 
-Actualmente hay **30 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
+Actualmente hay **50 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
 para asegurar que nada se rompió.
+
+### 4.7 Servicios: persistencia, notificaciones y configuración remota
+
+- **Persistencia JSON** (`services/persistence.py`): `save_store()` guarda todo el `Store` en
+  `data.json` (en el PC, en la carpeta del proyecto; en Android, en `user_data_dir`, que no se
+  borra al actualizar el APK). Se guarda después de cada acción exitosa (`app.safe`), al pausar
+  la app en Android (`on_pause`) y al cerrarla (`on_stop`). La escritura es atómica: primero a
+  `data.json.tmp` y luego `os.replace`. `load_store()` lo recupera al abrir; si el archivo está
+  roto o no tiene la estructura esperada, lo respalda como `data.json.corrupto` y la app arranca
+  con los datos de demo.
+- **Notificaciones locales** (`services/notifications.py`, con plyer): se envían al publicar una
+  oferta (vendedor) y al iniciar sesión un lector con ofertas activas por revisar. Las genera el
+  propio dispositivo, sin servidor; en Android 13+ se pide el permiso al iniciar la app.
+- **Configuración remota** (`services/remote_config.py`): al iniciar se descarga
+  `remote_config.json` desde GitHub sin bloquear la interfaz; si no hay red, se usa el valor por
+  defecto.
+
+El detalle de cada servicio y dónde se llama está en la tabla "Servicios implementados" del
+[`README.md`](../../README.md).
 
 ---
 
@@ -427,9 +489,13 @@ internet, al catálogo local.
 | Vendedor | pedro@demo.cl | 1234 |
 | Administrador | admin@demo.cl | admin |
 
-También se pueden registrar cuentas nuevas de lector o vendedor desde la app. **Sin base de
-datos:** todo vive en memoria mientras la app está abierta; al cerrarla, los datos vuelven al
-estado inicial (excepto la caché de portadas en `.cache/covers/`, que persiste en disco).
+También se pueden registrar cuentas nuevas de lector o vendedor desde la app. Los datos se
+guardan en `data.json` y se mantienen al cerrar y volver a abrir la app (§4.7). Para volver a
+los datos de demo, cierra la app y borra ese archivo.
+
+En el APK (Android) el login no muestra el panel de cuentas de demo, pero las cuentas siguen
+existiendo con estas contraseñas, que son públicas: no es una medida de seguridad. Los eventos
+generados con estas cuentas se excluyen de los KPIs (`analitica.py`).
 
 ### 6.4 Correr las pruebas
 
@@ -444,11 +510,12 @@ python -m unittest discover -s tests -v
 ### 7.1 Paleta de color
 
 KivyMD 2.0 genera un esquema Material You completo a partir de un solo color "semilla"
-(`theme_cls.primary_palette`, definido en `main.py`). Se probaron varias familias de color
+(`theme_cls.primary_palette`, definido en `controllers/app_controller.py`). Se probaron varias familias de color
 (marrón/rojiza, azul/índigo, dorada) y se descartó la familia roja porque su tono resultante
 chocaba visualmente con el color ya usado para el estado "cancelada". Primero se usó
 `"darkgoldenrod"`. Luego, siguiendo la maqueta "BookWho — Rediseño editorial", se cambió a un
-**verde oscuro `#1F4D3A`** (`ACCENT` en `main.py`) con fondo **crema `#FBFAF7`** (`PAPER`).
+**verde oscuro `#1F4D3A`** (`ACCENT` en `views/components.py`) con fondo **crema `#FBFAF7`**
+(`PAPER`).
 El acento es la semilla del esquema Material You. Como Material You ajusta levemente el tono,
 `_apply_brand_colors()` fija exactos el color primario y el fondo cada vez que se regenera el
 esquema. Los colores de estado (`STATUS_COLORS`) no cambiaron.
@@ -458,9 +525,9 @@ esquema. Los colores de estado (`STATUS_COLORS`) no cambiaron.
 Siguiendo la misma maqueta, los estilos "Display", "Headline" y "Title" de KivyMD usan
 **Source Serif 4** (seminegrita) y los estilos "Body" y "Label" (texto, botones y campos)
 usan **IBM Plex Sans**. Ambas fuentes tienen licencia OFL; los `.ttf` estáticos y sus
-licencias están en `fonts/`. Kivy no lee `woff2`, el formato que traía la maqueta, por eso se
+licencias están en `assets/fonts/`. Kivy no lee `woff2`, el formato que traía la maqueta, por eso se
 usan los `.ttf` oficiales de Adobe e IBM. Se aplica modificando `theme_cls.font_styles` una
-sola vez en `main.py`, sin tocar cada pantalla.
+sola vez en `controllers/app_controller.py`, sin tocar cada pantalla.
 
 ### 7.3 Estilo editorial en todas las pantallas
 
@@ -490,7 +557,7 @@ restilizaron los componentes compartidos:
 - **Botones** con esquinas de 6 dp; campos de texto con borde gris cálido y foco verde; barras
   superiores con una línea fina abajo.
 - Los tonos neutros del diseño (`INK`, `MUTED`, `FAINT`, `RULE`, `FIELD_LINE`, `TRACK`) están
-  al inicio de `libros.kv`.
+  al inicio de `views/libros.kv`.
 
 Ajustes tipográficos: los títulos en serif usan interlineado 1,15, como la maqueta (los valores
 de KivyMD están pensados para Roboto), y todas las etiquetas usan `font_hinting: None`, porque el
@@ -506,7 +573,7 @@ junto a las ofertas, porque la app no registra qué ofertas ya vio el lector.
 ### 7.4 Marca (`BrandMark`)
 
 En vez de un ícono genérico de Material Icons, se armó un logo propio combinando dos
-elementos superpuestos (definido como componente reutilizable en `libros.kv`): un cuadrado
+elementos superpuestos (definido como componente reutilizable en `views/libros.kv`): un cuadrado
 redondeado con un ícono de libro, y una insignia circular con un signo de interrogación
 superpuesta en la esquina — literalmente "BookWho?" convertido en símbolo.
 
@@ -516,7 +583,7 @@ superpuesta en la esquina — literalmente "BookWho?" convertido en símbolo.
 
 | Criterio | Peso | Estado |
 |---|---|---|
-| A — Fundamentación UX/UI con evidencia de usuarios | 30% | Cubierto: encuesta en Google Forms con 18 respuestas, analizada en [`FUNDAMENTACION-UX-UI.md`](FUNDAMENTACION-UX-UI.md) (metodología, resultados, matriz hallazgo → decisión, estructura y accesibilidad). |
+| A — Fundamentación UX/UI con evidencia de usuarios | 30% | Cubierto: encuesta en Google Forms con 18 respuestas, analizada en [`FUNDAMENTACION-UX-UI.md`](../01-requirements/FUNDAMENTACION-UX-UI.md) (metodología, resultados, matriz hallazgo → decisión, estructura y accesibilidad). |
 | B — Maqueta funcional Kivy + KivyMD | 30% | Cubierto: la app ejecuta sin errores, usa componentes KivyMD con coherencia Material Design. |
 | C — Estructura del proyecto y navegación | 25% | Cubierto: separación `.py`/`.kv`, `ScreenManager` con 19 pantallas, validaciones, proyecto ordenado. |
 | D — Presentación oral y demo en vivo | 15% | Depende de la presentación misma. |
@@ -524,3 +591,6 @@ superpuesta en la esquina — literalmente "BookWho?" convertido en símbolo.
 El punto A se completó con la encuesta real. Lo que los usuarios pidieron y quedó fuera del MVP
 (calificaciones de vendedores y reporte de usuarios) está declarado como próximo paso en la
 fundamentación.
+
+Para la Evaluación 4 (RA3: registro de eventos, KPIs y método MJV App) ver
+[`DOCUMENTATION.md`](../../DOCUMENTATION.md).
