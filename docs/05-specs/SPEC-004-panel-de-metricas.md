@@ -17,6 +17,9 @@ verificación de la app, con los datos del simulador (SPEC-003), y permitir una 
 - Diseño compacto: los tres KPI, una fila de cifras y tarjetas en pares (gráfico y actividad; desglose y
   estados). Una tarjeta sin datos se oculta y su vecina ocupa el espacio. En vivo, las cifras separan
   personas y agentes simulados, y suman las descargas del APK desde el último reinicio del servidor.
+- Los tres KPI se destacan sobre las cifras de apoyo (fondo suave, borde de marca y cifra grande).
+- «Descargar CSV» exporta lo que muestra el panel: separador «;», coma decimal y UTF-8, como lo abre Excel en
+  español; ningún texto se abre como fórmula. Las tablas de datos van en columnas y sin paginar: tienen pocas filas.
 
 Fuera de alcance: datos reales, inicio de sesión en el panel y el backend (SPEC-005).
 
