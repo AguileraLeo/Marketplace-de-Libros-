@@ -3,7 +3,7 @@
 **Asignatura:** TINF1119 Desarrollo Móvil (A+S)  
 **Institución:** Instituto Tecnológico UC Temuco  
 **Fecha:** 18-11-2026  
-**Integrantes:** [COMPLETAR: integrantes]  
+**Integrantes:** Leonardo Aguilera, Bryam Beltrán, Matías Mcintire, Alfredo San Juan 
 **Estado:** borrador para revisión del equipo.
 
 ## Resumen ejecutivo
