@@ -1,0 +1,4 @@
+# Solo para el servidor (SPEC-005); la app Kivy no los necesita.
+fastapi
+uvicorn
+httpx  # pruebas (TestClient)

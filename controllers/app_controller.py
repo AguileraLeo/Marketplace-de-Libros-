@@ -16,6 +16,8 @@ except ImportError:
     sys.modules["materialshapes"] = types.ModuleType("materialshapes")
     sys.modules["materialshapes.kivy_widget"] = _shape
 
+from kivy.base import ExceptionHandler, ExceptionManager
+from kivy.clock import Clock
 from kivy.core.text import LabelBase
 from kivy.core.window import Window
 from kivy.lang import Builder
@@ -45,7 +47,7 @@ from models.store import (
     format_price,
 )
 from services.books_api import catalog_lookup
-from services import notifications, persistence, remote_config
+from services import notifications, persistence, remote_config, remoto
 from services.locations import proximity_label
 from views.components import ACCENT, PAPER, RequestRow, fmt_date
 
@@ -63,6 +65,20 @@ LabelBase.register(
     fn_regular=os.path.join(FONTS_DIR, "IBMPlexSans-Regular.ttf"),
     fn_bold=os.path.join(FONTS_DIR, "IBMPlexSans-SemiBold.ttf"),
 )
+
+
+class _AvisoRemoto(ExceptionHandler):
+    """Modo servidor: un error de red o de sesión al refrescar una pantalla se avisa y no cierra la app."""
+
+    def __init__(self, app):
+        super().__init__()
+        self.app = app
+
+    def handle_exception(self, inst):
+        if not isinstance(inst, DomainError):
+            return ExceptionManager.RAISE
+        Clock.schedule_once(lambda *_: self.app.aviso_remoto(inst))
+        return ExceptionManager.PASS
 
 
 class DemoLibrosApp(MDApp):
@@ -85,15 +101,25 @@ class DemoLibrosApp(MDApp):
                 self.theme_cls.font_styles[style][role]["font-name"] = font
                 if font == "SourceSerif":
                     self.theme_cls.font_styles[style][role]["line-height"] = 1.15
-        # En Android el JSON va en user_data_dir; en escritorio se mantiene en data/user.
-        data_dir = self.user_data_dir if platform == "android" else os.path.join(BASE_DIR, "data", "user")
-        os.makedirs(data_dir, exist_ok=True)
-        self.data_file = os.path.join(data_dir, "data.json")
-        if platform != "android":
-            legacy_data_file = os.path.join(BASE_DIR, "data.json")
-            persistence.migrate_legacy_data_file(legacy_data_file, self.data_file)
-        self.store = persistence.load_store(self.data_file) or build_demo_store(catalog_lookup)
-        self.save()
+        # Modo servidor (SPEC-005): si hay servidor configurado y responde, el modelo es remoto y compartido.
+        servidor = remoto.servidor_configurado()
+        self.remoto = remoto.RemoteStore(servidor) if servidor else None
+        if self.remoto and self.remoto.disponible():
+            self.store = self.remoto
+            ExceptionManager.add_handler(_AvisoRemoto(self))
+        else:
+            if self.remoto:
+                Clock.schedule_once(lambda *_: self.notify("Modo sin conexión: los datos quedan solo en este teléfono."), 2)
+            self.remoto = None
+            # En Android el JSON va en user_data_dir; en escritorio se mantiene en data/user.
+            data_dir = self.user_data_dir if platform == "android" else os.path.join(BASE_DIR, "data", "user")
+            os.makedirs(data_dir, exist_ok=True)
+            self.data_file = os.path.join(data_dir, "data.json")
+            if platform != "android":
+                legacy_data_file = os.path.join(BASE_DIR, "data.json")
+                persistence.migrate_legacy_data_file(legacy_data_file, self.data_file)
+            self.store = persistence.load_store(self.data_file) or build_demo_store(catalog_lookup)
+            self.save()
         self.history: list[str] = []
         self.selected_book = None
         self.current_request_id = None
@@ -112,6 +138,8 @@ class DemoLibrosApp(MDApp):
 
     def save(self) -> bool:
         """Guarda el Store en data.json. Si el disco falla devuelve False en vez de cerrar la app."""
+        if self.remoto:
+            return True  # modo servidor: cada acción ya quedó guardada en el servidor
         try:
             persistence.save_store(self.store, self.data_file)
             return True
@@ -172,6 +200,8 @@ class DemoLibrosApp(MDApp):
                 notifications.send("Tienes ofertas por revisar", f"{n} oferta(s) activa(s) en tus solicitudes.")
 
     def logout(self):
+        if self.remoto:
+            self.remoto.token = None
         self.user = None
         self.user_name = ""
         self.history = []
@@ -184,7 +214,7 @@ class DemoLibrosApp(MDApp):
         try:
             result = fn(*args, **kwargs)
         except DomainError as exc:
-            self.notify(str(exc))
+            self.aviso_remoto(exc)
             return None
         if not self.save():
             # Lo que se ve debe ser lo que quedó guardado: se vuelve al último data.json
@@ -193,6 +223,12 @@ class DemoLibrosApp(MDApp):
             self.notify("No se pudieron guardar los cambios.")
             return None
         return True if result is None else result
+
+    def aviso_remoto(self, exc):
+        """Muestra un error de negocio; si la sesión del servidor venció, vuelve al login."""
+        self.notify(str(exc))
+        if isinstance(exc, remoto.SesionVencida) and self.user is not None:
+            self.logout()
 
     def notify(self, text):
         MDSnackbar(

@@ -80,9 +80,9 @@
 </head>
 <body>
 <main>
-  <p class="aviso" role="note"><span aria-hidden="true">⚠</span><span><strong>Datos simulados.</strong>
-    Actividad ficticia generada por <code>simulador.py</code> con la lógica real de BookWho?: no son usuarios reales,
-    y una oferta aceptada o una compra confirmada no es una venta verificada.</span></p>
+  <p class="aviso" role="note"><span aria-hidden="true">⚠</span><span><strong id="aviso-titulo">Datos simulados.</strong>
+    <span id="aviso-texto">Actividad ficticia generada por simulador.py con la lógica real de BookWho?: no son usuarios reales,
+    y una oferta aceptada o una compra confirmada no es una venta verificada.</span></span></p>
   <header>
     <div>
       <h1>BookWho? · Panel de métricas</h1>
@@ -130,7 +130,7 @@
       <h2 id="t-estados">Estado de las solicitudes</h2>
       <ul class="lista" id="estados"></ul>
     </section>
-    <section class="tarjeta mitad" aria-labelledby="t-reglas">
+    <section class="tarjeta mitad" aria-labelledby="t-reglas" id="tarjeta-reglas">
       <h2 id="t-reglas">La app cumple sus reglas</h2>
       <ul class="lista" id="verificacion"></ul>
     </section>
@@ -145,7 +145,7 @@
       <details><summary>Ver los datos en tablas</summary><div id="tablas"></div></details>
     </section>
   </div>
-  <footer>Datos ficticios según SPEC-003 y SPEC-004 · BookWho?, TINF1119 Desarrollo Móvil (A+S) ·
+  <footer><span id="pie-fuente">Datos ficticios según SPEC-003 y SPEC-004</span> · BookWho?, TINF1119 Desarrollo Móvil (A+S) ·
     <a href="https://github.com/AguileraLeo/Marketplace-de-Libros-">Código en GitHub</a></footer>
 </main>
 <div id="tip" role="tooltip" hidden></div>
@@ -278,11 +278,16 @@ const GRUPOS = { region: "Región", entrega: "Entrega", precio_maximo: "Precio m
 const ORDEN_ESTADOS = ["Resuelta", "En coordinación", "Con ofertas", "Publicada", "Cancelada"];
 
 function pintar(d) {
-  const k = d.kpis, t = d.totales, v = d.verificacion;
+  const k = d.kpis, t = d.totales, v = d.verificacion, tipo = d.simulado === false ? "reales" : "simulados";
+  $("aviso-titulo").textContent = d.simulado === false ? "Datos reales de la prueba en vivo." : "Datos simulados.";
+  $("aviso-texto").textContent = d.simulado === false
+    ? "Personas usando la app con datos de prueba (SPEC-005). Una oferta aceptada o una compra confirmada no es una venta verificada."
+    : "Actividad ficticia generada por simulador.py con la lógica real de BookWho?: no son usuarios reales, y una oferta aceptada o una compra confirmada no es una venta verificada.";
+  $("pie-fuente").textContent = d.simulado === false ? "Datos reales del servidor (SPEC-005)" : "Datos ficticios según SPEC-003 y SPEC-004";
   if (d.periodo) {
     const desde = fecha(d.periodo.desde), hasta = fecha(d.periodo.hasta);
     $("periodo").textContent = `Del ${diaCorto.format(desde)} al ${diaCorto.format(hasta)} de ${hasta.getUTCFullYear()} · ` +
-      `${d.agentes.lectores} lectores y ${d.agentes.vendedores} vendedores simulados`;
+      `${d.agentes.lectores} lectores y ${d.agentes.vendedores} vendedores ${tipo}`;
   }
   $("kpi-resolucion").textContent = pct(k.resolucion_pct);
   $("kpi-resolucion-nota").textContent = `${Math.round(k.resolucion_pct * t.solicitudes / 100)} de ${t.solicitudes} ` +
@@ -290,7 +295,7 @@ function pintar(d) {
   $("kpi-respuesta").textContent = pct(k.respuesta_pct);
   $("kpi-horas").textContent = horas(k.horas_primera_oferta);
   $("totales").replaceChildren(...[
-    [t.eventos, "eventos"], [t.usuarios_activos, "usuarios simulados activos"], [t.solicitudes, "solicitudes"],
+    [t.eventos, "eventos"], [t.usuarios_activos, `usuarios ${tipo} activos`], [t.solicitudes, "solicitudes"],
     [t.ofertas, "ofertas"], [t.aceptadas_para_coordinar, "aceptadas para coordinar"],
     [t.compras_confirmadas, "compras confirmadas por el lector"],
   ].map(([n, texto]) => { const li = el("li"); li.append(el("b", numero.format(n)), ` ${texto}`); return li; }));
@@ -302,13 +307,16 @@ function pintar(d) {
     .sort(([a], [b]) => (ORDEN_ESTADOS.indexOf(a) + 99) % 99 - (ORDEN_ESTADOS.indexOf(b) + 99) % 99);
   lista("estados", estados.map(([nombre, n]) => [nombre, numero.format(n)]));
 
-  const marca = (n) => (n === 0 ? ["✓", "ok"] : ["✗", "error"]);
-  const [i1, c1] = marca(v.contacto.violaciones), [i2, c2] = marca(v.acciones_invalidas.aceptadas), [i3, c3] = marca(v.fallas);
-  lista("verificacion", [
-    [`Contacto del vendedor revisado ${numero.format(v.contacto.verificaciones)} veces`, `${i1} ${v.contacto.violaciones} filtraciones`, c1],
-    [`${numero.format(v.acciones_invalidas.intentos)} acciones inválidas intentadas`, `${i2} ${v.acciones_invalidas.aceptadas} aceptadas`, c2],
-    ["Fallas inesperadas de la app", `${i3} ${v.fallas}`, c3],
-  ]);
+  $("tarjeta-reglas").hidden = !v;  // las verificaciones solo existen en la simulación
+  if (v) {
+    const marca = (n) => (n === 0 ? ["✓", "ok"] : ["✗", "error"]);
+    const [i1, c1] = marca(v.contacto.violaciones), [i2, c2] = marca(v.acciones_invalidas.aceptadas), [i3, c3] = marca(v.fallas);
+    lista("verificacion", [
+      [`Contacto del vendedor revisado ${numero.format(v.contacto.verificaciones)} veces`, `${i1} ${v.contacto.violaciones} filtraciones`, c1],
+      [`${numero.format(v.acciones_invalidas.intentos)} acciones inválidas intentadas`, `${i2} ${v.acciones_invalidas.aceptadas} aceptadas`, c2],
+      ["Fallas inesperadas de la app", `${i3} ${v.fallas}`, c3],
+    ]);
+  }
 
   $("actividad").replaceChildren(...d.actividad.map((a) => {
     const li = el("li"), hora = el("time", diaHora.format(fecha(a.hora)));
@@ -342,7 +350,7 @@ async function cargar() {
     const texto = await r.text();
     if (texto === ultimo) return;
     const d = JSON.parse(texto);
-    if (!d || !d.kpis || !d.totales || !Array.isArray(d.uso_diario) || !d.desglose || !d.verificacion) {
+    if (!d || !d.kpis || !d.totales || !Array.isArray(d.uso_diario) || !d.desglose) {
       throw new Error("formato inesperado");
     }
     pintar(d);
