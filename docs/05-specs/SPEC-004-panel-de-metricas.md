@@ -19,7 +19,23 @@ verificación de la app, con los datos del simulador (SPEC-003), y permitir una 
   personas y agentes simulados, y suman las descargas del APK desde el último reinicio del servidor.
 - Los tres KPI se destacan sobre las cifras de apoyo (fondo suave, borde de marca y cifra grande).
 - «Descargar CSV» exporta lo que muestra el panel: separador «;», coma decimal y UTF-8, como lo abre Excel en
-  español; ningún texto se abre como fórmula. Las tablas de datos van en columnas y sin paginar: tienen pocas filas.
+  español; ningún texto se abre como fórmula. Las tablas de datos van en columnas, con paginación de 8 filas cuando tienen más, y filas alternadas.
+
+
+- Auditoría UI/UX aprobada del panel:
+  - B1: estados de solicitudes con punto, cantidad, porcentaje y barra proporcional;
+    gris, verde, ámbar y rojo con variantes claras y oscuras. Nombres y valores en color de texto.
+  - B2: cifras agrupadas en «Mercado» y «Uso», con personas, agentes simulados o usuarios
+    simulados activos según el origen, y descargas del APK cuando están presentes.
+  - B3: destello de 1,6 segundos solo en cifras que cambian respecto al último pintado,
+    guardadas por rótulo, y solo con `prefers-reduced-motion: no-preference`.
+  - B4: última barra del día actual rotulada «hoy · N» durante el modo en vivo, sin
+    duplicar el rótulo si también es el máximo; fecha tomada de `generado`.
+  - B5: tablas con paginación de 8 filas solo si superan ese tamaño; la página se conserva
+    por título entre actualizaciones. Encabezados destacados, filas alternadas y controles
+    accesibles. El CSV conserva todas las filas y las tablas siguen en columnas de 300 px.
+  - B6: logo y «BookWho?» del encabezado enlazan al inicio, seguidos por « · Panel de métricas»,
+    sin enlace separado de vuelta.
 
 Fuera de alcance: datos reales, inicio de sesión en el panel y el backend (SPEC-005).
 

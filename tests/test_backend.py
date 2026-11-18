@@ -411,6 +411,8 @@ class SitioTest(unittest.TestCase):
         self.assertEqual(self.client.get("/qr-descarga.svg").headers["content-type"], "image/svg+xml")
         for ruta in ("/logo.svg", "/favicon.ico", "/apple-touch-icon.png"):  # logo y favicon de todas las páginas
             self.assertEqual(self.client.get(ruta).status_code, 200, ruta)
+        for ruta in ("/demo/app.mp4", "/demo/app.jpg", "/og-image.jpg"):
+            self.assertEqual(self.client.get(ruta).status_code, 200, ruta)
         self.assertEqual(self.client.get("/api/salud").json(), {"ok": True})  # el sitio no tapa la API
 
     def test_descarga_del_apk(self):

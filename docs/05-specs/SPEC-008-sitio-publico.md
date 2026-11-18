@@ -11,6 +11,12 @@ cambie el mensaje de la app sin compilar un APK nuevo.
 - `/`: landing con la identidad de SPEC-007 (azul tinta y Manrope): qué es, cómo funciona, botón de
   descarga, código QR que descarga el APK directo (`sitio/qr-descarga.svg`; `sitio/qr-descarga.png` para las diapositivas),
   cifras en vivo y cómo instalar.
+- Auditoría UI/UX aprobada: video de la app en un marco de teléfono en la portada (póster
+  estático con movimiento reducido), franja de la encuesta y sección para lectores y
+  vendedores. El QR se ubica en «Instalar en Android», junto a los pasos en escritorio.
+- Imagen local para compartir (`og-image.jpg`, 1200×630), cámara del marco en CSS y
+  punto de actividad en la demo. Las animaciones solo se habilitan con
+  `prefers-reduced-motion: no-preference`; el CSS se publica con `?v=3`.
 - `/descargar`: entrega `BOOKWHO_PUBLICO/bookwho.apk` como `BookWho.apk`, con el tipo de archivo de Android,
   y cuenta las descargas en memoria (no cuentan HEAD ni la continuación de una descarga cortada).
 - `/config.json`: configuración remota de la app. Sale de `BOOKWHO_PUBLICO/config.json`, que el equipo

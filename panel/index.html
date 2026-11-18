@@ -17,6 +17,7 @@
     --fondo: #F5F7FC; --tarjeta: #FFFFFF; --tinta: #17243F; --tinta-2: #52617B; --linea: #DCE3EF;
     --marca: #284DA6; --serie: #284DA6; --bien: #006300; --mal: #B3261E;
     --sombra: 0 1px 2px rgb(23 36 63 / .05), 0 6px 18px rgb(23 36 63 / .06); --suave: #E4EBFB;
+    --estado-gris: #748198; --estado-verde: #28734B; --estado-ambar: #B26B00; --estado-rojo: #A33A2F; --cebra: #F5F7FC;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
@@ -24,6 +25,7 @@
       --fondo: #0E1424; --tarjeta: #161F33; --tinta: #E8EDF7; --tinta-2: #A9B4C9; --linea: #27324A;
       --marca: #8FA9F0; --serie: #5F86E6; --bien: #0CA30C; --mal: #FF8A80;
       --sombra: 0 1px 2px rgb(0 0 0 / .35), 0 6px 18px rgb(0 0 0 / .25); --suave: #1D2A47;
+      --estado-gris: #9AA6BD; --estado-verde: #4CB07A; --estado-ambar: #E3A13B; --estado-rojo: #E0786C; --cebra: #1B2540;
       color-scheme: dark;
     }
   }
@@ -31,9 +33,11 @@
   body { margin: 0; background: var(--fondo); color: var(--tinta); font: 16px/1.5 Manrope, system-ui, sans-serif; }
   main { max-width: 1120px; margin: 0 auto; padding: 16px; }
   h1, h2 { font-weight: 600; letter-spacing: -0.01em; color: var(--tinta); margin: 0; }
-  .volver { display: inline-block; padding: 8px 0; font-size: 14px; font-weight: 600; }
-  h1 { display: flex; align-items: center; gap: 12px; font-size: clamp(24px, 4vw, 32px); line-height: 1.2; }
-  h1 img { flex: none; }
+  h1 { font-size: clamp(24px, 4vw, 32px); line-height: 1.2; }
+  h1 a { color: inherit; text-decoration: none; white-space: nowrap; }
+  h1 a:hover { text-decoration: underline; }
+  h1 img { vertical-align: middle; margin-right: 12px; }
+  h1 a:focus-visible { outline: 3px solid var(--marca); outline-offset: 3px; border-radius: 4px; }
   h2 { font-size: 20px; }
   h3 { font-size: 15px; margin: 8px 0 4px; }
   p { margin: 0; }
@@ -43,9 +47,13 @@
   .nota, .etiqueta { font-size: 14px; }
   #estado { display: flex; align-items: center; gap: 8px; color: var(--tinta-2); font-size: 14px; }
   #punto { width: 10px; height: 10px; border-radius: 50%; background: var(--linea); }
-  #punto.vivo { background: var(--bien); animation: latido 1.6s ease-in-out infinite; }
-  @keyframes latido { 50% { opacity: .35; } }
-  @media (prefers-reduced-motion: reduce) { #punto.vivo { animation: none; } }
+  #punto.vivo { background: var(--bien); }
+  @media (prefers-reduced-motion: no-preference) {
+    #punto.vivo { animation: latido 1.6s ease-in-out infinite; }
+    @keyframes latido { 50% { opacity: .35; } }
+    .destello { animation: destello 1.6s ease-out; }
+    @keyframes destello { 0%, 25% { background: var(--suave); border-color: var(--marca); } }
+  }
   /* Filas que se reacomodan: una tarjeta sin datos se oculta y su vecina ocupa el espacio; en el teléfono, una por fila. */
   .fila { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
   .fila > .tarjeta { flex: 1 1 300px; min-width: 0; }
@@ -54,7 +62,11 @@
   .kpis .valor { font-size: 52px; }
   .tarjeta { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 16px 18px; box-shadow: var(--sombra); }
   .valor { font-weight: 600; font-size: 40px; line-height: 1.1; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
-  .cifras { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin: 0 0 12px; padding: 0; list-style: none; }
+  .grupos-cifras { display: grid; gap: 12px; margin-bottom: 12px; }
+  @media (min-width: 760px) { .grupos-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .grupo-cifras { min-width: 0; }
+  .rotulo-grupo { color: var(--tinta-2); font-size: 13px; font-weight: 400; margin-bottom: 6px; }
+  .cifras { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin: 0; padding: 0; list-style: none; }
   .cifras li { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 10px 14px; }
   .cifras b { display: block; font-size: 24px; line-height: 1.2; font-variant-numeric: tabular-nums; }
   .cifras span { display: block; color: var(--tinta-2); font-size: 13px; line-height: 1.3; }
@@ -73,6 +85,11 @@
   ol.feed { max-height: 240px; overflow-y: auto; }  /* a la altura del gráfico de al lado; el resto, desplazando */
   ol.feed li { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 6px 0; border-bottom: 1px solid var(--linea); font-size: 14px; }
   ul.lista li:last-child, ol.feed li:last-child { border-bottom: 0; }
+  #estados li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto; align-items: center; gap: 6px 10px; }
+  .estado-punto { width: 10px; height: 10px; border-radius: 50%; background: var(--color-estado); }
+  .estado-porcentaje { color: var(--tinta-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .estado-barra { grid-column: 2 / -1; height: 6px; border-radius: 3px; background: var(--suave); overflow: hidden; }
+  .estado-barra span { display: block; height: 100%; border-radius: inherit; background: var(--color-estado); }
   .chequeos { display: grid; gap: 8px 24px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); list-style: none; margin: 8px 0 0; padding: 0; }
   .chequeos li { display: flex; flex-direction: column-reverse; gap: 2px; color: var(--tinta-2); font-size: 14px; }  /* resultado arriba */
   .chequeos b { font-size: 20px; }
@@ -82,8 +99,11 @@
   .error { color: var(--mal); }
   summary { cursor: pointer; font-weight: 600; }
   table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 12px 0; }
-  #tablas { columns: 300px; column-gap: 28px; }  /* las tablas se reparten en columnas parejas, sin huecos */
-  #tablas table { break-inside: avoid; }
+  #tablas { columns: 2 380px; column-gap: 28px; }  /* hasta dos columnas parejas, sin huecos ni palabras cortadas */
+  .tabla-contenedor { break-inside: avoid; min-width: 0; margin-bottom: 18px; overflow-x: auto; }  /* en pantallas angostas, desplaza la tabla */
+  .tabla-paginacion { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--tinta-2); }
+  thead { background: var(--suave); color: var(--tinta); font-weight: 600; }
+  tbody tr:nth-child(even) { background: var(--cebra); }
   .acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
   .boton { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--linea);
            border-radius: 10px; background: var(--tarjeta); color: var(--marca); font: 600 14px/1 Manrope, system-ui, sans-serif; cursor: pointer;
@@ -106,8 +126,7 @@
 <main>
   <header>
     <div>
-      <a class="volver" href="/">← BookWho?</a>
-      <h1><img src="/logo.svg" alt="" width="36" height="36">BookWho? · Panel de métricas</h1>
+      <h1><a href="/"><img src="/logo.svg" alt="" width="36" height="36">BookWho?</a> · Panel de métricas</h1>
       <p class="sub" id="periodo">Cargando datos…</p>
     </div>
     <div class="acciones">
@@ -137,7 +156,7 @@
       <p class="nota">Mediana, solo solicitudes con oferta.</p>
     </section>
   </div>
-  <ul class="cifras" id="totales" aria-label="Totales"></ul>
+  <div class="grupos-cifras" id="totales" aria-label="Totales"></div>
 
   <div class="fila">
     <section class="tarjeta ancha" aria-labelledby="t-dias">
@@ -242,7 +261,7 @@ function paso(max) {  // marcas del eje en números redondos
 
 const ancho = (cont, minimo) => Math.max(minimo, Math.round(cont.clientWidth) || minimo);  // el SVG se dibuja a su tamaño real: el texto no se encoge
 
-function graficoDias(cont, dias) {
+function graficoDias(cont, dias, hoy) {
   const W = ancho(cont, 300), H = 260, m = { t: 22, r: 4, b: 26, l: 34 };
   const max = Math.max(1, ...dias.map((d) => d.eventos));
   const p = paso(max), tope = Math.ceil(max / p) * p;
@@ -259,8 +278,11 @@ function graficoDias(cont, dias) {
     g.append(sv("rect", { x: x0, y: m.t, width: ranura, height: H - m.t - m.b, fill: "transparent", class: "golpe" }));
     g.append(sv("path", { d: columna(x, y(d.eventos), grosor, y(0) - y(d.eventos), 4), class: "serie" }));
     g.append(sv("text", { x: x + grosor / 2, y: H - 8, "text-anchor": "middle", class: "eje" }, String(f.getUTCDate())));
-    if (i === iMax) {  // rótulo directo solo en el máximo; el resto, en el eje, el tooltip y la tabla
-      g.append(sv("text", { x: x + grosor / 2, y: y(d.eventos) - 6, "text-anchor": "middle", class: "rotulo" }, numero.format(d.eventos)));
+    const esHoy = i === dias.length - 1 && d.dia === hoy;
+    if (esHoy || i === iMax) {  // un solo rótulo si hoy también es el máximo
+      g.append(sv("text", { x: x + grosor / 2, y: y(d.eventos) - 6,
+        "text-anchor": esHoy ? "end" : "middle", class: "rotulo" },
+        esHoy ? `hoy · ${numero.format(d.eventos)}` : numero.format(d.eventos)));
     }
     conTip(g, `${numero.format(d.eventos)} eventos`, diaCorto.format(f));
     s.append(g);
@@ -295,15 +317,81 @@ function lista(id, filas) {
   }));
 }
 
+// La página se conserva por título aunque se reemplace la tabla al actualizar los datos.
+const paginasTabla = new Map();
 function tabla(titulo, cabeza, filas) {
-  const t = el("table"), cab = el("tr"), cuerpo = el("tbody");
+  const contenedor = el("div", null, "tabla-contenedor");
+  const t = el("table"), cab = el("tr"), cuerpo = el("tbody"), encabezado = el("thead");
   t.append(el("caption", titulo));
-  cabeza.forEach((c) => cab.append(el("th", c)));
-  t.append(el("thead"));
-  t.tHead.append(cab);
-  filas.forEach((f) => { const tr = el("tr"); f.forEach((v) => tr.append(el("td", v))); cuerpo.append(tr); });
-  t.append(cuerpo);
-  return t;
+  cabeza.forEach((c) => { const th = el("th", c); th.scope = "col"; cab.append(th); });
+  encabezado.append(cab);
+  t.append(encabezado, cuerpo);
+  contenedor.append(t);
+  const porPagina = 8, totalPaginas = Math.max(1, Math.ceil(filas.length / porPagina));
+  let pagina = Math.min(Math.max(1, paginasTabla.get(titulo) || 1), totalPaginas);
+  const anterior = el("button", "Anterior", "boton"), siguiente = el("button", "Siguiente", "boton");
+  anterior.type = siguiente.type = "button";
+  const estado = el("span");
+  estado.setAttribute("aria-live", "polite");
+  function mostrar() {
+    paginasTabla.set(titulo, pagina);
+    cuerpo.replaceChildren(...filas.slice((pagina - 1) * porPagina, pagina * porPagina).map((f) => {
+      const fila = el("tr");
+      f.forEach((v) => fila.append(el("td", v)));
+      return fila;
+    }));
+    estado.textContent = `Página ${pagina} de ${totalPaginas}`;
+    anterior.disabled = pagina === 1;
+    siguiente.disabled = pagina === totalPaginas;
+  }
+  anterior.addEventListener("click", () => { if (pagina > 1) { pagina--; mostrar(); } });
+  siguiente.addEventListener("click", () => { if (pagina < totalPaginas) { pagina++; mostrar(); } });
+  if (filas.length > porPagina) {
+    const controles = el("nav", null, "tabla-paginacion");
+    controles.setAttribute("aria-label", `Páginas de ${titulo}`);
+    controles.append(anterior, estado, siguiente);
+    contenedor.append(controles);
+  }
+  mostrar();
+  return contenedor;
+}
+
+const cifrasAnteriores = new Map();
+function destacarCambio(tarjeta, rotulo, valor) {
+  const cambio = cifrasAnteriores.has(rotulo) && cifrasAnteriores.get(rotulo) !== valor;
+  cifrasAnteriores.set(rotulo, valor);
+  if (cambio && matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+    tarjeta.classList.remove("destello");
+    void tarjeta.offsetWidth;  // reinicia el destello si vuelve a cambiar antes de que termine
+    tarjeta.classList.add("destello");
+  }
+}
+function grupoCifras(titulo, filas) {
+  const grupo = el("section", null, "grupo-cifras"), lista = el("ul", null, "cifras");
+  grupo.setAttribute("aria-label", titulo);
+  grupo.append(el("h2", titulo, "rotulo-grupo"), lista);
+  filas.forEach(([valor, rotulo, ayuda]) => {
+    const tarjeta = el("li");
+    tarjeta.append(el("b", numero.format(valor)), el("span", rotulo));
+    if (ayuda) tarjeta.title = ayuda;
+    destacarCambio(tarjeta, rotulo, valor);
+    lista.append(tarjeta);
+  });
+  return grupo;
+}
+function estadosSolicitudes(filas, total) {
+  const colores = { Publicada: "gris", "Con ofertas": "verde", Resuelta: "verde", "En coordinación": "ambar", Cancelada: "rojo" };
+  $("estados").replaceChildren(...filas.map(([nombre, cantidad]) => {
+    const proporcion = total > 0 ? Math.min(100, Math.max(0, cantidad / total * 100)) : 0;
+    const fila = el("li"), punto = el("span", null, "estado-punto"), barra = el("div", null, "estado-barra"), relleno = el("span");
+    fila.style.setProperty("--color-estado", `var(--estado-${colores[nombre] || "gris"})`);
+    punto.setAttribute("aria-hidden", "true");
+    barra.setAttribute("aria-hidden", "true");
+    relleno.style.width = `${proporcion}%`;
+    barra.append(relleno);
+    fila.append(punto, el("span", nombre), el("b", numero.format(cantidad)), el("span", pct(proporcion), "estado-porcentaje"), barra);
+    return fila;
+  }));
 }
 
 const GRUPOS = { region: "Región", entrega: "Entrega", precio_maximo: "Precio máximo" };
@@ -320,32 +408,31 @@ function pintar(d) {
     $("periodo").textContent = `Del ${diaCorto.format(desde)} al ${diaCorto.format(hasta)} de ${hasta.getUTCFullYear()} · ` +
       `${d.agentes.lectores} lectores y ${d.agentes.vendedores} vendedores ${tipo}`;
   }
+  destacarCambio($("kpi-resolucion").closest(".tarjeta"), "KPI 1 · Tasa de resolución", k.resolucion_pct);
+  destacarCambio($("kpi-respuesta").closest(".tarjeta"), "KPI 2 · Tasa de respuesta", k.respuesta_pct);
+  destacarCambio($("kpi-horas").closest(".tarjeta"), "KPI 3 · Hasta la 1.ª oferta", k.horas_primera_oferta);
   $("kpi-resolucion").textContent = pct(k.resolucion_pct);
   $("kpi-resolucion-nota").textContent = `${Math.round(k.resolucion_pct * t.solicitudes / 100)} de ${t.solicitudes} ` +
     "solicitudes con compra confirmada por el lector.";
   $("kpi-respuesta").textContent = pct(k.respuesta_pct);
   $("kpi-horas").textContent = horas(k.horas_primera_oferta);
-  const cifras = [  // primero el recorrido de una solicitud; después, quiénes usan la app
+  const mercado = [
     [t.solicitudes, "solicitudes"], [t.ofertas, "ofertas"], [t.aceptadas_para_coordinar, "aceptadas para coordinar"],
     [t.compras_confirmadas, "compras confirmadas"],
   ];
-  if (d.origen) cifras.push([d.origen.personas, "personas"], [d.origen.agentes_simulados, "agentes simulados"]);
-  else cifras.push([t.usuarios_activos, `usuarios ${tipo} activos`]);
-  if (t.descargas_apk != null) cifras.push([t.descargas_apk, "descargas del APK", "Desde el último reinicio del servidor"]);
-  cifras.push([t.eventos, "eventos registrados"]);
-  $("totales").replaceChildren(...cifras.map(([n, texto, ayuda]) => {
-    const li = el("li");
-    li.append(el("b", numero.format(n)), el("span", texto));
-    if (ayuda) li.title = ayuda;
-    return li;
-  }));
+  const uso = d.origen
+    ? [[d.origen.personas, "personas"], [d.origen.agentes_simulados, "agentes simulados"]]
+    : [[t.usuarios_activos, d.simulado === false ? "usuarios activos" : "usuarios simulados activos"]];
+  if (t.descargas_apk != null) uso.push([t.descargas_apk, "descargas del APK", "Desde el último reinicio del servidor"]);
+  uso.push([t.eventos, "eventos registrados"]);
+  $("totales").replaceChildren(grupoCifras("Mercado", mercado), grupoCifras("Uso", uso));
 
-  graficoDias($("grafico-dias"), d.uso_diario);
+  graficoDias($("grafico-dias"), d.uso_diario, d.en_vivo ? d.generado.slice(0, 10) : null);
   for (const clave in GRUPOS) graficoGrupos($(`grafico-${clave}`), d.desglose[clave] || [], GRUPOS[clave].toLowerCase());
 
   const estados = Object.entries(d.solicitudes_por_estado)
     .sort(([a], [b]) => (ORDEN_ESTADOS.indexOf(a) + 99) % 99 - (ORDEN_ESTADOS.indexOf(b) + 99) % 99);
-  lista("estados", estados.map(([nombre, n]) => [nombre, numero.format(n)]));
+  estadosSolicitudes(estados, t.solicitudes);
 
   $("tarjeta-reglas").hidden = !v;  // las verificaciones solo existen en la simulación
   if (v) {
