@@ -189,6 +189,9 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
             excluidos |= {u.id for u in store.users.values() if u.role == Role.ADMIN}  # la moderación no es uso
             r = analitica.calcular(eventos, excluidos)
             reales = {u.id for u in store.users.values() if u.id not in excluidos}
+            agentes = {u.id for u in store.users.values() if u.email.endswith("@" + analitica.DOMINIO_SIMULADO)}
+            activos = {e.actor_id for e in store.activity}
+            origen = {"agentes_simulados": len(agentes & reales & activos), "personas": len((reales - agentes) & activos)}
             solicitudes = [q for q in store.requests.values() if q.reader_id in reales]
             primera = {}
             for o in store.offers.values():
@@ -217,7 +220,10 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
             tipos = r["eventos_por_tipo"]
             return {
                 "simulado": False,
-                "aviso": "Datos reales de la prueba en vivo: personas que usan la app con datos de prueba.",
+                "aviso": (f"Demo en vivo: {origen['agentes_simulados']} agentes simulados (cuentas del dominio bookwho.test) "
+                          f"y {origen['personas']} personas usan la app con datos de prueba." if origen["agentes_simulados"]
+                          else "Datos reales de la prueba en vivo: personas que usan la app con datos de prueba."),
+                "origen": origen,
                 "generado": datetime.now().isoformat(timespec="seconds"),
                 "en_vivo": True,
                 "periodo": {"desde": r["periodo"][0], "hasta": r["periodo"][1]} if r["periodo"] else None,

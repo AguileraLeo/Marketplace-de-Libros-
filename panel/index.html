@@ -278,10 +278,11 @@ const GRUPOS = { region: "Región", entrega: "Entrega", precio_maximo: "Precio m
 const ORDEN_ESTADOS = ["Resuelta", "En coordinación", "Con ofertas", "Publicada", "Cancelada"];
 
 function pintar(d) {
-  const k = d.kpis, t = d.totales, v = d.verificacion, tipo = d.simulado === false ? "reales" : "simulados";
-  $("aviso-titulo").textContent = d.simulado === false ? "Datos reales de la prueba en vivo." : "Datos simulados.";
+  const mixto = d.simulado === false && Boolean(d.origen && d.origen.agentes_simulados);  // agentes (SPEC-006) y personas
+  const k = d.kpis, t = d.totales, v = d.verificacion, tipo = mixto ? "de la demo" : d.simulado === false ? "reales" : "simulados";
+  $("aviso-titulo").textContent = mixto ? "Demo en vivo con agentes simulados." : d.simulado === false ? "Datos reales de la prueba en vivo." : "Datos simulados.";
   $("aviso-texto").textContent = d.simulado === false
-    ? "Personas usando la app con datos de prueba (SPEC-005). Una oferta aceptada o una compra confirmada no es una venta verificada."
+    ? `${d.aviso} Una oferta aceptada o una compra confirmada no es una venta verificada.`
     : "Actividad ficticia generada por simulador.py con la lógica real de BookWho?: no son usuarios reales, y una oferta aceptada o una compra confirmada no es una venta verificada.";
   $("pie-fuente").textContent = d.simulado === false ? "Datos reales del servidor (SPEC-005)" : "Datos ficticios según SPEC-003 y SPEC-004";
   if (d.periodo) {
