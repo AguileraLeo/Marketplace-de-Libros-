@@ -175,6 +175,7 @@ docs/                    Requisitos, arquitectura (ADR), specs, proceso y presen
 buildozer.spec           Compilación del APK
 requirements.txt         Dependencias de escritorio
 DOCUMENTATION.md         Medición RA3: eventos, KPIs, método MJV App y resultados
+INFORME_FINAL.md         Informe Final de la Evaluación 4
 AGENTS.md, CONTEXTO.md   Visión y reglas del producto; estado actual del proyecto
 CLAUDE.md                Instrucciones para asistentes de IA
 ```
@@ -183,6 +184,7 @@ CLAUDE.md                Instrucciones para asistentes de IA
 
 | Documento | Contenido |
 |---|---|
+| [`INFORME_FINAL.md`](INFORME_FINAL.md) | Informe Final de la Evaluación 4: problema, solución, medición, resultados y ética |
 | [`DOCUMENTATION.md`](DOCUMENTATION.md) | Medición y evaluación de funcionalidad (RA3) |
 | [`docs/04-architecture/DOCUMENTACION.md`](docs/04-architecture/DOCUMENTACION.md) | Documentación técnica del código, módulo por módulo |
 | [`docs/04-architecture/`](docs/04-architecture/) | Decisiones de arquitectura (ADR-001 a ADR-003) |

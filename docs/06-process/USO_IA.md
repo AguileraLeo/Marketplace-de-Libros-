@@ -9,6 +9,8 @@
 - **E2:** Claude Sonnet 5; en la sesión de revisión final, Claude Sonnet 5 y Claude Opus 5.5.
 - **E3:** Claude Opus 5.5 (`claude-opus-5-5`).
 
+- **E4:** Claude Opus 5.5 (Claude Code) y GPT-6.1 Sol (Codex en VS Code).
+
 ## 3. Prompts realizados
 
 ### E2 (maqueta)
@@ -45,6 +47,24 @@
 26. "Configuremos la configuración remota." / "Dame los comandos." 
 27. "Hagamos lo que falta." (Release del APK, repositorio personal, esta declaración y guía de defensa.)
 
+### E4 (borrador)
+
+Prompts principales a Claude Code en la sesión del 17-11-2026 (textuales, abreviados con […]):
+
+1. "tienes la rubrica de la ultima evaluacion, la de mañana?"
+2. "quiero ordenar el repo […] y quiero saber si fredo subio cambios al git, prioridad ordenar el repo, buena arquitectura, limpia profesional, y acorde a la rubrica"
+3. "espera, el repo esta bien, los cambios estan bien?"
+4. "el profesor dijo que podemos usar datos ficticios", junto con un plan pegado: "Quiero que me ayudes a planificar una infraestructura para alojar Bookwho en mi servidor y ejecutar agentes que simulen usuarios […]. Por ahora, realiza el diagnóstico y presenta el plan."
+5. "que haria el simulador […] que las ias usan la app, que esten el el servidor y usen la app muchos agente o varios, creando cuentas, etc o no se puede? es mas barato otra opcion?"
+6. "meditemos hacer un backend compartido […]" y luego "terminemos con lo que estabas haciendo, despues seguimoms con el backend"
+7. "podrias divir todo lo que queda por hacer y trabajan los dos en paralelo […] gpt no tiene ponytail aunque le puedes dar intrucciones pero lo que sea mas barato"
+
+Los prompts a Codex (borrador del Informe Final; revisión del informe, guion y esta sección) los redactó Claude Code y el equipo los pegó en Codex. [COMPLETAR: prompts E4 de la sesión del 16-11, ver el borrador en CIERRE_E4.md §4]. Alcance de los trabajos:
+
+- **Claude Code:** integración del refactor MVC con el trabajo E4 y resolución de conflictos; corrección del cierre al suspender usuarios; organización del repositorio; simulador ficticio (SPEC-003), panel público (SPEC-004), diagnóstico de CGNAT y guía de publicación con Cloudflare Tunnel.
+- **GPT-6.1 Sol (Codex):** redacción del borrador del Informe Final, del guion de presentación y de este borrador de declaración.
+- **Decisiones y ejecución del equipo:** comandos de git y del servidor; uso de datos simulados autorizado por el docente; aprobación de sacar `.agents/` y de postergar el backend hasta después de la presentación.
+
 ## 4. Outputs
 
 ### E2
@@ -74,6 +94,19 @@
 - **Pruebas en emulador Android 14:** la IA configuró el emulador, instaló el APK y verificó con capturas el login, la notificación, la persistencia tras forzar el cierre y la configuración remota con y sin red. Antes de eso detectó en el contenido del APK dos fallas que lo habrían cerrado al abrir (falta de `pycairo` y una versión vieja de `materialyoucolor`) y una que impedía mostrar notificaciones en Android 12+.
 - **Documentación:** secciones nuevas del `README.md` (servicios y dónde están, Android, dificultades) y la reorganización de este archivo en las 6 secciones pedidas.
 
+### E4 (borrador)
+
+Antecedentes proporcionados por el equipo para esta declaración; no constituyen una nueva ejecución ni una verificación independiente de los resultados:
+
+- **Claude Code — integración:** integró el refactor MVC realizado por un integrante con el trabajo E4 y resolvió los conflictos.
+- **Claude Code — corrección:** detectó y corrigió un error que cerraba la aplicación al suspender usuarios.
+- **Claude Code — organización:** ordenó el repositorio, ajustó el README según la rúbrica, creó ADR-003 y sacó `.agents/`.
+- **Claude Code — medición y panel:** creó el simulador de datos ficticios (SPEC-003) y el panel público de métricas (SPEC-004).
+- **Claude Code — publicación:** diagnosticó CGNAT y guió la publicación con Cloudflare Tunnel.
+- **Pruebas informadas:** pasaron de 50 a 63. Esta evolución se declara según los hechos aportados por el equipo; Codex no ejecutó pruebas durante estas tareas de documentación.
+- **GPT-6.1 Sol (Codex) — redacción:** redactó el borrador del Informe Final, el guion de la presentación y este borrador de la parte E4.
+- **Responsabilidad del equipo:** ejecutó todos los comandos de git y del servidor; decidió usar datos simulados con autorización del docente, aprobó sacar `.agents/` y postergó el backend hasta después de la presentación.
+
 ## 5. Ajustes
 
 ### E2
@@ -96,6 +129,10 @@
 - Quería servir la configuración remota y la descarga desde mi propio servidor (un Lenovo Z40 con dominio propio). Como estaba apagado, decidí dejarlo para después de la evaluación y usar GitHub como fuente remota.
 - Hice yo los commits y el paso a `main` con un Pull Request, como veníamos trabajando en el equipo.
 
+### E4
+
+[COMPLETAR: escrito por el equipo]
+
 ## 6. Reflexión en el uso de IA
 
 ### E2
@@ -115,3 +152,8 @@ La IA me sirvió principalmente para configurar los servicios y entender cómo f
 Me preocupa no haber podido configurar todo como hubiera querido, desde mi servidor Z40 con dominio propio. También me preocupa entender código escrito a última hora, pero no es una limitante: se entiende la lógica detrás de cada acción.
 
 Aprendí a compilar para Android. Antes lo había hecho para iOS en una aplicación personal, y entender ambos sistemas me aporta al progreso general.
+
+### E4
+
+[COMPLETAR: escrito por el equipo]
+

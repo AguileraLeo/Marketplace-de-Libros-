@@ -255,6 +255,7 @@ assets/          Fuentes tipográficas y capturas.
 
 analitica.py     Fuera de la app: calcula los KPIs de RA3 desde data.json (DOCUMENTATION.md).
 simulador.py     Fuera de la app: genera actividad ficticia para medir RA3 (SPEC-003).
+panel/           Fuera de la app: panel web de métricas que se publica en el servidor (SPEC-004).
 ```
 
 Regla de separación (definida en `CONTEXTO.md` y respetada en todo el código): **toda regla de
@@ -401,8 +402,10 @@ python -m unittest discover -s tests -v
 - `tests/test_simulador.py`: `simulador.py` es reproducible, escribe solo donde se le indica,
   usa cuentas y contactos ficticios, la app respeta sus reglas durante la simulación y
   `analitica.py` rotula los resultados como simulados.
+- `tests/test_panel.py`: `metricas.json` no trae datos personales, sus KPIs coinciden con
+  `analitica.py`, el modo en vivo no altera el periodo base y la página no inserta HTML.
 
-Actualmente hay **56 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
+Actualmente hay **63 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
 para asegurar que nada se rompió.
 
 ### 4.7 Servicios: persistencia, notificaciones y configuración remota
