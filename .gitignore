@@ -11,6 +11,7 @@ __pycache__/
 *.code-workspace
 .claude/settings.local.json
 .agents/
+/Imagen pegada*.png
 
 # Build Android
 .buildozer/
@@ -19,6 +20,7 @@ bin/
 # Datos locales de la app y exportaciones de teléfonos (pueden traer correos de participantes)
 /data.json
 data/user/
+data/simulacion/
 data_*.json
 *.json.corrupto
 *.json.tmp

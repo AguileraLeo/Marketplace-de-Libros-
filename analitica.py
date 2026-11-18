@@ -5,6 +5,7 @@ Uso, en el PC:   python analitica.py [ruta/data.json]
 - Analiza UN archivo por dispositivo: no mezcles data.json de teléfonos distintos
   (cada uno numera sus solicitudes desde 1, así que los ids se repetirían).
 - Excluye las cuentas demo y las del equipo (CORREOS_EQUIPO): mide solo a usuarios reales.
+  Si los datos vienen de simulador.py (cuentas @bookwho.test), lo rotula como DATOS SIMULADOS.
 - Imprime solo conteos: nunca el detalle de los eventos (puede traer correos).
 - Genera kpis.png si matplotlib está instalado (no es parte del APK).
 Fórmulas y limitaciones: DOCUMENTATION.md.
@@ -24,6 +25,7 @@ DATA_ESCRITORIO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data
 # Población real = todas las cuentas menos estas. Se compara el correo exacto, nunca "parecidos".
 CORREOS_DEMO = {email for _nombre, email, *_ in DEMO_USERS}
 CORREOS_EQUIPO = set()  # el equipo agrega aquí los correos con que probó la app, p. ej. {"ana@uct.cl"}
+DOMINIO_SIMULADO = "bookwho.test"  # cuentas de simulador.py: datos ficticios, nunca personas reales
 
 CAMPOS = {"at", "actor_id", "action", "detail"}
 SOLICITUD = re.compile(r"[Ss]olicitud #(\d+)")
@@ -112,7 +114,17 @@ def calcular(eventos, excluidos=frozenset()):
     }
 
 
-def grafico(r, salida="kpis.png"):
+def poblacion(usuarios, eventos, excluidos=frozenset()):
+    """'simulados' si todo lo analizado viene de simulador.py, 'reales' si no hay cuentas simuladas
+    y 'mezclados' si hay de ambas (no se deben analizar juntas)."""
+    simulados = {u.get("id") for u in usuarios if str(u.get("email", "")).lower().endswith("@" + DOMINIO_SIMULADO)}
+    actores = {e.get("actor_id") for e in eventos if isinstance(e, dict)} - set(excluidos) - {None}
+    if not actores & simulados:
+        return "reales"
+    return "simulados" if actores <= simulados else "mezclados"
+
+
+def grafico(r, tipo="reales", salida="kpis.png"):
     try:
         import matplotlib
         matplotlib.use("Agg")
@@ -123,7 +135,7 @@ def grafico(r, salida="kpis.png"):
     fig, (a, b) = plt.subplots(1, 2, figsize=(11, 4.4))
     dias = r["uso_diario"]
     a.bar(list(dias), list(dias.values()), color="#3b6ea5")
-    a.set_title("Eventos por día (usuarios reales)")
+    a.set_title(f"Eventos por día (usuarios {tipo})")
     a.tick_params(axis="x", rotation=45)
     nombres = ["Respuesta\n(recibió oferta)", "Resolución\n(trato concretado)"]
     valores = [r["kpi_tasa_respuesta"], r["kpi_tasa_resolucion"]]
@@ -134,7 +146,8 @@ def grafico(r, salida="kpis.png"):
         b.text(i, v + 2, f"{v}%", ha="center")
     desde, hasta = r["periodo"]
     horas = r["kpi_horas_primera_oferta"]
-    fig.suptitle(f"BookWho? · {desde} a {hasta} · {r['usuarios_activos']} usuarios · "
+    aviso = "" if tipo == "reales" else "DATOS SIMULADOS · "
+    fig.suptitle(f"{aviso}BookWho? · {desde} a {hasta} · {r['usuarios_activos']} usuarios · "
                  f"mediana hasta la 1.ª oferta: {'—' if horas is None else f'{horas} h'}")
     fig.tight_layout()
     fig.savefig(salida, dpi=120)
@@ -143,15 +156,21 @@ def grafico(r, salida="kpis.png"):
 
 def main(ruta):
     usuarios, eventos = cargar(ruta)
-    r = calcular(eventos, ids_excluidos(usuarios, CORREOS_DEMO | CORREOS_EQUIPO))
+    excluidos = ids_excluidos(usuarios, CORREOS_DEMO | CORREOS_EQUIPO)
+    r = calcular(eventos, excluidos)
+    tipo = poblacion(usuarios, eventos, excluidos)
+    if tipo == "simulados":
+        print("DATOS SIMULADOS (simulador.py, cuentas del dominio bookwho.test): no son usuarios reales.")
+    elif tipo == "mezclados":
+        print("ADVERTENCIA: el archivo mezcla cuentas simuladas y reales; analízalas por separado.")
     print(f"Excluidos (cuentas demo/equipo): {r['eventos_excluidos']} evento(s) de {r['cuentas_excluidas']} cuenta(s)")
     if r["mal_formados"] or r["no_procesados"]:
         print(f"ADVERTENCIA: {r['mal_formados']} evento(s) incompleto(s) y {r['no_procesados']} que no se pudieron "
               "interpretar quedaron fuera del cálculo. ¿Cambió la redacción de store._log?")
     if not r["eventos_reales"]:
-        print("No hay eventos de usuarios reales: todavía no hay datos para calcular KPIs.")
+        print(f"No hay eventos de usuarios {tipo}: todavía no hay datos para calcular KPIs.")
         return
-    print(f"Periodo: {r['periodo'][0]} a {r['periodo'][1]} · {r['eventos_reales']} eventos reales")
+    print(f"Periodo: {r['periodo'][0]} a {r['periodo'][1]} · {r['eventos_reales']} eventos de usuarios {tipo}")
     print("Eventos por tipo:", r["eventos_por_tipo"])
     print("Uso diario:", r["uso_diario"])
     print("Usuarios activos:", r["usuarios_activos"])
@@ -159,7 +178,7 @@ def main(ruta):
     print(f"KPI 2 · Tasa de respuesta:   {r['kpi_tasa_respuesta']}%")
     print(f"KPI 3 · Horas hasta 1.ª oferta (mediana): {r['kpi_horas_primera_oferta']}")
     if r["solicitudes_publicadas"]:
-        grafico(r)
+        grafico(r, tipo)
 
 
 if __name__ == "__main__":

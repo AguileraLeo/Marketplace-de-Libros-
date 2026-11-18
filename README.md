@@ -85,6 +85,15 @@ python analitica.py data_telefono.json   # datos exportados de un teléfono (ver
 
 Imprime solo conteos (nunca correos ni detalles) y genera `kpis.png` si `matplotlib` está instalado. El método MJV App, los eventos, las limitaciones y los resultados están en [`DOCUMENTATION.md`](DOCUMENTATION.md).
 
+Mientras no haya uso real, `simulador.py` genera actividad **ficticia** con la lógica real de la app: 24 lectores y 10 vendedores simulados (cuentas `@bookwho.test`) durante 14 días. Mientras simula, verifica que el contacto del vendedor lo vea solo quien corresponde y que se rechacen acciones inválidas. `analitica.py` rotula esos resultados como **DATOS SIMULADOS** ([SPEC-003](docs/05-specs/SPEC-003-simulador-de-uso.md)):
+
+```bash
+python simulador.py                                    # datos ficticios en data/simulacion/
+python analitica.py data/simulacion/simulacion.json
+```
+
+![KPIs con datos simulados](docs/resultados/kpis_simulados.png)
+
 ## Instalación y uso
 
 ### Android
@@ -126,7 +135,7 @@ También se pueden registrar cuentas nuevas de lector o vendedor. En el APK el l
 python -m unittest discover -s tests -v
 ```
 
-50 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas y cálculo de KPIs.
+56 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs y simulador.
 
 ### Generar el APK (Linux, con Docker)
 
@@ -144,6 +153,7 @@ La segunda línea guarda la llave de firma de depuración fuera del contenedor (
 ```text
 main.py                  Punto de entrada de la app
 analitica.py             Herramienta de PC: KPIs de RA3 desde data.json (no va en el APK)
+simulador.py             Herramienta de PC: actividad ficticia para medir RA3 (no va en el APK)
 controllers/             Controlador: ciclo de vida, navegación y una clase por pantalla
 views/                   Vista: libros.kv y widgets reutilizables
 models/                  Modelo: dominio, reglas de negocio, permisos y eventos
@@ -166,7 +176,7 @@ CLAUDE.md                Instrucciones para asistentes de IA
 | [`DOCUMENTATION.md`](DOCUMENTATION.md) | Medición y evaluación de funcionalidad (RA3) |
 | [`docs/04-architecture/DOCUMENTACION.md`](docs/04-architecture/DOCUMENTACION.md) | Documentación técnica del código, módulo por módulo |
 | [`docs/04-architecture/`](docs/04-architecture/) | Decisiones de arquitectura (ADR-001 a ADR-003) |
-| [`docs/05-specs/`](docs/05-specs/) | Especificaciones de los cambios estructurales |
+| [`docs/05-specs/`](docs/05-specs/) | Especificaciones: MVC, estructura del repositorio y simulador |
 | [`docs/01-requirements/FUNDAMENTACION-UX-UI.md`](docs/01-requirements/FUNDAMENTACION-UX-UI.md) | Diagnóstico (encuesta) y fundamentación UX/UI |
 | [`docs/06-process/USO_IA.md`](docs/06-process/USO_IA.md) | Declaración de uso de inteligencia artificial |
 | [`docs/presentations/`](docs/presentations/) | Presentación del proyecto y landing del pitch |

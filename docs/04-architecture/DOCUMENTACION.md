@@ -254,6 +254,7 @@ data/            Catálogo de comunas y configuración remota.
 assets/          Fuentes tipográficas y capturas.
 
 analitica.py     Fuera de la app: calcula los KPIs de RA3 desde data.json (DOCUMENTATION.md).
+simulador.py     Fuera de la app: genera actividad ficticia para medir RA3 (SPEC-003).
 ```
 
 Regla de separación (definida en `CONTEXTO.md` y respetada en todo el código): **toda regla de
@@ -397,8 +398,11 @@ python -m unittest discover -s tests -v
   cálculo de los KPIs (con archivos temporales, nunca con el `data.json` real).
 - `tests/test_locations_and_cache.py`: catálogo de ubicaciones, búsqueda tolerante a tildes,
   normalización, `proximity_label` y la caché de portadas de `services/books_api.py`.
+- `tests/test_simulador.py`: `simulador.py` es reproducible, escribe solo donde se le indica,
+  usa cuentas y contactos ficticios, la app respeta sus reglas durante la simulación y
+  `analitica.py` rotula los resultados como simulados.
 
-Actualmente hay **50 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
+Actualmente hay **56 pruebas**, todas en verde. Se ejecutan después de cada cambio de código
 para asegurar que nada se rompió.
 
 ### 4.7 Servicios: persistencia, notificaciones y configuración remota
