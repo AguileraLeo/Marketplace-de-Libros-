@@ -18,7 +18,9 @@ usan la app **por la misma API que un teléfono** (SPEC-005), y el panel `/en-vi
   y los agentes siguen con las cuentas del historial.
 - Los agentes también interactúan con las personas: ofertan a solicitudes publicadas desde los
   teléfonos y aceptan ofertas que reciben de ellos.
-- El panel indica cuántos agentes simulados y cuántas personas hay activos.
+- La API informa cuántos agentes simulados y cuántas personas hay activos. El
+  panel identifica la demo con una fuente discreta al pie, sin advertencia
+  superior, por solicitud del usuario; el equipo explica el detalle en vivo.
 
 Fuera de alcance: agentes con modelos de lenguaje, y correr los agentes en forma permanente.
 
@@ -27,7 +29,8 @@ Fuera de alcance: agentes con modelos de lenguaje, y correr los agentes en forma
 1. Las cuentas de los agentes son del dominio `bookwho.test`, sus nombres terminan en "(sim)" y
    sus contactos son ficticios.
 2. Cada acción pasa por la API con la sesión del propio agente: ninguno puede actuar como otro.
-3. El panel nunca presenta a los agentes como personas: el aviso dice "agentes simulados".
+3. El panel nunca presenta a los agentes como personas: el pie identifica los
+   "agentes simulados" cuando hay datos mixtos, sin un aviso de advertencia.
 4. Un error de negocio (por ejemplo, una oferta que otro aceptó antes) o una caída de red no
    detiene a los agentes: se informa y siguen.
 5. Prueba automática contra un servidor real levantado en la prueba.

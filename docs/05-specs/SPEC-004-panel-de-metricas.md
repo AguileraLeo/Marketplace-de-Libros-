@@ -14,12 +14,17 @@ verificación de la app, con los datos del simulador (SPEC-003), y permitir una 
 - `simulador.py --en-vivo MINUTOS` continúa la simulación un día más, repartido en esos minutos
   reales, y actualiza el archivo después de cada acción.
 - `panel/index.html`: página estática que lee `metricas.json` y se actualiza sola.
+- Diseño compacto: los tres KPI, una fila de cifras y tarjetas en pares (gráfico y actividad; desglose y
+  estados). Una tarjeta sin datos se oculta y su vecina ocupa el espacio. En vivo, las cifras separan
+  personas y agentes simulados, y suman las descargas del APK desde el último reinicio del servidor.
 
 Fuera de alcance: datos reales, inicio de sesión en el panel y el backend (SPEC-005).
 
 ## Criterios de aceptación
 
-1. La página indica de forma visible que los datos son **simulados**.
+1. La página identifica los datos **simulados** mediante etiquetas y la fuente al
+   pie. Por solicitud del usuario, no muestra una advertencia amarilla superior;
+   la explicación detallada se presenta en vivo.
 2. `metricas.json` no contiene correos, nombres de personas, teléfonos ni contraseñas.
 3. Los KPIs del panel coinciden con los que imprime `analitica.py` sobre los mismos datos.
 4. La página no usa librerías externas para los gráficos e inserta todo texto con

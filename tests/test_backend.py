@@ -409,6 +409,8 @@ class SitioTest(unittest.TestCase):
             self.assertEqual(r.status_code, 200, ruta)
             self.assertIn(texto, r.text, ruta)
         self.assertEqual(self.client.get("/qr-descarga.svg").headers["content-type"], "image/svg+xml")
+        for ruta in ("/logo.svg", "/favicon.ico", "/apple-touch-icon.png"):  # logo y favicon de todas las páginas
+            self.assertEqual(self.client.get(ruta).status_code, 200, ruta)
         self.assertEqual(self.client.get("/api/salud").json(), {"ok": True})  # el sitio no tapa la API
 
     def test_descarga_del_apk(self):
@@ -420,6 +422,8 @@ class SitioTest(unittest.TestCase):
         self.assertIn('filename="BookWho.apk"', r.headers["content-disposition"])
         cabeza = self.client.head("/descargar")
         self.assertEqual((cabeza.status_code, cabeza.headers["content-type"]), (200, "application/vnd.android.package-archive"))
+        self.client.get("/descargar", headers={"Range": "bytes=10-"})  # continuación de la misma descarga
+        self.assertEqual(self.client.get("/en-vivo/metricas.json").json()["totales"]["descargas_apk"], 1)
 
     def test_configuracion_remota_editable_en_el_servidor(self):
         with open(os.path.join(RAIZ, "data", "remote_config.json"), encoding="utf-8") as f:

@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BookWho? · Panel de métricas</title>
 <meta name="description" content="KPIs de BookWho? con datos simulados (TINF1119, RA3).">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style>
   /* SPEC-004 con la identidad de SPEC-007: azul tinta y Manrope, servida por el propio servidor (sin fuentes externas).
      Colores de serie validados con la guía de visualización (claro #284DA6 sobre #FFFFFF, oscuro #5F86E6 sobre #161F33). */
@@ -12,13 +15,15 @@
   @font-face { font-family: "Manrope"; font-weight: 600; font-display: swap; src: url("/fuentes/Manrope-SemiBold.ttf") format("truetype"); }
   :root {
     --fondo: #F5F7FC; --tarjeta: #FFFFFF; --tinta: #17243F; --tinta-2: #52617B; --linea: #DCE3EF;
-    --marca: #284DA6; --serie: #284DA6; --aviso: #FAB219; --aviso-fondo: #FDF1D6; --bien: #006300; --mal: #B3261E;
+    --marca: #284DA6; --serie: #284DA6; --bien: #006300; --mal: #B3261E;
+    --sombra: 0 1px 2px rgb(23 36 63 / .05), 0 6px 18px rgb(23 36 63 / .06);
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --fondo: #0E1424; --tarjeta: #161F33; --tinta: #E8EDF7; --tinta-2: #A9B4C9; --linea: #27324A;
-      --marca: #8FA9F0; --serie: #5F86E6; --aviso-fondo: #3A2F14; --bien: #0CA30C; --mal: #FF8A80;
+      --marca: #8FA9F0; --serie: #5F86E6; --bien: #0CA30C; --mal: #FF8A80;
+      --sombra: 0 1px 2px rgb(0 0 0 / .35), 0 6px 18px rgb(0 0 0 / .25);
       color-scheme: dark;
     }
   }
@@ -27,14 +32,13 @@
   main { max-width: 1120px; margin: 0 auto; padding: 16px; }
   h1, h2 { font-weight: 600; letter-spacing: -0.01em; color: var(--tinta); margin: 0; }
   .volver { display: inline-block; padding: 8px 0; font-size: 14px; font-weight: 600; }
-  h1 { font-size: clamp(24px, 4vw, 32px); line-height: 1.2; }
+  h1 { display: flex; align-items: center; gap: 12px; font-size: clamp(24px, 4vw, 32px); line-height: 1.2; }
+  h1 img { flex: none; }
   h2 { font-size: 20px; }
   h3 { font-size: 15px; margin: 8px 0 4px; }
   p { margin: 0; }
   a, summary { color: var(--marca); }
-  .aviso { display: flex; gap: 10px; background: var(--aviso-fondo); border-left: 6px solid var(--aviso);
-           padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; }
-  header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 8px 24px; margin-bottom: 16px; }
+  header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 8px 24px; margin-bottom: 12px; }
   .sub, .nota, .etiqueta { color: var(--tinta-2); }
   .nota, .etiqueta { font-size: 14px; }
   #estado { display: flex; align-items: center; gap: 8px; color: var(--tinta-2); font-size: 14px; }
@@ -42,13 +46,17 @@
   #punto.vivo { background: var(--bien); animation: latido 1.6s ease-in-out infinite; }
   @keyframes latido { 50% { opacity: .35; } }
   @media (prefers-reduced-motion: reduce) { #punto.vivo { animation: none; } }
-  .grilla { display: grid; gap: 16px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
-  .tarjeta { grid-column: span 12; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 18px 20px; }
-  @media (min-width: 760px) { .principal, .mitad { grid-column: span 6; } .kpi { grid-column: span 3; } }
-  .valor { font-weight: 600; font-size: 36px; line-height: 1.1; margin: 6px 0 4px; }
-  .principal .valor { font-size: 56px; }
-  .totales { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; padding: 0; list-style: none; color: var(--tinta-2); font-size: 14px; }
-  .totales b { color: var(--tinta); }
+  /* Filas que se reacomodan: una tarjeta sin datos se oculta y su vecina ocupa el espacio; en el teléfono, una por fila. */
+  .fila { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+  .fila > .tarjeta { flex: 1 1 300px; min-width: 0; }
+  .fila > .ancha { flex: 2 1 560px; }
+  .kpis > .tarjeta { flex-basis: 220px; }
+  .tarjeta { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 16px 18px; box-shadow: var(--sombra); }
+  .valor { font-weight: 600; font-size: 40px; line-height: 1.1; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .cifras { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin: 0 0 12px; padding: 0; list-style: none; }
+  .cifras li { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 10px 14px; box-shadow: var(--sombra); }
+  .cifras b { display: block; font-size: 24px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .cifras span { display: block; color: var(--tinta-2); font-size: 13px; line-height: 1.3; }
   .grafico { margin-top: 10px; }
   svg { display: block; width: 100%; height: auto; overflow: visible; }
   .eje { fill: var(--tinta-2); font-size: 11px; }
@@ -58,11 +66,15 @@
   .marca { outline: none; }
   .marca:hover .serie, .marca:focus .serie { opacity: .78; }
   .marca:focus-visible .golpe { stroke: var(--tinta); stroke-width: 1; }
-  .multiples { display: grid; gap: 8px 24px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  .multiples { display: grid; gap: 4px 28px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
   ul.lista, ol.feed { list-style: none; margin: 8px 0 0; padding: 0; }
   ul.lista li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--linea); }
-  ol.feed li { display: grid; grid-template-columns: 112px 1fr; gap: 0 12px; padding: 6px 0; border-bottom: 1px solid var(--linea); font-size: 14px; }
+  ol.feed { max-height: 240px; overflow-y: auto; }  /* a la altura del gráfico de al lado; el resto, desplazando */
+  ol.feed li { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 6px 0; border-bottom: 1px solid var(--linea); font-size: 14px; }
   ul.lista li:last-child, ol.feed li:last-child { border-bottom: 0; }
+  .chequeos { display: grid; gap: 8px 24px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); list-style: none; margin: 8px 0 0; padding: 0; }
+  .chequeos li { display: flex; flex-direction: column-reverse; gap: 2px; color: var(--tinta-2); font-size: 14px; }  /* resultado arriba */
+  .chequeos b { font-size: 20px; }
   ol.feed time { color: var(--tinta-2); }
   ol.feed span { grid-column: 2; color: var(--tinta-2); }
   .ok { color: var(--bien); }
@@ -76,78 +88,79 @@
          background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 8px; box-shadow: 0 4px 16px rgb(0 0 0 / .14); }
   #tip strong { display: block; font-size: 15px; }
   #tip span { color: var(--tinta-2); }
-  footer { color: var(--tinta-2); font-size: 13px; margin: 24px 0 8px; }
+  footer { color: var(--tinta-2); font-size: 13px; margin: 16px 0 8px; }
 </style>
 </head>
 <body>
 <main>
-  <p class="aviso" role="note"><span aria-hidden="true">⚠</span><span><strong id="aviso-titulo">Datos simulados.</strong>
-    <span id="aviso-texto">Actividad ficticia generada por simulador.py con la lógica real de BookWho?: no son usuarios reales,
-    y una oferta aceptada o una compra confirmada no es una venta verificada.</span></span></p>
   <header>
     <div>
       <a class="volver" href="/">← BookWho?</a>
-      <h1>BookWho? · Panel de métricas</h1>
+      <h1><img src="/logo.svg" alt="" width="36" height="36">BookWho? · Panel de métricas</h1>
       <p class="sub" id="periodo">Cargando datos…</p>
     </div>
     <p id="estado"><span id="punto" aria-hidden="true"></span><span id="estado-texto">Conectando…</span></p>
   </header>
   <noscript><p>Este panel necesita JavaScript para leer <code>metricas.json</code>.</p></noscript>
 
-  <div class="grilla">
-    <section class="tarjeta principal" aria-labelledby="t-kpi1">
+  <div class="fila kpis">
+    <section class="tarjeta" aria-labelledby="t-kpi1">
       <p class="etiqueta" id="t-kpi1">KPI 1 · Tasa de resolución</p>
       <p class="valor" id="kpi-resolucion">—</p>
       <p class="nota" id="kpi-resolucion-nota">Solicitudes con compra confirmada por el lector.</p>
     </section>
-    <section class="tarjeta kpi" aria-labelledby="t-kpi2">
+    <section class="tarjeta" aria-labelledby="t-kpi2">
       <p class="etiqueta" id="t-kpi2">KPI 2 · Tasa de respuesta</p>
       <p class="valor" id="kpi-respuesta">—</p>
       <p class="nota">Recibieron al menos una oferta.</p>
     </section>
-    <section class="tarjeta kpi" aria-labelledby="t-kpi3">
+    <section class="tarjeta" aria-labelledby="t-kpi3">
       <p class="etiqueta" id="t-kpi3">KPI 3 · Hasta la 1.ª oferta</p>
       <p class="valor" id="kpi-horas">—</p>
       <p class="nota">Mediana, solo solicitudes con oferta.</p>
     </section>
-    <section class="tarjeta" aria-label="Totales"><ul class="totales" id="totales"></ul></section>
+  </div>
+  <ul class="cifras" id="totales" aria-label="Totales"></ul>
 
-    <section class="tarjeta" aria-labelledby="t-dias">
+  <div class="fila">
+    <section class="tarjeta ancha" aria-labelledby="t-dias">
       <h2 id="t-dias">Eventos por día</h2>
       <p class="nota">Todas las acciones registradas, incluidos los inicios de sesión.</p>
       <div class="grafico" id="grafico-dias"></div>
     </section>
-
-    <section class="tarjeta" aria-labelledby="t-grupos">
-      <h2 id="t-grupos">¿Qué solicitudes reciben ofertas?</h2>
-      <p class="nota">Porcentaje de solicitudes con al menos una oferta. Las diferencias salen de los supuestos del simulador.</p>
-      <div class="multiples grafico">
-        <div><h3>Región</h3><div id="grafico-region"></div></div>
-        <div><h3>Entrega</h3><div id="grafico-entrega"></div></div>
-        <div><h3>Precio máximo</h3><div id="grafico-precio_maximo"></div></div>
-      </div>
-    </section>
-
-    <section class="tarjeta mitad" aria-labelledby="t-estados">
-      <h2 id="t-estados">Estado de las solicitudes</h2>
-      <ul class="lista" id="estados"></ul>
-    </section>
-    <section class="tarjeta mitad" aria-labelledby="t-reglas" id="tarjeta-reglas">
-      <h2 id="t-reglas">La app cumple sus reglas</h2>
-      <ul class="lista" id="verificacion"></ul>
-    </section>
-
-    <section class="tarjeta" aria-labelledby="t-actividad">
+    <section class="tarjeta" aria-labelledby="t-actividad" id="tarjeta-actividad">
       <h2 id="t-actividad">Actividad reciente</h2>
       <p class="nota">Sin nombres ni datos de contacto: solo la acción, el libro y la comuna.</p>
       <ol class="feed" id="actividad"></ol>
     </section>
-
-    <section class="tarjeta">
-      <details><summary>Ver los datos en tablas</summary><div id="tablas"></div></details>
+    <section class="tarjeta" aria-labelledby="t-reglas" id="tarjeta-reglas">
+      <h2 id="t-reglas">La app cumple sus reglas</h2>
+      <ul class="chequeos" id="verificacion"></ul>
     </section>
   </div>
-  <footer><span id="pie-fuente">Datos ficticios según SPEC-003 y SPEC-004</span> · BookWho?, TINF1119 Desarrollo Móvil (A+S) ·
+
+  <div class="fila">
+    <section class="tarjeta ancha" aria-labelledby="t-grupos">
+      <h2 id="t-grupos">¿Qué solicitudes reciben ofertas?</h2>
+      <p class="nota">Porcentaje de solicitudes con al menos una oferta. Las diferencias salen de los supuestos del simulador.</p>
+      <div class="multiples grafico">
+        <div><h3>Región</h3><div id="grafico-region"></div></div>
+        <div>
+          <h3>Entrega</h3><div id="grafico-entrega"></div>
+          <h3>Precio máximo</h3><div id="grafico-precio_maximo"></div>
+        </div>
+      </div>
+    </section>
+    <section class="tarjeta" aria-labelledby="t-estados">
+      <h2 id="t-estados">Estado de las solicitudes</h2>
+      <ul class="lista" id="estados"></ul>
+    </section>
+  </div>
+
+  <section class="tarjeta">
+    <details><summary>Ver los datos en tablas</summary><div id="tablas"></div></details>
+  </section>
+  <footer><span id="pie-fuente">Datos simulados según SPEC-003 y SPEC-004</span> · BookWho?, TINF1119 Desarrollo Móvil (A+S) ·
     <a href="https://github.com/AguileraLeo/Marketplace-de-Libros-">Código en GitHub</a></footer>
 </main>
 <div id="tip" role="tooltip" hidden></div>
@@ -213,7 +226,7 @@ function paso(max) {  // marcas del eje en números redondos
 const ancho = (cont, minimo) => Math.max(minimo, Math.round(cont.clientWidth) || minimo);  // el SVG se dibuja a su tamaño real: el texto no se encoge
 
 function graficoDias(cont, dias) {
-  const W = ancho(cont, 300), H = 230, m = { t: 22, r: 4, b: 26, l: 34 };
+  const W = ancho(cont, 300), H = 260, m = { t: 22, r: 4, b: 26, l: 34 };
   const max = Math.max(1, ...dias.map((d) => d.eventos));
   const p = paso(max), tope = Math.ceil(max / p) * p;
   const y = (v) => m.t + (H - m.t - m.b) * (1 - v / tope);
@@ -282,11 +295,9 @@ const ORDEN_ESTADOS = ["Resuelta", "En coordinación", "Con ofertas", "Publicada
 function pintar(d) {
   const mixto = d.simulado === false && Boolean(d.origen && d.origen.agentes_simulados);  // agentes (SPEC-006) y personas
   const k = d.kpis, t = d.totales, v = d.verificacion, tipo = mixto ? "de la demo" : d.simulado === false ? "reales" : "simulados";
-  $("aviso-titulo").textContent = mixto ? "Demo en vivo con agentes simulados." : d.simulado === false ? "Datos reales de la prueba en vivo." : "Datos simulados.";
-  $("aviso-texto").textContent = d.simulado === false
-    ? `${d.aviso} Una oferta aceptada o una compra confirmada no es una venta verificada.`
-    : "Actividad ficticia generada por simulador.py con la lógica real de BookWho?: no son usuarios reales, y una oferta aceptada o una compra confirmada no es una venta verificada.";
-  $("pie-fuente").textContent = d.simulado === false ? "Datos reales del servidor (SPEC-005)" : "Datos ficticios según SPEC-003 y SPEC-004";
+  $("pie-fuente").textContent = mixto
+    ? "Datos de demostración: agentes simulados y personas (SPEC-005 y SPEC-006)"
+    : d.simulado === false ? "Datos reales del servidor (SPEC-005)" : "Datos simulados según SPEC-003 y SPEC-004";
   if (d.periodo) {
     const desde = fecha(d.periodo.desde), hasta = fecha(d.periodo.hasta);
     $("periodo").textContent = `Del ${diaCorto.format(desde)} al ${diaCorto.format(hasta)} de ${hasta.getUTCFullYear()} · ` +
@@ -297,11 +308,20 @@ function pintar(d) {
     "solicitudes con compra confirmada por el lector.";
   $("kpi-respuesta").textContent = pct(k.respuesta_pct);
   $("kpi-horas").textContent = horas(k.horas_primera_oferta);
-  $("totales").replaceChildren(...[
-    [t.eventos, "eventos"], [t.usuarios_activos, `usuarios ${tipo} activos`], [t.solicitudes, "solicitudes"],
-    [t.ofertas, "ofertas"], [t.aceptadas_para_coordinar, "aceptadas para coordinar"],
-    [t.compras_confirmadas, "compras confirmadas por el lector"],
-  ].map(([n, texto]) => { const li = el("li"); li.append(el("b", numero.format(n)), ` ${texto}`); return li; }));
+  const cifras = [  // primero el recorrido de una solicitud; después, quiénes usan la app
+    [t.solicitudes, "solicitudes"], [t.ofertas, "ofertas"], [t.aceptadas_para_coordinar, "aceptadas para coordinar"],
+    [t.compras_confirmadas, "compras confirmadas"],
+  ];
+  if (d.origen) cifras.push([d.origen.personas, "personas"], [d.origen.agentes_simulados, "agentes simulados"]);
+  else cifras.push([t.usuarios_activos, `usuarios ${tipo} activos`]);
+  if (t.descargas_apk != null) cifras.push([t.descargas_apk, "descargas del APK", "Desde el último reinicio del servidor"]);
+  cifras.push([t.eventos, "eventos registrados"]);
+  $("totales").replaceChildren(...cifras.map(([n, texto, ayuda]) => {
+    const li = el("li");
+    li.append(el("b", numero.format(n)), el("span", texto));
+    if (ayuda) li.title = ayuda;
+    return li;
+  }));
 
   graficoDias($("grafico-dias"), d.uso_diario);
   for (const clave in GRUPOS) graficoGrupos($(`grafico-${clave}`), d.desglose[clave] || [], GRUPOS[clave].toLowerCase());
@@ -321,6 +341,7 @@ function pintar(d) {
     ]);
   }
 
+  $("tarjeta-actividad").hidden = !d.actividad.length;  // sin actividad, el gráfico usa todo el ancho
   $("actividad").replaceChildren(...d.actividad.map((a) => {
     const li = el("li"), hora = el("time", diaHora.format(fecha(a.hora)));
     hora.dateTime = a.hora;

@@ -5,12 +5,14 @@
 :root {
   --fondo: #F5F7FC; --superficie: #FFFFFF; --tinta: #17243F; --tinta-2: #52617B; --linea: #DCE3EF;
   --acento: #284DA6; --acento-suave: #E4EBFB; --sobre-acento: #FFFFFF;
+  --sombra: 0 1px 2px rgb(23 36 63 / .05), 0 8px 24px rgb(23 36 63 / .07);
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --fondo: #0E1424; --superficie: #161F33; --tinta: #E8EDF7; --tinta-2: #A9B4C9; --linea: #27324A;
     --acento: #8FA9F0; --acento-suave: #1D2A47; --sobre-acento: #0E1424;
+    --sombra: 0 1px 2px rgb(0 0 0 / .35), 0 8px 24px rgb(0 0 0 / .25);
     color-scheme: dark;
   }
 }
@@ -32,7 +34,9 @@ code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 
 /* Encabezado y pie */
 .barra { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 68px; }
-.marca { color: var(--tinta); font-size: 22px; font-weight: 600; letter-spacing: -0.02em; text-decoration: none; }
+.marca { display: inline-flex; align-items: center; color: var(--tinta); font-size: 22px; font-weight: 600;
+         letter-spacing: -0.02em; text-decoration: none; }
+.marca img { display: block; width: 32px; height: 32px; margin-right: 10px; }
 .marca span { color: var(--acento); }
 .barra nav { display: flex; gap: 4px; }
 .barra nav a { padding: 12px 10px; color: var(--tinta-2); font-size: 15px; text-decoration: none; }
@@ -56,7 +60,8 @@ code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .boton:hover { filter: brightness(1.1); }
 .boton:focus-visible { border-radius: 14px; }
 .nota { margin-top: 12px; color: var(--tinta-2); font-size: 14px; }
-.qr { padding: 20px; border: 1px solid var(--linea); border-radius: 20px; background: var(--superficie); text-align: center; }
+.qr { padding: 20px; border: 1px solid var(--linea); border-radius: 20px; background: var(--superficie); text-align: center;
+      box-shadow: var(--sombra); }
 .qr img { display: block; width: 100%; max-width: 236px; height: auto; margin: 0 auto 12px; border-radius: 6px; }
 .qr p { color: var(--tinta-2); font-size: 15px; }
 @media (max-width: 879px) { .qr { display: none; } } /* en el teléfono no sirve escanear su propia pantalla */
@@ -64,7 +69,7 @@ code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 /* Secciones */
 .seccion { padding-top: 36px; padding-bottom: 36px; }
 .intro { max-width: 40em; margin-top: 10px; color: var(--tinta-2); }
-.tarjeta { padding: 24px; border: 1px solid var(--linea); border-radius: 18px; background: var(--superficie); }
+.tarjeta { padding: 24px; border: 1px solid var(--linea); border-radius: 18px; background: var(--superficie); box-shadow: var(--sombra); }
 .tarjeta p { margin-top: 6px; color: var(--tinta-2); }
 .grilla { display: grid; gap: 16px; margin-top: 24px; padding: 0; list-style: none; }
 @media (min-width: 720px) { .grilla { grid-template-columns: repeat(3, 1fr); } }
@@ -92,3 +97,11 @@ code { font: 0.92em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
 .texto p + p, .texto ul + p { margin-top: 12px; }
 .texto ul { padding-left: 1.2em; }
 .texto li + li { margin-top: 8px; }
+
+/* Animación al hacer scroll: la clase .aparece la pone el script, solo si el sistema no pide reducir el movimiento. */
+@media (prefers-reduced-motion: no-preference) {
+  .aparece { opacity: 0; transform: translateY(18px); transition: opacity .6s ease, transform .6s ease; }
+  .aparece.visible { opacity: 1; transform: none; }
+  .grilla > .aparece:nth-child(2) { transition-delay: .08s; }
+  .grilla > .aparece:nth-child(3) { transition-delay: .16s; }
+}

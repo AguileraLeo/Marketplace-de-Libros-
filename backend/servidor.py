@@ -20,7 +20,7 @@ from datetime import date, datetime, timedelta
 from statistics import median
 from typing import Optional
 
-from fastapi import Body, FastAPI, Header
+from fastapi import Body, FastAPI, Header, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -116,6 +116,7 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
         store.add_user("Administrador", admin[0], admin[1], Role.ADMIN)
     candado = threading.Lock()  # un solo Store y un solo escritor: cada llamada pasa de a una
     sesiones: dict[str, tuple[int, float]] = {}
+    descargas = [0]  # ponytail: en memoria, desde el último reinicio; guardarlas en disco si importa el histórico
 
     def guardar():
         os.makedirs(os.path.dirname(os.path.abspath(ruta_datos)), exist_ok=True)
@@ -259,7 +260,7 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
                 "totales": {"eventos": r["eventos_reales"], "usuarios_activos": r["usuarios_activos"],
                             "solicitudes": r["solicitudes_publicadas"], "ofertas": tipos.get("oferta_publicada", 0),
                             "aceptadas_para_coordinar": tipos.get("oferta_por_concretar", 0),
-                            "compras_confirmadas": tipos.get("trato_concretado", 0)},
+                            "compras_confirmadas": tipos.get("trato_concretado", 0), "descargas_apk": descargas[0]},
                 "uso_diario": [{"dia": d, "eventos": r["uso_diario"].get(d, 0)} for d in dias_seguidos(r["uso_diario"])],
                 "solicitudes_por_estado": dict(sorted(Counter(RequestStatus.LABELS[q.status] for q in solicitudes).items())),
                 "desglose": desglose,
@@ -296,10 +297,13 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
 
     # Sitio público (SPEC-008)
     @app.api_route("/descargar", methods=["GET", "HEAD"], include_in_schema=False)  # HEAD: lectores de QR que revisan el enlace
-    def descargar():
+    def descargar(request: Request):
         apk = de_publico("bookwho.apk")
         if not apk:
             return PlainTextResponse("La app todavía no está publicada. Vuelve a intentarlo en un rato.", 404)
+        if request.method == "GET" and request.headers.get("range", "bytes=0-").startswith("bytes=0-"):
+            with candado:  # una por descarga: no cuentan HEAD ni la continuación de una descarga cortada
+                descargas[0] += 1
         return FileResponse(apk, media_type="application/vnd.android.package-archive", filename="BookWho.apk")
 
     @app.get("/config.json", include_in_schema=False)
