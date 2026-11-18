@@ -5,12 +5,14 @@
 #:import Delivery models.store.Delivery
 #:import hex kivy.utils.get_color_from_hex
 #:import hexstr kivy.utils.get_hex_from_color
-#:set INK "#1A1A17"
-#:set MUTED "#5E5B53"
-#:set FAINT "#6F6B62"
-#:set RULE "#E6E2D9"
-#:set FIELD_LINE "#D6D1C6"
-#:set TRACK "#EFECE5"
+#:import sp kivy.metrics.sp
+#:import UI views.components
+#:set INK UI.INK
+#:set MUTED UI.MUTED
+#:set FAINT UI.MUTED
+#:set RULE UI.RULE
+#:set FIELD_LINE UI.RULE
+#:set TRACK UI.SOFT
 
 
 # ==========================================================================
@@ -41,7 +43,7 @@
     theme_width: "Custom"
     size_hint_x: 1
     height: dp(48)
-    radius: [dp(6)] * 4
+    radius: [dp(12)] * 4
 
 <PrimaryButton@WideButton>:
     style: "filled"
@@ -49,27 +51,48 @@
 
 # El hinting "normal" de Kivy abre huecos dentro de palabras en Source Serif ("ofer tas").
 <MDLabel>:
+    text_color: hex(app.ui_palette["ink"])
+    theme_text_color: "Custom"
     font_hinting: None
     font_kerning: True
 
+<MDButtonText>:
+    theme_text_color: "Custom"
+    text_color: app.theme_cls.onPrimaryColor if self.parent and self.parent.style == "filled" else app.theme_cls.primaryColor
+
+<MDButtonIcon>:
+    theme_text_color: "Custom"
+    text_color: app.theme_cls.onPrimaryColor if self.parent and self.parent.style == "filled" else app.theme_cls.primaryColor
+
 <MDTextField>:
-    radius: [dp(6)] * 4
+    theme_bg_color: "Custom"
+    fill_color_normal: hex(app.ui_palette["surface"])
+    fill_color_focus: hex(app.ui_palette["surface"])
+    radius: [dp(12)] * 4
     theme_line_color: "Custom"
-    line_color_normal: hex(FIELD_LINE)
+    line_color_normal: hex(app.ui_palette["rule"])
     line_color_focus: app.theme_cls.primaryColor
 
+<MDTextFieldHintText>:
+    text_color_normal: hex(app.ui_palette["muted"])
+    text_color_focus: app.theme_cls.primaryColor
+
+# KivyMD aplica el color de estas texturas en el canvas del campo.
+<BaseTextFieldLabel>:
+    text_color: 1, 1, 1, 1
+
+<BaseTextFieldIcon>:
+    text_color: 1, 1, 1, 1
+
 <MDTopAppBar>:
-    canvas.after:
-        Color:
-            rgba: hex(RULE)
-        Line:
-            points: [self.x, self.y, self.right, self.y]
+    theme_bg_color: "Custom"
+    md_bg_color: app.theme_cls.backgroundColor
 
 <Page@MDBoxLayout>:
     orientation: "vertical"
     adaptive_height: True
-    padding: dp(16), dp(12), dp(16), dp(32)
-    spacing: dp(12)
+    padding: dp(24), dp(16), dp(24), dp(32)
+    spacing: dp(16)
 
 <Panel@MDCard>:
     style: "filled"
@@ -79,10 +102,10 @@
     height: self.minimum_height
     padding: dp(16)
     spacing: dp(10)
-    radius: [dp(8)] * 4
+    radius: [dp(16)] * 4
     ripple_effect: False
-    md_bg_color: hex("#FFFFFF")
-    line_color: hex(RULE)
+    md_bg_color: hex(app.ui_palette["surface"])
+    line_color: hex(app.ui_palette["rule"])
 
 <Gap@Widget>:
     size_hint_y: None
@@ -93,14 +116,14 @@
     height: dp(1)
     canvas:
         Color:
-            rgba: hex(RULE)
+            rgba: hex(app.ui_palette["rule"])
         Rectangle:
             pos: self.pos
             size: self.size
 
 <NextStep@MDBoxLayout>:
     number: ""
-    text: ""
+    text: ''
     adaptive_height: True
     padding: 0, dp(10)
     MDLabel:
@@ -120,21 +143,18 @@
         adaptive_height: True
         pos_hint: {"top": 1}
         theme_text_color: "Custom"
-        text_color: hex(INK)
+        text_color: hex(app.ui_palette["ink"])
 
 <SegmentedRow>:
     adaptive_height: True
-    padding: dp(3)
-    spacing: dp(2)
-    radius: [dp(7)] * 4
-    md_bg_color: hex(TRACK)
+    spacing: dp(8)
+    md_bg_color: 0, 0, 0, 0
 
 <SegmentButton>:
     size_hint_y: None
     height: dp(48)
-    radius: [dp(5)] * 4
-    md_bg_color: hex("#FFFFFF") if self.selected else hex(TRACK)
-    line_color: hex(FIELD_LINE) if self.selected else hex(TRACK)
+    radius: [dp(24)] * 4
+    md_bg_color: hex(app.ui_palette["soft"]) if self.selected else (0, 0, 0, 0)
     MDLabel:
         text: root.text
         halign: "center"
@@ -142,115 +162,102 @@
         role: "medium"
         bold: root.selected
         theme_text_color: "Custom"
-        text_color: hex(INK) if root.selected else hex(MUTED)
+        text_color: app.theme_cls.primaryColor if root.selected else hex(app.ui_palette["muted"])
 
 <StatLink@ButtonBehavior+MDBoxLayout>:
     value: "0"
-    label: ""
+    label: ''
     highlight: False
     orientation: "vertical"
     adaptive_height: True
     spacing: dp(2)
     MDLabel:
-        text: root.value
+        text: ('0' if len(root.value) == 1 else '') + root.value
         font_style: "Headline"
         role: "medium"
         adaptive_height: True
         theme_text_color: "Custom"
-        text_color: app.theme_cls.primaryColor if root.highlight else hex(INK)
+        text_color: app.theme_cls.primaryColor
     MDLabel:
         text: root.label
         font_style: "Body"
         role: "small"
         adaptive_height: True
         theme_text_color: "Custom"
-        text_color: hex(MUTED)
+        text_color: hex(app.ui_palette["muted"])
 
 <RequestRow>:
-    orientation: "horizontal"
+    orientation: "vertical"
     size_hint_y: None
-    height: max(dp(70), info.minimum_height) + dp(32)
-    padding: 0, dp(16)
-    spacing: dp(14)
+    height: self.minimum_height
+    padding: dp(16)
+    spacing: dp(12)
+    radius: [dp(16)] * 4
+    md_bg_color: hex(app.ui_palette["surface"])
+    line_color: hex(app.ui_palette["rule"])
     on_release: root.callback(root) if root.callback else None
-    canvas.after:
-        Color:
-            rgba: hex(RULE)
-        Line:
-            points: [self.x, self.y, self.right, self.y]
-    BookCover:
-        source: root.cover
-        size: dp(48), dp(70)
-        radius: [dp(2)] * 4
-        pos_hint: {"top": 1}
     MDBoxLayout:
-        id: info
-        orientation: "vertical"
-        adaptive_height: True
-        spacing: dp(2)
-        pos_hint: {"top": 1}
+        size_hint_y: None
+        height: max(dp(92), info.minimum_height)
+        spacing: dp(16)
+        BookCover:
+            source: root.cover
+            size: dp(64), dp(92)
+            pos_hint: {"top": 1}
         MDBoxLayout:
+            id: info
+            orientation: "vertical"
             adaptive_height: True
-            spacing: dp(12)
+            spacing: dp(5)
+            pos_hint: {"top": 1}
             MDLabel:
                 text: root.title
                 font_style: "Title"
                 role: "medium"
+                bold: True
                 adaptive_height: True
-                theme_text_color: "Custom"
-                text_color: hex(INK)
+            Muted:
+                text: root.author
+                role: "small"
+            Muted:
+                text: root.meta
+                role: "small"
             MDLabel:
                 text: root.price
                 markup: True
                 font_style: "Body"
                 role: "medium"
-                adaptive_size: True
-                pos_hint: {"top": 1}
-                theme_text_color: "Custom"
-                text_color: hex(INK)
+                adaptive_height: True
+                text_color: app.theme_cls.primaryColor
+    MDBoxLayout:
+        adaptive_height: True
+        spacing: dp(8)
+        StatusChip:
+            status: root.status
+            kind: "request"
         MDLabel:
-            text: root.author
+            text: root.detail
             font_style: "Body"
             role: "small"
             adaptive_height: True
-            theme_text_color: "Custom"
-            text_color: hex(MUTED)
-        MDLabel:
-            text: root.meta
-            font_style: "Body"
-            role: "small"
-            adaptive_height: True
-            theme_text_color: "Custom"
-            text_color: hex(MUTED)
-        MDBoxLayout:
-            adaptive_height: True
-            spacing: dp(8)
-            padding: 0, dp(6), 0, 0
-            StatusChip:
-                status: root.status
-                kind: "request"
-            MDLabel:
-                text: root.detail
-                font_style: "Body"
-                role: "small"
-                adaptive_size: True
-                theme_text_color: "Custom"
-                text_color: hex(FAINT)
+            pos_hint: {"center_y": .5}
+            text_color: hex(app.ui_palette["muted"])
 
 <ListBox@MDBoxLayout>:
     orientation: "vertical"
     adaptive_height: True
+    spacing: dp(12)
 
 <BookCover>:
     size_hint: None, None
     size: dp(64), dp(92)
-    md_bg_color: hex(TRACK)
+    md_bg_color: hex(app.ui_palette["soft"])
     radius: [dp(3)] * 4
     MDIcon:
         icon: "book-open-page-variant"
         pos_hint: {"center_x": .5, "center_y": .5}
         theme_text_color: "Custom"
-        text_color: hex(FAINT)
+        text_color: hex(app.ui_palette["muted"])
     Image:
         source: root.local_source
         fit_mode: "cover"
@@ -258,7 +265,10 @@
 
 <StatusChip>:
     adaptive_size: True
-    spacing: dp(8)
+    spacing: dp(6)
+    padding: dp(10), dp(6)
+    radius: [dp(16)] * 4
+    md_bg_color: root.bg
     pos_hint: {"center_y": .5}
     Widget:
         size_hint: None, None
@@ -271,7 +281,7 @@
                 pos: self.pos
                 size: self.size
     MDLabel:
-        text: root.text or " "
+        text: app.ui_text(root.text, app.language) or ' '
         adaptive_size: True
         font_style: "Body"
         role: "small"
@@ -282,20 +292,16 @@
 <ItemCard>:
     style: "filled"
     theme_bg_color: "Custom"
-    md_bg_color: 0, 0, 0, 0
+    md_bg_color: hex(app.ui_palette["surface"])
+    line_color: hex(app.ui_palette["rule"])
     orientation: "vertical"
     size_hint_y: None
     height: self.minimum_height
-    padding: 0, dp(14)
+    padding: dp(16)
     spacing: dp(2)
-    radius: [0] * 4
+    radius: [dp(14)] * 4
     ripple_effect: False
     on_release: root.callback(root) if root.callback else None
-    canvas.after:
-        Color:
-            rgba: hex(RULE)
-        Line:
-            points: [self.x, self.y, self.right, self.y]
     MDBoxLayout:
         adaptive_height: True
         spacing: dp(12)
@@ -306,7 +312,7 @@
             adaptive_height: True
             pos_hint: {"center_y": .5}
             theme_text_color: "Custom"
-            text_color: hex(INK)
+            text_color: hex(app.ui_palette["ink"])
         StatusChip:
             status: root.status
             kind: root.kind
@@ -317,14 +323,14 @@
         role: "small"
         adaptive_height: True
         theme_text_color: "Custom"
-        text_color: hex(MUTED)
+        text_color: hex(app.ui_palette["muted"])
     MDLabel:
         text: root.meta
         font_style: "Body"
         role: "small"
         adaptive_height: True
         theme_text_color: "Custom"
-        text_color: hex(MUTED)
+        text_color: hex(app.ui_palette["muted"])
     MDBoxLayout:
         size_hint_y: None
         height: dp(48) if root.action_text else 0
@@ -342,22 +348,18 @@
 <BookResultCard>:
     style: "filled"
     theme_bg_color: "Custom"
-    md_bg_color: 0, 0, 0, 0
+    md_bg_color: hex(app.ui_palette["surface"])
+    line_color: hex(app.ui_palette["rule"])
     orientation: "horizontal"
     size_hint_y: None
-    height: max(dp(70), content.minimum_height) + dp(32)
-    padding: 0, dp(16)
+    height: max(dp(92), content.minimum_height) + dp(32)
+    padding: dp(16)
     spacing: dp(14)
-    radius: [0] * 4
+    radius: [dp(14)] * 4
     ripple_effect: False
-    canvas.after:
-        Color:
-            rgba: hex(RULE)
-        Line:
-            points: [self.x, self.y, self.right, self.y]
     BookCover:
         source: root.cover
-        size: dp(48), dp(70)
+        size: dp(64), dp(92)
         pos_hint: {"top": 1}
     MDBoxLayout:
         id: content
@@ -371,42 +373,42 @@
             role: "medium"
             adaptive_height: True
             theme_text_color: "Custom"
-            text_color: hex(INK)
+            text_color: hex(app.ui_palette["ink"])
         MDLabel:
             text: root.subtitle
             font_style: "Body"
             role: "small"
             adaptive_height: True
             theme_text_color: "Custom"
-            text_color: hex(MUTED)
+            text_color: hex(app.ui_palette["muted"])
         MDLabel:
             text: root.meta
             font_style: "Body"
             role: "small"
             adaptive_height: True
             theme_text_color: "Custom"
-            text_color: hex(MUTED)
+            text_color: hex(app.ui_palette["muted"])
         MDBoxLayout:
             adaptive_height: True
             padding: 0, dp(6), 0, 0
             Widget:
             MDButton:
                 style: "outlined"
-                radius: [dp(6)] * 4
+                radius: [dp(12)] * 4
                 on_release: app.select_book(root.book)
                 MDButtonText:
-                    text: "Seleccionar"
+                    text: app.ui_text('Seleccionar', app.language)
 
 <StatTile>:
     style: "filled"
     theme_bg_color: "Custom"
-    md_bg_color: hex("#FFFFFF")
-    line_color: hex(RULE)
+    md_bg_color: hex(app.ui_palette["surface"])
+    line_color: hex(app.ui_palette["rule"])
     orientation: "vertical"
     size_hint_y: None
     height: dp(84)
     padding: dp(14), dp(10)
-    radius: [dp(6)] * 4
+    radius: [dp(12)] * 4
     ripple_effect: False
     MDBoxLayout:
         adaptive_height: True
@@ -415,42 +417,37 @@
             font_style: "Headline"
             role: "medium"
             theme_text_color: "Custom"
-            text_color: hex(INK)
+            text_color: hex(app.ui_palette["ink"])
         Widget:
         MDIcon:
             icon: root.icon
             theme_text_color: "Custom"
-            text_color: hex(FAINT)
+            text_color: hex(app.ui_palette["muted"])
             pos_hint: {"center_y": .6}
     MDLabel:
         text: root.label
         font_style: "Body"
         role: "small"
         theme_text_color: "Custom"
-        text_color: hex(MUTED)
+        text_color: hex(app.ui_palette["muted"])
 
 <InfoRow>:
     adaptive_height: True
-    spacing: dp(14)
-    padding: 0, dp(4)
-    MDIcon:
-        icon: root.icon
-        pos_hint: {"center_y": .5}
-        theme_text_color: "Custom"
-        text_color: app.theme_cls.primaryColor
-    MDBoxLayout:
-        orientation: "vertical"
+    spacing: dp(12)
+    padding: 0, dp(10)
+    Muted:
+        text: root.label
+        size_hint_x: .40
+        pos_hint: {"top": 1}
+        role: "small"
+    MDLabel:
+        text: root.value
+        size_hint_x: .60
+        font_style: "Body"
+        role: "medium"
         adaptive_height: True
-        pos_hint: {"center_y": .5}
-        Muted:
-            text: root.label
-            font_style: "Label"
-            role: "medium"
-        MDLabel:
-            text: root.value
-            font_style: "Body"
-            role: "large"
-            adaptive_height: True
+        bold: True
+        pos_hint: {"top": 1}
 
 <EmptyState>:
     orientation: "vertical"
@@ -474,40 +471,53 @@
 # Marca de la app: libro + insignia de interrogación ("¿quién lo tiene?")
 <BrandMark@MDRelativeLayout>:
     size_hint: None, None
-    size: dp(88), dp(88)
+    size: dp(104), dp(104)
     pos_hint: {"center_x": .5}
     MDCard:
         style: "filled"
         theme_bg_color: "Custom"
-        md_bg_color: app.theme_cls.primaryColor
+        md_bg_color: hex(UI.ACCENT)
         radius: [dp(14)] * 4
         ripple_effect: False
-        MDIcon:
-            icon: "book-open-page-variant"
-            font_size: "40sp"
-            pos_hint: {"center_x": .5, "center_y": .5}
-            theme_text_color: "Custom"
-            text_color: app.theme_cls.onPrimaryColor
+        MDRelativeLayout:
+            canvas.after:
+                Color:
+                    rgba: hex("#F3C66E")
+                Line:
+                    points: [self.center_x, self.center_y + dp(23), self.center_x, self.center_y - dp(19)]
+                    width: dp(1.5)
+                    cap: "round"
+            MDIcon:
+                icon: "book-open-page-variant"
+                theme_font_size: "Custom"
+                font_size: "68sp"
+                pos_hint: {"center_x": .5, "center_y": .5}
+                theme_text_color: "Custom"
+                text_color: hex("#FFFFFF")
+
     MDCard:
         style: "filled"
         theme_bg_color: "Custom"
-        md_bg_color: app.theme_cls.backgroundColor
-        line_color: app.theme_cls.primaryColor
+        md_bg_color: hex(UI.PAPER)
+        line_color: hex(UI.ACCENT)
         radius: [dp(15)] * 4
         size_hint: None, None
         size: dp(30), dp(30)
         pos_hint: {"right": 1, "y": 0}
         ripple_effect: False
-        MDIcon:
-            icon: "help"
-            font_size: "18sp"
-            pos_hint: {"center_x": .5, "center_y": .5}
-            theme_text_color: "Custom"
-            text_color: app.theme_cls.primaryColor
+        MDRelativeLayout:
+            MDIcon:
+                icon: "help"
+                theme_font_size: "Custom"
+                font_size: "18sp"
+                pos_hint: {"center_x": .5, "center_y": .5}
+                theme_text_color: "Custom"
+                text_color: hex(UI.ACCENT)
+
 
 # Barra superior con botón "atrás"
 <BackBar@MDTopAppBar>:
-    title: ""
+    title: ''
     type: "small"
     MDTopAppBarLeadingButtonContainer:
         MDActionTopAppBarButton:
@@ -518,6 +528,66 @@
     MDTopAppBarTrailingButtonContainer:
 
 
+
+<RoleBadge@MDBoxLayout>:
+    text: app.ui_text('Lector', app.language)
+    adaptive_size: True
+    padding: dp(12), dp(7)
+    radius: [dp(18)] * 4
+    md_bg_color: hex(app.ui_palette["soft"])
+    pos_hint: {"center_y": .5}
+    MDLabel:
+        text: root.text
+        font_style: "Label"
+        role: "medium"
+        adaptive_size: True
+        text_color: app.theme_cls.primaryColor
+
+<HomeHeader@MDBoxLayout>:
+    role_text: app.ui_text('Lector', app.language)
+    size_hint_y: None
+    height: dp(72)
+    padding: dp(24), dp(12)
+    MDLabel:
+        text: 'BookWho?'
+        font_style: "Title"
+        role: "large"
+        bold: True
+        adaptive_height: True
+        pos_hint: {"center_y": .5}
+        text_color: app.theme_cls.primaryColor
+    RoleBadge:
+        text: root.role_text
+
+<HomeNav@MDBoxLayout>:
+    seller: False
+    size_hint_y: None
+    height: dp(64)
+    padding: dp(12), dp(6)
+    spacing: dp(4)
+    md_bg_color: app.theme_cls.backgroundColor
+    MDButton:
+        style: "text"
+        theme_width: "Custom"
+        size_hint_x: 1
+        on_release: app.go_home()
+        MDButtonText:
+            text: app.ui_text('Inicio', app.language)
+    MDButton:
+        style: "text"
+        theme_width: "Custom"
+        size_hint_x: 1.6
+        on_release: app.go("seller_offers" if root.seller else "reader_requests")
+        MDButtonText:
+            text: app.ui_text('Mis ofertas', app.language) if root.seller else app.ui_text('Mis solicitudes', app.language)
+    MDButton:
+        style: "text"
+        theme_width: "Custom"
+        size_hint_x: 1
+        on_release: app.logout()
+        MDButtonText:
+            text: app.ui_text('Salir', app.language)
+
 # ==========================================================================
 #  Pantallas
 # ==========================================================================
@@ -525,6 +595,7 @@
 MDScreenManager:
     LoginScreen:
     RegisterScreen:
+    ServiceTermsScreen:
     ReaderHomeScreen:
     BookSearchScreen:
     CreateRequestScreen:
@@ -547,100 +618,186 @@ MDScreenManager:
 # ------------------------------------------------------------------ Login
 <LoginScreen>:
     name: "login"
-    md_bg_color: app.theme_cls.backgroundColor
+    md_bg_color: hex(app.ui_palette["surface"])
     MDScrollView:
         Page:
-            padding: dp(24), dp(40), dp(24), dp(32)
-            spacing: dp(14)
+            padding: dp(24), dp(48), dp(24), dp(32)
+            spacing: 0
             BrandMark:
+            Gap:
+                height: dp(20)
             MDLabel:
-                text: "BookWho?"
+                text: 'BookWho?'
                 halign: "center"
                 font_style: "Headline"
                 role: "medium"
                 bold: True
                 adaptive_height: True
-            Muted:
-                text: "Ofrece, busca, vende e intercambia."
+            Gap:
+                height: dp(40)
+            MDLabel:
+                text: app.ui_text('Iniciar sesión', app.language)
                 halign: "center"
-            Muted:
-                # Viene de la configuración remota (app.banner)
-                text: app.banner
-                halign: "center"
-                role: "small"
-            Widget:
+                font_style: "Title"
+                role: "large"
+                bold: True
+                adaptive_height: True
+            MDBoxLayout:
                 size_hint_y: None
-                height: dp(8)
+                height: dp(48)
+                spacing: 0
+                Widget:
+                Muted:
+                    text: app.ui_text('¿No tienes cuenta?', app.language)
+                    adaptive_size: True
+                    role: "small"
+                    pos_hint: {"center_y": .5}
+                MDButton:
+                    style: "text"
+                    pos_hint: {"center_y": .5}
+                    on_release: app.go("register")
+                    MDButtonText:
+                        text: app.ui_text('Crear cuenta', app.language)
+                Widget:
+            Gap:
+                height: dp(24)
+            FieldLabel:
+                text: app.ui_text('Correo electrónico', app.language)
+                padding: 0
+            Gap:
+                height: dp(10)
             MDTextField:
                 id: email
                 mode: "outlined"
                 write_tab: False
-                MDTextFieldLeadingIcon:
-                    icon: "email-outline"
+                radius: [dp(10)] * 4
                 MDTextFieldHintText:
-                    text: "Correo"
+                    text: app.ui_text('tu@correo.cl', app.language)
+            Gap:
+                height: dp(22)
+            FieldLabel:
+                text: app.ui_text('Contraseña', app.language)
+                padding: 0
+            Gap:
+                height: dp(10)
             MDTextField:
                 id: password
                 mode: "outlined"
                 password: True
                 write_tab: False
+                radius: [dp(10)] * 4
                 on_text_validate: root.do_login()
-                MDTextFieldLeadingIcon:
-                    icon: "lock-outline"
                 MDTextFieldHintText:
-                    text: "Contraseña"
+                    text: app.ui_text('Tu contraseña', app.language)
+            Gap:
+                height: dp(24)
             PrimaryButton:
+                height: dp(54)
+                radius: [dp(27)] * 4
                 on_release: root.do_login()
                 MDButtonText:
-                    text: "Iniciar sesión"
-            MDBoxLayout:
-                adaptive_height: True
-                MDButton:
-                    style: "text"
-                    on_release: app.go("register")
-                    MDButtonText:
-                        text: "Crear cuenta"
-                Widget:
-                MDButton:
-                    style: "text"
-                    on_release: root.forgot_password()
-                    MDButtonText:
-                        text: "¿Olvidaste tu contraseña?"
-            # Cuentas demo: en Android se quita este panel (LoginScreen.on_kv_post)
-            Panel:
-                id: demo_panel
+                    text: app.ui_text('Iniciar sesión', app.language)
+            Gap:
+                height: dp(30)
+            Muted:
+                text: app.ui_text('Recuperación de contraseña', app.language)
+                halign: "center"
+                role: "small"
+            Gap:
+                height: dp(6)
+            Muted:
+                text: app.ui_text('Todavía no disponible.', app.language)
+                halign: "center"
+                role: "small"
+            Gap:
+                height: dp(40)
+            Rule:
+                size_hint_x: None
+                width: dp(100)
+                pos_hint: {"center_x": .5}
+            Gap:
+                height: dp(20)
+            Muted:
+                text: app.ui_text('Busca un libro.\nEncuentra quién lo tiene.', app.language)
+                halign: "center"
+            Gap:
+                height: dp(16)
+            Muted:
+                text: app.ui_text(app.banner, app.language)
+                halign: "center"
+                role: "small"
+            Gap:
+                height: dp(24)
+            Rule:
+            Gap:
+                height: dp(8)
+            WideButton:
+                style: "text"
+                on_release: app.show_language_picker()
+                MDButtonIcon:
+                    icon: "web"
+                MDButtonText:
+                    text: 'English' if app.language == 'en' else 'Español'
+            Muted:
+                text: app.ui_text('Idioma de la aplicación', app.language)
+                halign: "center"
+                role: "small"
+            Muted:
+                text: 'soporte@quadcorestore.com'
+                halign: "center"
+                role: "small"
+            Muted:
+                text: app.ui_text('Correo informativo · aún no habilitado', app.language)
+                halign: "center"
+                role: "small"
+            WideButton:
+                style: "text"
+                on_release: app.go("service_terms")
+                MDButtonText:
+                    text: app.ui_text('Condiciones del servicio', app.language)
+            Muted:
+                text: app.ui_text('BookWho? · Proyecto académico', app.language)
+                halign: "center"
+                role: "small"
+
+
+<ServiceTermsScreen>:
+    name: "service_terms"
+    md_bg_color: hex(app.ui_palette["surface"])
+    MDBoxLayout:
+        orientation: "vertical"
+        BackBar:
+            title: app.ui_text('Condiciones del servicio', app.language)
+        MDScrollView:
+            Page:
                 Heading:
-                    text: "Cuentas de demo"
-                    role: "small"
+                    text: app.ui_text('Condiciones de BookWho?', app.language)
                 Muted:
-                    text: "Toca una para completar los datos."
-                    role: "small"
-                MDListItem:
-                    on_release: root.fill_demo("lector@demo.cl", "1234")
-                    MDListItemLeadingIcon:
-                        icon: "account-search-outline"
-                    MDListItemHeadlineText:
-                        text: "Lector · Juan Pérez"
-                    MDListItemSupportingText:
-                        text: "lector@demo.cl  /  1234"
-                MDListItem:
-                    on_release: root.fill_demo("vendedor@demo.cl", "1234")
-                    MDListItemLeadingIcon:
-                        icon: "storefront-outline"
-                    MDListItemHeadlineText:
-                        text: "Vendedor · Librería Los Andes"
-                    MDListItemSupportingText:
-                        text: "vendedor@demo.cl  /  1234"
-                MDListItem:
-                    on_release: root.fill_demo("admin@demo.cl", "admin")
-                    MDListItemLeadingIcon:
-                        icon: "shield-account-outline"
-                    MDListItemHeadlineText:
-                        text: "Administrador"
-                    MDListItemSupportingText:
-                        text: "admin@demo.cl  /  admin"
-
-
+                    text: app.ui_text('Borrador para revisión del equipo · Prototipo académico', app.language)
+                MDLabel:
+                    text: app.ui_text('BookWho? conecta lectores que buscan libros con vendedores que pueden ofrecerlos. Una solicitud no garantiza recibir una oferta ni conseguir el libro.', app.language)
+                    adaptive_height: True
+                Heading:
+                    text: app.ui_text('Coordinación entre las partes', app.language)
+                MDLabel:
+                    text: app.ui_text('Aceptar una oferta inicia la coordinación y permite consultar el contacto autorizado. La compra y la entrega se acuerdan fuera de BookWho?. La aplicación no procesa pagos, no gestiona envíos y no dispone de chat interno.', app.language)
+                    adaptive_height: True
+                Heading:
+                    text: app.ui_text('Datos y acceso', app.language)
+                MDLabel:
+                    text: app.ui_text('La aplicación guarda datos de cuenta, solicitudes, ofertas, contactos y actividad. Los permisos se comprueban según el rol y la propiedad del recurso. Los datos de contacto se muestran mediante los métodos autorizados al coordinar una oferta. En modo servidor los datos se guardan en el servidor; en modo sin conexión permanecen en el dispositivo.', app.language)
+                    adaptive_height: True
+                Heading:
+                    text: app.ui_text('Límites de esta versión', app.language)
+                MDLabel:
+                    text: app.ui_text('La recuperación de contraseña no está disponible. El correo soporte@quadcorestore.com se muestra como referencia y aún no está habilitado. No se ofrece inicio de sesión con Google, Apple ni códigos de un solo uso.', app.language)
+                    adaptive_height: True
+                Muted:
+                    text: app.ui_text('Este texto describe el funcionamiento del prototipo. Las condiciones definitivas y la identificación del responsable del servicio están pendientes de revisión por el equipo.', app.language)
+                PrimaryButton:
+                    on_release: app.back()
+                    MDButtonText:
+                        text: app.ui_text('Volver', app.language)
 # --------------------------------------------------------------- Registro
 <RegisterScreen>:
     name: "register"
@@ -648,7 +805,7 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Crear cuenta"
+            title: app.ui_text('Crear cuenta', app.language)
         MDScrollView:
             Page:
                 padding: dp(24), dp(16), dp(24), dp(32)
@@ -659,7 +816,7 @@ MDScreenManager:
                     MDTextFieldLeadingIcon:
                         icon: "account-outline"
                     MDTextFieldHintText:
-                        text: "Nombre"
+                        text: app.ui_text('Nombre', app.language)
                 MDTextField:
                     id: email
                     mode: "outlined"
@@ -667,7 +824,7 @@ MDScreenManager:
                     MDTextFieldLeadingIcon:
                         icon: "email-outline"
                     MDTextFieldHintText:
-                        text: "Correo"
+                        text: app.ui_text('Correo', app.language)
                 MDTextField:
                     id: password
                     mode: "outlined"
@@ -676,18 +833,18 @@ MDScreenManager:
                     MDTextFieldLeadingIcon:
                         icon: "lock-outline"
                     MDTextFieldHintText:
-                        text: "Contraseña"
+                        text: app.ui_text('Contraseña', app.language)
                     MDTextFieldHelperText:
-                        text: "Mínimo 4 caracteres"
+                        text: app.ui_text('Mínimo 4 caracteres', app.language)
                         mode: "persistent"
                 Gap:
                     # el texto de ayuda se dibuja bajo el campo: este espacio evita que toque la etiqueta
                     height: dp(4)
                 FieldLabel:
-                    text: "¿Cómo usarás la app?"
+                    text: app.ui_text('¿Cómo usarás la app?', app.language)
                 SegmentedRow:
                     id: role
-                    options: [(Role.READER, "Busco libros (Lector)"), (Role.SELLER, "Vendo libros (Vendedor)")]
+                    options: [(Role.READER, app.ui_text('Busco libros (Lector)', app.language)), (Role.SELLER, app.ui_text('Vendo libros (Vendedor)', app.language))]
                     value: Role.READER
                 MDBoxLayout:
                     orientation: "vertical"
@@ -697,7 +854,7 @@ MDScreenManager:
                     opacity: 1 if role.value == Role.SELLER else 0
                     disabled: role.value != Role.SELLER
                     FieldLabel:
-                        text: "Tu comuna (para que los lectores vean qué tan cerca estás)"
+                        text: app.ui_text('Tu comuna (para que los lectores vean qué tan cerca estás)', app.language)
                     MDTextField:
                         id: location
                         mode: "outlined"
@@ -705,18 +862,16 @@ MDScreenManager:
                         MDTextFieldLeadingIcon:
                             icon: "map-marker-outline"
                         MDTextFieldHintText:
-                            text: "Ej: Concepción, Santiago…"
+                            text: app.ui_text('Ej: Concepción, Santiago…', app.language)
                     ListBox:
                         id: suggestions_box
                 Muted:
-                    text: "Las cuentas de administrador no se pueden crear desde aquí."
+                    text: app.ui_text('Las cuentas de administrador no se pueden crear desde aquí.', app.language)
                     role: "small"
                 PrimaryButton:
                     on_release: root.do_register()
                     MDButtonText:
-                        text: "Crear cuenta"
-
-
+                        text: app.ui_text('Crear cuenta', app.language)
 # ========================================================================
 #  LECTOR
 # ========================================================================
@@ -725,119 +880,70 @@ MDScreenManager:
     md_bg_color: app.theme_cls.backgroundColor
     MDBoxLayout:
         orientation: "vertical"
-        MDTopAppBar:
-            type: "small"
-            MDTopAppBarTitle:
-                markup: True
-                text: "BookWho[color=" + hexstr(app.theme_cls.primaryColor) + "]?[/color]"
-            MDTopAppBarTrailingButtonContainer:
-                MDActionTopAppBarButton:
-                    icon: "format-list-bulleted"
-                    on_release: app.go("reader_requests")
-                MDActionTopAppBarButton:
-                    icon: "logout"
-                    on_release: app.logout()
+        HomeHeader:
+            role_text: app.ui_text('Lector', app.language)
         MDScrollView:
-            MDBoxLayout:
-                orientation: "vertical"
-                adaptive_height: True
-                padding: dp(20), dp(28), dp(20), dp(32)
+            Page:
+                padding: dp(24), dp(16), dp(24), dp(24)
+                spacing: dp(16)
+                Muted:
+                    text: app.ui_text('Hola, ', app.language) + app.user_name
+                    role: "small"
                 MDLabel:
-                    text: "Hola, " + app.user_name
-                    font_style: "Body"
-                    role: "medium"
-                    adaptive_height: True
-                    theme_text_color: "Custom"
-                    text_color: hex(MUTED)
-                Gap:
-                    height: dp(6)
-                MDLabel:
-                    text: "¿Qué libro estás buscando?"
+                    text: app.ui_text('Tu próximo libro\nempieza aquí.', app.language)
                     font_style: "Headline"
                     role: "medium"
+                    bold: True
                     adaptive_height: True
-                    theme_text_color: "Custom"
-                    text_color: hex(INK)
-                Gap:
-                    height: dp(8)
-                MDLabel:
-                    text: "Publica tu búsqueda y los vendedores te enviarán ofertas."
-                    font_style: "Body"
-                    role: "medium"
-                    adaptive_height: True
-                    theme_text_color: "Custom"
-                    text_color: hex(MUTED)
-                Gap:
-                    height: dp(20)
+                Muted:
+                    text: app.ui_text('Busca un libro y recibe ofertas de vendedores que lo tienen.', app.language)
                 SegmentedRow:
                     id: mode
-                    options: [("titulo", "Título"), ("autor", "Autor"), ("isbn", "ISBN")]
+                    options: [('titulo', app.ui_text('Título', app.language)), ('autor', app.ui_text('Autor', app.language)), ('isbn', 'ISBN')]
                     value: "titulo"
-                Gap:
-                    height: dp(12)
-                MDBoxLayout:
-                    adaptive_height: True
-                    spacing: dp(8)
-                    MDTextField:
-                        id: query
-                        mode: "outlined"
-                        on_text_validate: root.search()
-                        MDTextFieldLeadingIcon:
-                            icon: "magnify"
-                        MDTextFieldHintText:
-                            text: {"titulo": "Título del libro", "autor": "Nombre del autor", "isbn": "ISBN"}.get(mode.value, "")
-                    MDButton:
-                        style: "filled"
-                        theme_height: "Custom"
-                        height: query.height
-                        radius: [dp(6)] * 4
-                        pos_hint: {"center_y": .5}
-                        on_release: root.search()
-                        MDButtonText:
-                            text: "Buscar"
-                Gap:
-                    height: dp(28)
+                MDTextField:
+                    id: query
+                    mode: "outlined"
+                    on_text_validate: root.search()
+                    MDTextFieldLeadingIcon:
+                        icon: "magnify"
+                    MDTextFieldHintText:
+                        text: {'titulo': app.ui_text('¿Qué libro estás buscando?', app.language), 'autor': app.ui_text('¿Quién lo escribió?', app.language), 'isbn': app.ui_text('ISBN del libro', app.language)}.get(mode.value, '')
+                PrimaryButton:
+                    on_release: root.search()
+                    MDButtonText:
+                        text: app.ui_text('Buscar libro', app.language)
                 MDGridLayout:
                     cols: 2
                     adaptive_height: True
-                    canvas.before:
-                        Color:
-                            rgba: hex(RULE)
-                        Line:
-                            points: [self.x, self.top, self.right, self.top]
-                        Line:
-                            points: [self.x, self.y, self.right, self.y]
-                        Line:
-                            points: [self.center_x, self.y, self.center_x, self.top]
                     StatLink:
                         id: stat_active
-                        label: "Solicitudes activas"
-                        padding: 0, dp(16), dp(16), dp(16)
+                        label: app.ui_text('Solicitudes activas', app.language)
+                        padding: 0, dp(8), 0, dp(8)
                         on_release: app.go("reader_requests")
                     StatLink:
                         id: stat_offers
-                        label: "Ofertas por revisar"
-                        padding: dp(16), dp(16), 0, dp(16)
+                        label: app.ui_text('Ofertas por revisar', app.language)
+                        padding: 0, dp(8), 0, dp(8)
                         on_release: app.go("reader_requests")
-                Gap:
-                    height: dp(20)
+                Rule:
                 MDBoxLayout:
                     adaptive_height: True
                     MDLabel:
-                        text: "Solicitudes recientes"
+                        text: app.ui_text('Tus solicitudes', app.language)
                         font_style: "Title"
-                        role: "large"
+                        role: "medium"
+                        bold: True
                         adaptive_height: True
                         pos_hint: {"center_y": .5}
                     MDButton:
                         style: "text"
-                        pos_hint: {"center_y": .5}
                         on_release: app.go("reader_requests")
                         MDButtonText:
-                            text: "Ver todas"
+                            text: app.ui_text('Ver todas', app.language)
                 ListBox:
                     id: recent_list
-
+        HomeNav:
 
 <BookSearchScreen>:
     name: "book_search"
@@ -845,7 +951,7 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Buscar libro"
+            title: app.ui_text('Buscar libro', app.language)
         Page:
             padding: dp(16), dp(12), dp(16), dp(4)
             MDTextField:
@@ -855,16 +961,16 @@ MDScreenManager:
                 MDTextFieldLeadingIcon:
                     icon: "magnify"
                 MDTextFieldHintText:
-                    text: "Título, autor o ISBN"
+                    text: app.ui_text('Título, autor o ISBN', app.language)
             SegmentedRow:
                 id: mode
-                options: [("titulo", "Título"), ("autor", "Autor"), ("isbn", "ISBN")]
+                options: [('titulo', app.ui_text('Título', app.language)), ('autor', app.ui_text('Autor', app.language)), ('isbn', 'ISBN')]
                 value: "titulo"
             PrimaryButton:
                 disabled: root.searching
                 on_release: root.search()
                 MDButtonText:
-                    text: "Buscar"
+                    text: app.ui_text('Buscar', app.language)
             MDBoxLayout:
                 adaptive_height: True
                 spacing: dp(8)
@@ -890,7 +996,7 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Crear solicitud"
+            title: app.ui_text('Crear solicitud', app.language)
         MDScrollView:
             Page:
                 BookHeader:
@@ -905,7 +1011,7 @@ MDScreenManager:
                         spacing: dp(4)
                         pos_hint: {"top": 1}
                         Muted:
-                            text: "Libro seleccionado"
+                            text: app.ui_text('Libro seleccionado', app.language)
                             font_style: "Label"
                         Heading:
                             id: book_title
@@ -913,7 +1019,7 @@ MDScreenManager:
                             id: book_meta
                             role: "small"
                 FieldLabel:
-                    text: "Precio máximo (opcional)"
+                    text: app.ui_text('Precio máximo (opcional)', app.language)
                 MDTextField:
                     id: max_price
                     mode: "outlined"
@@ -921,20 +1027,20 @@ MDScreenManager:
                     MDTextFieldLeadingIcon:
                         icon: "currency-usd"
                     MDTextFieldHintText:
-                        text: "Ej: 15000"
+                        text: app.ui_text('Ej: 15000', app.language)
                     MDTextFieldHelperText:
-                        text: "Déjalo vacío si no tienes un máximo"
+                        text: app.ui_text('Déjalo vacío si no tienes un máximo', app.language)
                         mode: "persistent"
                 Gap:
                     height: dp(4)
                 FieldLabel:
-                    text: "¿En qué estado lo aceptas?"
+                    text: app.ui_text('¿En qué estado lo aceptas?', app.language)
                 SegmentedRow:
                     id: condition
-                    options: [(Condition.ANY, "Cualquiera"), (Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
+                    options: [(Condition.ANY, app.ui_text('Cualquiera', app.language)), (Condition.NEW, app.ui_text('Nuevo', app.language)), (Condition.USED, app.ui_text('Usado', app.language))]
                     value: Condition.ANY
                 FieldLabel:
-                    text: "Ubicación (Ciudad o Comuna)"
+                    text: app.ui_text('¿Dónde buscas el libro?', app.language)
                 MDTextField:
                     id: location
                     mode: "outlined"
@@ -942,9 +1048,9 @@ MDScreenManager:
                     MDTextFieldLeadingIcon:
                         icon: "map-marker-outline"
                     MDTextFieldHintText:
-                        text: "Ej: Concepción, Santiago…"
+                        text: app.ui_text('Ej: Concepción, Santiago…', app.language)
                     MDTextFieldHelperText:
-                        text: "Escribe para buscar tu comuna o ciudad"
+                        text: app.ui_text('Escribe para buscar tu comuna o ciudad', app.language)
                         mode: "persistent"
                 Gap:
                     height: dp(4)
@@ -955,7 +1061,7 @@ MDScreenManager:
                     spacing: dp(6)
                     padding: 0, dp(4), 0, 0
                     Muted:
-                        text: "Rápido:"
+                        text: app.ui_text('Rápido:', app.language)
                         adaptive_width: True
                         font_style: "Label"
                         role: "small"
@@ -966,34 +1072,34 @@ MDScreenManager:
                         size_hint_y: None
                         on_release: root.select_location("Concepción (Biobío)")
                         MDButtonText:
-                            text: "Concepción"
+                            text: 'Concepción'
                     WideButton:
                         style: "outlined"
                         size_hint_y: None
                         on_release: root.select_location("Santiago (Metropolitana)")
                         MDButtonText:
-                            text: "Santiago"
+                            text: 'Santiago'
                     WideButton:
                         style: "outlined"
                         size_hint_y: None
                         on_release: root.select_location("Valparaíso (Valparaíso)")
                         MDButtonText:
-                            text: "Valparaíso"
+                            text: 'Valparaíso'
                 FieldLabel:
-                    text: "Preferencia de entrega"
+                    text: app.ui_text('Preferencia de entrega', app.language)
                 SegmentedRow:
                     id: delivery
-                    options: [(Delivery.IN_PERSON, "Presencial"), (Delivery.SHIPPING, "Envío"), (Delivery.ANY, "Cualquiera")]
+                    options: [(Delivery.IN_PERSON, app.ui_text('Presencial', app.language)), (Delivery.SHIPPING, app.ui_text('Envío', app.language)), (Delivery.ANY, app.ui_text('Cualquiera', app.language))]
                     value: Delivery.ANY
                 FieldLabel:
-                    text: "Notas (opcional)"
+                    text: app.ui_text('¿Algo más que debamos saber? (opcional)', app.language)
                 MDTextField:
                     id: notes
                     mode: "outlined"
                     multiline: True
                     max_height: dp(140)
                     MDTextFieldHintText:
-                        text: "Edición, idioma, detalles…"
+                        text: app.ui_text('Por ejemplo, una edición o un idioma en particular', app.language)
                 Widget:
                     size_hint_y: None
                     height: dp(4)
@@ -1002,7 +1108,7 @@ MDScreenManager:
                     MDButtonIcon:
                         icon: "send"
                     MDButtonText:
-                        text: "Publicar solicitud"
+                        text: app.ui_text('Publicar solicitud', app.language)
 
 
 <RequestPublishedScreen>:
@@ -1019,7 +1125,7 @@ MDScreenManager:
                 icon: "close"
                 pos_hint: {"center_y": .5}
                 theme_icon_color: "Custom"
-                icon_color: hex(INK)
+                icon_color: hex(app.ui_palette["ink"])
                 on_release: app.go_home()
         MDScrollView:
             MDBoxLayout:
@@ -1045,25 +1151,25 @@ MDScreenManager:
                     bold: True
                     adaptive_height: True
                     theme_text_color: "Custom"
-                    text_color: hex(FAINT)
+                    text_color: hex(app.ui_palette["muted"])
                 Gap:
                     height: dp(8)
                 MDLabel:
-                    text: "Tu solicitud está publicada"
+                    text: app.ui_text('Tu solicitud está publicada', app.language)
                     font_style: "Headline"
                     role: "large"
                     adaptive_height: True
                     theme_text_color: "Custom"
-                    text_color: hex(INK)
+                    text_color: hex(app.ui_palette["ink"])
                 Gap:
                     height: dp(8)
                 MDLabel:
-                    text: "Los vendedores ya pueden verla y enviarte ofertas."
+                    text: app.ui_text('Los vendedores ya pueden verla y enviarte ofertas.', app.language)
                     font_style: "Body"
                     role: "large"
                     adaptive_height: True
                     theme_text_color: "Custom"
-                    text_color: hex(MUTED)
+                    text_color: hex(app.ui_palette["muted"])
                 Gap:
                     height: dp(24)
                 Rule:
@@ -1072,24 +1178,24 @@ MDScreenManager:
                 Gap:
                     height: dp(28)
                 MDLabel:
-                    text: "QUÉ SIGUE"
+                    text: app.ui_text('Qué pasa ahora', app.language)
                     font_style: "Label"
                     role: "large"
                     bold: True
                     adaptive_height: True
                     theme_text_color: "Custom"
-                    text_color: hex(INK)
+                    text_color: hex(app.ui_palette["ink"])
                 Gap:
                     height: dp(8)
                 NextStep:
                     number: "1"
-                    text: "Los vendedores que tengan el libro te envían una oferta."
+                    text: app.ui_text('Los vendedores que tengan el libro te envían una oferta.', app.language)
                 NextStep:
                     number: "2"
-                    text: "Comparas precio, estado y ubicación, y aceptas una."
+                    text: app.ui_text('Comparas precio, estado y ubicación, y aceptas una.', app.language)
                 NextStep:
                     number: "3"
-                    text: "Ves los datos de contacto del vendedor para coordinar."
+                    text: app.ui_text('Ves los datos de contacto del vendedor para coordinar.', app.language)
         MDBoxLayout:
             orientation: "vertical"
             adaptive_height: True
@@ -1097,16 +1203,16 @@ MDScreenManager:
             spacing: dp(10)
             WideButton:
                 style: "filled"
-                radius: [dp(6)] * 4
+                radius: [dp(12)] * 4
                 on_release: app.open_reader_request(app.current_request_id)
                 MDButtonText:
-                    text: "Ver solicitud"
+                    text: app.ui_text('Ver solicitud', app.language)
             WideButton:
                 style: "outlined"
-                radius: [dp(6)] * 4
+                radius: [dp(12)] * 4
                 on_release: app.go_home()
                 MDButtonText:
-                    text: "Volver al inicio"
+                    text: app.ui_text('Volver al inicio', app.language)
 
 
 <ReaderRequestsScreen>:
@@ -1115,12 +1221,12 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Mis solicitudes"
+            title: app.ui_text('Mis solicitudes', app.language)
         Page:
             padding: dp(16), dp(12), dp(16), dp(4)
             SegmentedRow:
                 id: filter
-                options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
+                options: [('todas', app.ui_text('Todas', app.language)), ('activas', app.ui_text('Activas', app.language)), ('resueltas', app.ui_text('Resueltas', app.language)), ('canceladas', app.ui_text('Canceladas', app.language))]
                 value: "todas"
                 on_value: root.refresh()
         MDScrollView:
@@ -1136,7 +1242,7 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Detalle de solicitud"
+            title: app.ui_text('Detalle de solicitud', app.language)
         MDScrollView:
             Page:
                 BookHeader:
@@ -1174,7 +1280,7 @@ MDScreenManager:
                     disabled: not root.can_cancel
                     on_release: root.cancel()
                     MDButtonText:
-                        text: "Cancelar solicitud"
+                        text: app.ui_text('Cancelar solicitud', app.language)
                         theme_text_color: "Custom"
                         text_color: app.theme_cls.errorColor
 
@@ -1185,33 +1291,58 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Detalle de oferta"
+            title: app.ui_text('Detalle de oferta', app.language)
         MDScrollView:
             Page:
-                Panel:
-                    Muted:
-                        id: book_title
-                        font_style: "Title"
-                        role: "small"
-                        text_color: hex(MUTED)
-                    MDLabel:
-                        id: price
-                        font_style: "Display"
-                        role: "small"
-                        bold: True
+                HomeHeader:
+                    role_text: app.ui_text('Lector', app.language) if app.user and app.user.role == Role.READER else app.ui_text('Vendedor', app.language)
+                    padding: 0, dp(8)
+                StatusChip:
+                    id: status
+                    kind: "offer"
+                MDBoxLayout:
+                    size_hint_y: None
+                    height: max(dp(110), offer_book.minimum_height)
+                    spacing: dp(18)
+                    BookCover:
+                        id: cover
+                        size: dp(76), dp(110)
+                        pos_hint: {"top": 1}
+                    MDBoxLayout:
+                        id: offer_book
+                        orientation: "vertical"
                         adaptive_height: True
-                        theme_text_color: "Custom"
-                        text_color: hex(INK)
-                    StatusChip:
-                        id: status
-                        kind: "offer"
+                        spacing: dp(8)
+                        MDLabel:
+                            id: book_title
+                            font_style: "Title"
+                            role: "large"
+                            bold: True
+                            adaptive_height: True
+                        Muted:
+                            id: book_author
+                            role: "small"
+                        Muted:
+                            id: seller_name
+                            role: "small"
+                Rule:
+                MDLabel:
+                    id: price
+                    font_style: "Display"
+                    role: "small"
+                    bold: True
+                    adaptive_height: True
+                    text_color: app.theme_cls.primaryColor
+                Muted:
+                    text: app.ui_text('Precio ofrecido · pesos chilenos', app.language)
+                    role: "small"
                 Panel:
                     spacing: dp(2)
                     ListBox:
                         id: info
                         spacing: dp(2)
                 Panel:
-                    md_bg_color: hex(TRACK)
+                    md_bg_color: hex(app.ui_palette["soft"])
                     opacity: 1 if root.can_accept else 0
                     height: self.minimum_height if root.can_accept else 0
                     MDBoxLayout:
@@ -1221,12 +1352,12 @@ MDScreenManager:
                             icon: "shield-lock-outline"
                             pos_hint: {"center_y": .5}
                         MDLabel:
-                            text: "Los datos de contacto del vendedor se mostrarán cuando aceptes la oferta para coordinar."
+                            text: app.ui_text('El siguiente paso: al aceptar verás el contacto del vendedor. La compra y la entrega se acuerdan directamente entre ustedes.', app.language)
                             font_style: "Body"
                             role: "medium"
                             adaptive_height: True
                 Panel:
-                    md_bg_color: hex(TRACK)
+                    md_bg_color: hex(app.ui_palette["soft"])
                     opacity: 1 if root.in_deal else 0
                     height: self.minimum_height if root.in_deal else 0
                     MDBoxLayout:
@@ -1236,12 +1367,12 @@ MDScreenManager:
                             icon: "handshake-outline"
                             pos_hint: {"center_y": .5}
                         MDLabel:
-                            text: "Oferta en coordinación. Comunícate con el vendedor mediante sus datos de contacto."
+                            text: app.ui_text('Oferta en coordinación. Comunícate con el vendedor mediante sus datos de contacto.', app.language)
                             font_style: "Body"
                             role: "medium"
                             adaptive_height: True
                 Panel:
-                    md_bg_color: hex(TRACK)
+                    md_bg_color: hex(app.ui_palette["soft"])
                     opacity: 1 if root.on_hold else 0
                     height: self.minimum_height if root.on_hold else 0
                     MDBoxLayout:
@@ -1251,48 +1382,54 @@ MDScreenManager:
                             icon: "clock-outline"
                             pos_hint: {"center_y": .5}
                         MDLabel:
-                            text: "Esta oferta está en espera mientras el lector coordina con otra oferta. Si no se concreta, se reactivará."
+                            text: app.ui_text('Esta oferta está en espera mientras el lector coordina con otra oferta. Si no se concreta, se reactivará.', app.language)
                             font_style: "Body"
                             role: "medium"
                             adaptive_height: True
-                PrimaryButton:
-                    opacity: 1 if root.can_accept else 0
-                    disabled: not root.can_accept
-                    height: dp(52) if root.can_accept else 0
-                    on_release: root.accept()
-                    MDButtonIcon:
-                        icon: "handshake-outline"
-                    MDButtonText:
-                        text: "Aceptar para coordinar"
-                PrimaryButton:
-                    opacity: 1 if (root.in_deal or root.accepted) else 0
-                    disabled: not (root.in_deal or root.accepted)
-                    height: dp(52) if (root.in_deal or root.accepted) else 0
-                    on_release: app.go("offer_accepted")
-                    MDButtonIcon:
-                        icon: "card-account-phone-outline"
-                    MDButtonText:
-                        text: "Ver datos de contacto"
-                PrimaryButton:
-                    opacity: 1 if (root.in_deal and root.is_reader) else 0
-                    disabled: not (root.in_deal and root.is_reader)
-                    height: dp(52) if (root.in_deal and root.is_reader) else 0
-                    on_release: root.confirm_deal()
-                    MDButtonIcon:
-                        icon: "check-circle-outline"
-                    MDButtonText:
-                        text: "Confirmar compra concretada"
-                WideButton:
-                    style: "outlined"
-                    opacity: 1 if (root.in_deal and root.is_reader) else 0
-                    disabled: not (root.in_deal and root.is_reader)
-                    height: dp(48) if (root.in_deal and root.is_reader) else 0
-                    on_release: root.cancel_deal()
-                    MDButtonText:
-                        text: "Desistir del trato"
-                        theme_text_color: "Custom"
-                        text_color: app.theme_cls.errorColor
-
+        MDBoxLayout:
+            orientation: "vertical"
+            size_hint_y: None
+            height: self.minimum_height if (root.can_accept or root.in_deal or root.accepted) else 0
+            opacity: 1 if (root.can_accept or root.in_deal or root.accepted) else 0
+            padding: dp(24), dp(8), dp(24), dp(16)
+            md_bg_color: app.theme_cls.backgroundColor
+            PrimaryButton:
+                opacity: 1 if root.can_accept else 0
+                disabled: not root.can_accept
+                height: dp(52) if root.can_accept else 0
+                on_release: root.accept()
+                MDButtonIcon:
+                    icon: "handshake-outline"
+                MDButtonText:
+                    text: app.ui_text('Aceptar para coordinar', app.language)
+            PrimaryButton:
+                opacity: 1 if (root.in_deal or root.accepted) else 0
+                disabled: not (root.in_deal or root.accepted)
+                height: dp(52) if (root.in_deal or root.accepted) else 0
+                on_release: app.go("offer_accepted")
+                MDButtonIcon:
+                    icon: "card-account-phone-outline"
+                MDButtonText:
+                    text: app.ui_text('Ver datos de contacto', app.language)
+            PrimaryButton:
+                opacity: 1 if (root.in_deal and root.is_reader) else 0
+                disabled: not (root.in_deal and root.is_reader)
+                height: dp(52) if (root.in_deal and root.is_reader) else 0
+                on_release: root.confirm_deal()
+                MDButtonIcon:
+                    icon: "check-circle-outline"
+                MDButtonText:
+                    text: app.ui_text('Confirmar compra concretada', app.language)
+            WideButton:
+                style: "outlined"
+                opacity: 1 if (root.in_deal and root.is_reader) else 0
+                disabled: not (root.in_deal and root.is_reader)
+                height: dp(48) if (root.in_deal and root.is_reader) else 0
+                on_release: root.cancel_deal()
+                MDButtonText:
+                    text: app.ui_text('Desistir del trato', app.language)
+                    theme_text_color: "Custom"
+                    text_color: app.theme_cls.errorColor
 
 <OfferAcceptedScreen>:
     name: "offer_accepted"
@@ -1300,7 +1437,7 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Oferta aceptada"
+            title: app.ui_text('Oferta aceptada', app.language)
         MDScrollView:
             Page:
                 padding: dp(16), dp(24), dp(16), dp(32)
@@ -1312,7 +1449,7 @@ MDScreenManager:
                     theme_text_color: "Custom"
                     text_color: app.theme_cls.primaryColor
                 MDLabel:
-                    text: "¡Oferta aceptada!"
+                    text: app.ui_text('Ya pueden ponerse de acuerdo', app.language)
                     halign: "center"
                     font_style: "Headline"
                     role: "medium"
@@ -1323,13 +1460,13 @@ MDScreenManager:
                     halign: "center"
                 Panel:
                     Heading:
-                        text: "Contacto del vendedor"
+                        text: app.ui_text('Contacto del vendedor', app.language)
                         role: "small"
                     ListBox:
                         id: contact
                         spacing: dp(2)
                 Panel:
-                    md_bg_color: hex(TRACK)
+                    md_bg_color: hex(app.ui_palette["soft"])
                     MDBoxLayout:
                         adaptive_height: True
                         spacing: dp(12)
@@ -1337,18 +1474,18 @@ MDScreenManager:
                             icon: "information-outline"
                             pos_hint: {"top": 1}
                             theme_text_color: "Custom"
-                            text_color: hex(INK)
+                            text_color: hex(app.ui_palette["ink"])
                         MDLabel:
-                            text: "La compra y la entrega se coordinan directamente entre tú y el vendedor. La app no procesa pagos ni envíos."
+                            text: app.ui_text('La compra y la entrega se coordinan directamente entre tú y el vendedor. La app no procesa pagos ni envíos.', app.language)
                             font_style: "Body"
                             role: "medium"
                             adaptive_height: True
                             theme_text_color: "Custom"
-                            text_color: hex(INK)
+                            text_color: hex(app.ui_palette["ink"])
                 PrimaryButton:
                     on_release: app.go_home()
                     MDButtonText:
-                        text: "Volver al inicio"
+                        text: app.ui_text('Volver al inicio', app.language)
 
 
 # ========================================================================
@@ -1359,22 +1496,23 @@ MDScreenManager:
     md_bg_color: app.theme_cls.backgroundColor
     MDBoxLayout:
         orientation: "vertical"
-        MDTopAppBar:
-            type: "small"
-            MDTopAppBarTitle:
-                text: "Solicitudes disponibles"
-            MDTopAppBarTrailingButtonContainer:
-                MDActionTopAppBarButton:
-                    icon: "tag-multiple-outline"
-                    on_release: app.go("seller_offers")
-                MDActionTopAppBarButton:
-                    icon: "logout"
-                    on_release: app.logout()
-        Page:
-            padding: dp(16), dp(12), dp(16), dp(4)
-            Muted:
-                text: "Hola, " + app.user_name + ". No publicas libros: elige una solicitud abierta y ofrécele el libro que buscan."
-            Panel:
+        HomeHeader:
+            role_text: app.ui_text('Vendedor', app.language)
+        MDScrollView:
+            Page:
+                spacing: dp(16)
+                Muted:
+                    text: app.ui_text('SOLICITUDES DISPONIBLES', app.language)
+                    role: "small"
+                    text_color: app.theme_cls.primaryColor
+                MDLabel:
+                    text: app.ui_text('Alguien busca ese\nlibro que tienes.', app.language)
+                    font_style: "Headline"
+                    role: "medium"
+                    bold: True
+                    adaptive_height: True
+                Muted:
+                    text: app.ui_text('Encuentra lectores y envía tu oferta.', app.language)
                 MDTextField:
                     id: text
                     mode: "outlined"
@@ -1382,48 +1520,48 @@ MDScreenManager:
                     MDTextFieldLeadingIcon:
                         icon: "magnify"
                     MDTextFieldHintText:
-                        text: "Buscar por título, autor o ISBN"
+                        text: app.ui_text('Título, autor o ISBN', app.language)
                 MDBoxLayout:
                     adaptive_height: True
-                    spacing: dp(10)
+                    spacing: dp(12)
                     MDTextField:
                         id: location
                         mode: "outlined"
                         on_text: root.refresh()
-                        MDTextFieldLeadingIcon:
-                            icon: "map-marker-outline"
                         MDTextFieldHintText:
-                            text: "Ubicación"
+                            text: app.ui_text('Comuna o ciudad', app.language)
                     MDTextField:
                         id: budget
                         mode: "outlined"
                         input_filter: "int"
                         on_text: root.refresh()
-                        MDTextFieldLeadingIcon:
-                            icon: "cash"
                         MDTextFieldHintText:
-                            text: "Presup. mín."
+                            text: app.ui_text('Presupuesto mín.', app.language)
                 MDBoxLayout:
                     adaptive_height: True
                     spacing: dp(8)
                     SegmentedRow:
                         id: condition
-                        options: [("todas", "Todas"), (Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
+                        options: [('todas', app.ui_text('Todas', app.language)), (Condition.NEW, app.ui_text('Nuevo', app.language)), (Condition.USED, app.ui_text('Usado', app.language))]
                         value: "todas"
                         on_value: root.refresh()
                     MDIconButton:
                         icon: "filter-remove-outline"
-                        pos_hint: {"center_y": .5}
                         on_release: root.clear_filters()
-            Muted:
-                id: count
-                role: "small"
-        MDScrollView:
-            Page:
-                padding: dp(16), dp(4), dp(16), dp(32)
+                        pos_hint: {"center_y": .5}
+                Rule:
+                Heading:
+                    text: app.ui_text('Búsquedas recientes', app.language)
+                Muted:
+                    id: count
+                    role: "small"
                 ListBox:
                     id: list
-
+                Muted:
+                    text: app.ui_text('¿Tienes un libro que alguien busca? Abre su solicitud y cuéntale qué ofreces.', app.language)
+                    role: "small"
+        HomeNav:
+            seller: True
 
 <SellerRequestDetailScreen>:
     name: "seller_request_detail"
@@ -1431,7 +1569,7 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Solicitud"
+            title: app.ui_text('Solicitud', app.language)
         MDScrollView:
             Page:
                 BookHeader:
@@ -1459,7 +1597,7 @@ MDScreenManager:
                         id: info
                         spacing: dp(2)
                 Panel:
-                    md_bg_color: hex(TRACK)
+                    md_bg_color: hex(app.ui_palette["soft"])
                     opacity: 1 if root.offer_note else 0
                     height: self.minimum_height if root.offer_note else 0
                     MDLabel:
@@ -1475,7 +1613,7 @@ MDScreenManager:
                     MDButtonIcon:
                         icon: "hand-extended-outline"
                     MDButtonText:
-                        text: "Puedo ofrecerlo"
+                        text: app.ui_text('Puedo ofrecerlo', app.language)
 
 
 <CreateOfferScreen>:
@@ -1484,7 +1622,7 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Crear oferta"
+            title: app.ui_text('Crear oferta', app.language)
         MDScrollView:
             Page:
                 Panel:
@@ -1494,7 +1632,7 @@ MDScreenManager:
                         id: book_meta
                         role: "small"
                 FieldLabel:
-                    text: "Precio"
+                    text: app.ui_text('Precio', app.language)
                 MDTextField:
                     id: price
                     mode: "outlined"
@@ -1502,30 +1640,30 @@ MDScreenManager:
                     MDTextFieldLeadingIcon:
                         icon: "currency-usd"
                     MDTextFieldHintText:
-                        text: "Ej: 12990"
+                        text: app.ui_text('Ej: 12990', app.language)
                 FieldLabel:
-                    text: "Estado del libro"
+                    text: app.ui_text('Estado del libro', app.language)
                 SegmentedRow:
                     id: condition
-                    options: [(Condition.NEW, "Nuevo"), (Condition.USED, "Usado")]
+                    options: [(Condition.NEW, app.ui_text('Nuevo', app.language)), (Condition.USED, app.ui_text('Usado', app.language))]
                     value: Condition.USED
                 MDTextField:
                     id: description
                     mode: "outlined"
                     MDTextFieldHintText:
-                        text: "Condición (ej: sin subrayar)"
+                        text: app.ui_text('Condición (ej: sin subrayar)', app.language)
                 MDTextField:
                     id: notes
                     mode: "outlined"
                     multiline: True
                     max_height: dp(120)
                     MDTextFieldHintText:
-                        text: "Información adicional (opcional)"
+                        text: app.ui_text('Información adicional (opcional)', app.language)
                 MDDivider:
                 FieldLabel:
-                    text: "Datos de contacto"
+                    text: app.ui_text('Datos de contacto', app.language)
                 Muted:
-                    text: "Solo los verá el lector si acepta tu oferta. Completa al menos uno."
+                    text: app.ui_text('Elige cómo quieres que te contacten. El lector verá estos datos al aceptar tu oferta.', app.language)
                     role: "small"
                 MDTextField:
                     id: phone
@@ -1533,21 +1671,21 @@ MDScreenManager:
                     MDTextFieldLeadingIcon:
                         icon: "phone-outline"
                     MDTextFieldHintText:
-                        text: "Teléfono"
+                        text: app.ui_text('Teléfono', app.language)
                 MDTextField:
                     id: email
                     mode: "outlined"
                     MDTextFieldLeadingIcon:
                         icon: "email-outline"
                     MDTextFieldHintText:
-                        text: "Correo"
+                        text: app.ui_text('Correo', app.language)
                 MDTextField:
                     id: address
                     mode: "outlined"
                     MDTextFieldLeadingIcon:
                         icon: "map-marker-outline"
                     MDTextFieldHintText:
-                        text: "Dirección o punto de entrega"
+                        text: app.ui_text('Dirección o punto de entrega', app.language)
                 Widget:
                     size_hint_y: None
                     height: dp(4)
@@ -1556,7 +1694,7 @@ MDScreenManager:
                     MDButtonIcon:
                         icon: "send"
                     MDButtonText:
-                        text: "Publicar oferta"
+                        text: app.ui_text('Publicar oferta', app.language)
 
 
 <SellerOffersScreen>:
@@ -1565,12 +1703,12 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Mis ofertas"
+            title: app.ui_text('Mis ofertas', app.language)
         Page:
             padding: dp(16), dp(12), dp(16), dp(4)
             SegmentedRow:
                 id: filter
-                options: [("todas", "Todas"), ("activas", "Activas"), ("aceptadas", "Aceptadas"), ("finalizadas", "Finalizadas")]
+                options: [('todas', app.ui_text('Todas', app.language)), ('activas', app.ui_text('Activas', app.language)), ('aceptadas', app.ui_text('Aceptadas', app.language)), ('finalizadas', app.ui_text('Finalizadas', app.language))]
                 value: "todas"
                 on_value: root.refresh()
         MDScrollView:
@@ -1591,7 +1729,7 @@ MDScreenManager:
         MDTopAppBar:
             type: "small"
             MDTopAppBarTitle:
-                text: "Administración"
+                text: app.ui_text('Administración', app.language)
             MDTopAppBarTrailingButtonContainer:
                 MDActionTopAppBarButton:
                     icon: "refresh"
@@ -1607,42 +1745,42 @@ MDScreenManager:
                     adaptive_height: True
                     StatTile:
                         id: st_usuarios
-                        label: "Usuarios"
+                        label: app.ui_text('Usuarios', app.language)
                         icon: "account-group-outline"
                     StatTile:
                         id: st_lectores
-                        label: "Lectores"
+                        label: app.ui_text('Lectores', app.language)
                         icon: "account-search-outline"
                     StatTile:
                         id: st_vendedores
-                        label: "Vendedores"
+                        label: app.ui_text('Vendedores', app.language)
                         icon: "storefront-outline"
                     StatTile:
                         id: st_solicitudes
-                        label: "Solicitudes"
+                        label: app.ui_text('Solicitudes', app.language)
                         icon: "file-document-outline"
                     StatTile:
                         id: st_activas
-                        label: "Activas"
+                        label: app.ui_text('Activas', app.language)
                         icon: "flash-outline"
                     StatTile:
                         id: st_con_ofertas
-                        label: "Con ofertas"
+                        label: app.ui_text('Con ofertas', app.language)
                         icon: "tag-outline"
                     StatTile:
                         id: st_resueltas
-                        label: "Resueltas"
+                        label: app.ui_text('Resueltas', app.language)
                         icon: "check-decagram-outline"
                     StatTile:
                         id: st_canceladas
-                        label: "Canceladas"
+                        label: app.ui_text('Canceladas', app.language)
                         icon: "close-circle-outline"
                     StatTile:
                         id: st_ofertas
-                        label: "Ofertas"
+                        label: app.ui_text('Ofertas', app.language)
                         icon: "handshake-outline"
                 Heading:
-                    text: "Gestión"
+                    text: app.ui_text('Gestión', app.language)
                     role: "small"
                 Panel:
                     spacing: dp(2)
@@ -1651,33 +1789,33 @@ MDScreenManager:
                         MDListItemLeadingIcon:
                             icon: "clipboard-text-outline"
                         MDListItemHeadlineText:
-                            text: "Solicitudes"
+                            text: app.ui_text('Solicitudes', app.language)
                         MDListItemSupportingText:
-                            text: "Ver, filtrar y moderar solicitudes"
+                            text: app.ui_text('Ver, filtrar y moderar solicitudes', app.language)
                     MDListItem:
                         on_release: app.go("admin_users")
                         MDListItemLeadingIcon:
                             icon: "account-multiple-outline"
                         MDListItemHeadlineText:
-                            text: "Usuarios"
+                            text: app.ui_text('Usuarios', app.language)
                         MDListItemSupportingText:
-                            text: "Consultar y suspender usuarios"
+                            text: app.ui_text('Consultar y suspender usuarios', app.language)
                     MDListItem:
                         on_release: app.go("admin_offers")
                         MDListItemLeadingIcon:
                             icon: "tag-multiple-outline"
                         MDListItemHeadlineText:
-                            text: "Ofertas"
+                            text: app.ui_text('Ofertas', app.language)
                         MDListItemSupportingText:
-                            text: "Historial de ofertas de la plataforma"
+                            text: app.ui_text('Historial de ofertas de la plataforma', app.language)
                     MDListItem:
                         on_release: app.go("admin_activity")
                         MDListItemLeadingIcon:
                             icon: "history"
                         MDListItemHeadlineText:
-                            text: "Auditoría / Actividad"
+                            text: app.ui_text('Auditoría / Actividad', app.language)
                         MDListItemSupportingText:
-                            text: "Buscar y exportar logs de actividad"
+                            text: app.ui_text('Buscar y exportar logs de actividad', app.language)
 
 
 <AdminRequestsScreen>:
@@ -1686,12 +1824,12 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Solicitudes"
+            title: app.ui_text('Solicitudes', app.language)
         Page:
             padding: dp(16), dp(12), dp(16), dp(4)
             SegmentedRow:
                 id: filter
-                options: [("todas", "Todas"), ("activas", "Activas"), ("resueltas", "Resueltas"), ("canceladas", "Canceladas")]
+                options: [('todas', app.ui_text('Todas', app.language)), ('activas', app.ui_text('Activas', app.language)), ('resueltas', app.ui_text('Resueltas', app.language)), ('canceladas', app.ui_text('Canceladas', app.language))]
                 value: "todas"
                 on_value: root.refresh()
         MDScrollView:
@@ -1707,10 +1845,10 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Usuarios"
+            title: app.ui_text('Usuarios', app.language)
         MDScrollView:
             Page:
-                padding: dp(16), dp(12), dp(16), dp(32)
+                padding: dp(24), dp(16), dp(24), dp(32)
                 ListBox:
                     id: list
 
@@ -1721,10 +1859,10 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Ofertas"
+            title: app.ui_text('Ofertas', app.language)
         MDScrollView:
             Page:
-                padding: dp(16), dp(12), dp(16), dp(32)
+                padding: dp(24), dp(16), dp(24), dp(32)
                 ListBox:
                     id: list
 
@@ -1735,7 +1873,7 @@ MDScreenManager:
     MDBoxLayout:
         orientation: "vertical"
         BackBar:
-            title: "Auditoría / Actividad"
+            title: app.ui_text('Auditoría / Actividad', app.language)
         Page:
             padding: dp(16), dp(12), dp(16), dp(4)
             MDTextField:
@@ -1745,13 +1883,13 @@ MDScreenManager:
                 MDTextFieldLeadingIcon:
                     icon: "magnify"
                 MDTextFieldHintText:
-                    text: "Buscar por acción, detalle o actor"
+                    text: app.ui_text('Buscar por acción, detalle o actor', app.language)
             PrimaryButton:
                 on_release: root.export_logs()
                 MDButtonIcon:
                     icon: "download"
                 MDButtonText:
-                    text: "Exportar logs de actividad"
+                    text: app.ui_text('Exportar logs de actividad', app.language)
         MDScrollView:
             Page:
                 padding: dp(16), dp(4), dp(16), dp(32)

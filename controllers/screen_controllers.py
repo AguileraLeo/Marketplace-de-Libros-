@@ -7,7 +7,6 @@ from datetime import datetime
 from kivy.clock import Clock, mainthread
 from kivy.metrics import dp
 from kivy.properties import BooleanProperty, NumericProperty, StringProperty
-from kivy.utils import platform
 from kivymd.app import MDApp
 from kivymd.uix.button import MDButton, MDButtonText
 from kivymd.uix.screen import MDScreen
@@ -19,11 +18,11 @@ from models.store import (
     RequestStatus,
     Role,
     UserStatus,
-    format_price,
 )
 from services.books_api import search_books
 from services.locations import normalize_location_name, search_locations
 from services import notifications
+from views.localization import tr, format_price
 from views.components import STATUS_LABELS, BookResultCard, EmptyState, InfoRow, ItemCard, fmt_date
 
 
@@ -50,15 +49,11 @@ class BaseScreen(MDScreen):
 
 
 # --------------------------------------------------------------- acceso
-class LoginScreen(BaseScreen):
-    def on_kv_post(self, base_widget):
-        super().on_kv_post(base_widget)
-        # En el APK no se muestran las cuentas demo (incluida la de admin). Solo se ocultan:
-        # las cuentas siguen existiendo en los datos de demo, no es una medida de seguridad completa.
-        if platform == "android":
-            panel = self.ids.demo_panel
-            panel.parent.remove_widget(panel)
+class ServiceTermsScreen(BaseScreen):
+    """Información del prototipo; no introduce aceptación contractual."""
 
+
+class LoginScreen(BaseScreen):
     def do_login(self):
         user = self.app.safe(
             self.app.store.authenticate, self.ids.email.text, self.ids.password.text
@@ -67,21 +62,6 @@ class LoginScreen(BaseScreen):
             self.ids.password.text = ""
             self.app.login(user)
 
-    def fill_demo(self, email, password):
-        self.ids.email.text = email
-        self.ids.password.text = password
-
-    def forgot_password(self):
-        email = self.ids.email.text.strip()
-        if not email:
-            self.app.notify("Escribe tu correo en el campo de arriba.")
-            return
-        if self.app.safe(self.app.store.recover_password, email):
-            self.app.info_dialog(
-                "Recuperar contraseña",
-                f"Si existe una cuenta asociada a {email}, recibirás un enlace para "
-                "restablecer tu contraseña.\n\n(Simulado: el demo no envía correos.)",
-            )
 
 
 class RegisterScreen(BaseScreen):
@@ -120,7 +100,7 @@ class RegisterScreen(BaseScreen):
             normalize_location_name(self.ids.location.text),
         )
         if user:
-            self.app.notify(f"¡Bienvenido/a, {user.first_name}!")
+            self.app.notify(tr('¡Bienvenido/a, {v1}!', v1=user.first_name))
             self.app.login(user)
 
 
@@ -137,7 +117,7 @@ class ReaderHomeScreen(BaseScreen):
         self.fill(
             self.ids.recent_list,
             [app.request_card(r, app.open_reader_request) for r in requests[:3]],
-            "Aún no tienes solicitudes. Busca un libro para crear la primera.",
+            tr('Aún no tienes solicitudes. Busca un libro para crear la primera.'),
         )
 
     def search(self):
@@ -159,10 +139,10 @@ class BookSearchScreen(BaseScreen):
     def search(self):
         query, mode = self.ids.query.text, self.ids.mode.value
         if len(query.strip()) < 2:
-            self.app.notify("Escribe al menos 2 caracteres para buscar.")
+            self.app.notify(tr('Escribe al menos 2 caracteres para buscar.'))
             return
         self.searching = True
-        self.status_text = "Buscando…"
+        self.status_text = tr('Buscando…')
         self.ids.results.clear_widgets()
         self._search_id = getattr(self, "_search_id", 0) + 1
         threading.Thread(target=self._worker, args=(query, mode, self._search_id), daemon=True).start()
@@ -185,11 +165,11 @@ class BookSearchScreen(BaseScreen):
         origin = {
             "google_books": "Google Books",
             "open_library": "Open Library",
-        }.get(source, "catálogo de ejemplo (sin conexión)")
-        self.status_text = f"{len(results)} resultado(s) · {origin}"
+        }.get(source, tr('catálogo de ejemplo (sin conexión)'))
+        self.status_text = tr('{v0} resultado(s) · {v2}', v0=len(results), v2=origin)
         cards = []
         for book in results:
-            authors = ", ".join(book["authors"]) or "Autor desconocido"
+            authors = ", ".join(book["authors"]) or tr('Autor desconocido')
             details = " · ".join(filter(None, [book["publisher"], book["published_date"][:4]]))
             cards.append(
                 BookResultCard(
@@ -200,7 +180,7 @@ class BookSearchScreen(BaseScreen):
                     cover=book["cover_url"],
                 )
             )
-        self.fill(self.ids.results, cards, "No encontramos libros. Prueba con otro término.")
+        self.fill(self.ids.results, cards, tr('No encontramos libros. Prueba con otro término.'))
 
 
 class CreateRequestScreen(BaseScreen):
@@ -269,7 +249,7 @@ class RequestPublishedScreen(BaseScreen):
     def refresh(self):
         req = self.app.store.requests.get(self.app.current_request_id)
         if req:
-            self.ids.request_id.text = f"SOLICITUD N.º {req.id}"
+            self.ids.request_id.text = tr('SOLICITUD N.º {v1}', v1=req.id)
             self.fill(self.ids.request_row, [self.app.request_card(req, self.app.open_reader_request)])
 
 
@@ -280,7 +260,7 @@ class ReaderRequestsScreen(BaseScreen):
         self.fill(
             self.ids.list,
             [app.request_card(r, app.open_reader_request) for r in items],
-            "No hay solicitudes en esta categoría.",
+            tr('No hay solicitudes en esta categoría.'),
         )
 
 
@@ -298,41 +278,41 @@ class ReaderRequestDetailScreen(BaseScreen):
         self.ids.info.clear_widgets()
         rows = app.request_info_rows(req)
         if req.status == RequestStatus.CANCELLED:
-            who = "moderación administrativa" if req.canceled_by_role == Role.ADMIN else "el lector"
-            cancel_msg = f"Cancelada por {who}"
+            who = tr('moderación administrativa') if req.canceled_by_role == Role.ADMIN else tr('el lector')
+            cancel_msg = tr('Cancelada por {v1}', v1=who)
             if req.cancellation_reason:
-                cancel_msg += f" · Motivo: {req.cancellation_reason}"
-            rows.append(("alert-circle-outline", "Moderación / Cancelación", cancel_msg))
+                cancel_msg += tr(' · Motivo: {v1}', v1=req.cancellation_reason)
+            rows.append(("alert-circle-outline", tr('Moderación / Cancelación'), cancel_msg))
         for icon, label, value in rows:
             self.ids.info.add_widget(InfoRow(icon=icon, label=label, value=value))
         self.can_cancel = req.status in RequestStatus.OPEN
 
         offers = store.offers_for_request(app.user, req.id)
-        self.ids.offers_title.text = f"Ofertas recibidas ({len(offers)})"
+        self.ids.offers_title.text = tr('Ofertas recibidas ({v1})', v1=len(offers))
         cards = []
         for o in offers:
             seller = store.user(o.seller_id)
             cards.append(ItemCard(
-                title=f"{format_price(o.price)}  ·  {Condition.LABELS[o.book_condition]}",
+                title=f"{format_price(o.price)}  ·  {tr(Condition.LABELS[o.book_condition])}",
                 subtitle=seller.name,
-                meta=o.condition_description or "Sin descripción de condición",
+                meta=o.condition_description or tr('Sin descripción de condición'),
                 status=o.status, kind="offer",
                 callback=lambda _c, oid=o.id: app.open_offer(oid),
             ))
-        self.fill(self.ids.offers, cards, "Todavía no hay ofertas. Te avisaremos aquí cuando llegue una.", "timer-sand")
+        self.fill(self.ids.offers, cards, tr('Todavía no hay ofertas. Te avisaremos aquí cuando llegue una.'), "timer-sand")
 
     def cancel(self):
         app = self.app
 
         def do_cancel():
             if app.safe(app.store.cancel_request, app.user, app.current_request_id, reason="Cancelada por el lector"):
-                app.notify("Solicitud cancelada.")
+                app.notify(tr('Solicitud cancelada.'))
                 self.refresh()
 
         app.confirm(
-            "¿Cancelar solicitud?",
-            "Los vendedores dejarán de verla y las ofertas activas se cancelarán.",
-            "Cancelar solicitud", do_cancel,
+            tr('¿Cancelar solicitud?'),
+            tr('Los vendedores dejarán de verla y las ofertas activas se cancelarán.'),
+            tr('Cancelar solicitud'), do_cancel,
         )
 
 
@@ -352,23 +332,26 @@ class OfferDetailScreen(BaseScreen):
         book = store.book(req.book_id)
         seller = store.user(offer.seller_id)
         self.ids.book_title.text = book.title
+        self.ids.book_author.text = book.authors_text
+        self.ids.cover.source = book.cover_url
+        self.ids.seller_name.text = tr('Oferta de ') + seller.name
         self.ids.price.text = format_price(offer.price)
         self.ids.status.status = offer.status
         self.is_reader = app.user.role == Role.READER and req.reader_id == app.user.id
         rows = [
-            ("book-open-variant", "Estado del libro", Condition.LABELS[offer.book_condition]),
-            ("text-box-outline", "Condición", offer.condition_description or "—"),
-            ("storefront-outline", "Vendedor", seller.name),
-            ("note-text-outline", "Información adicional", offer.notes or "—"),
-            ("calendar", "Fecha de la oferta", fmt_date(offer.created_at)),
+            ("book-open-variant", tr('Estado del libro'), tr(Condition.LABELS[offer.book_condition])),
+            ("text-box-outline", tr('Condición'), offer.condition_description or "—"),
+            ("storefront-outline", tr('Vendedor'), seller.name),
+            ("note-text-outline", tr('Información adicional'), offer.notes or "—"),
+            ("calendar", tr('Fecha de la oferta'), fmt_date(offer.created_at)),
         ]
         if req.max_price and offer.price > req.max_price:
-            rows.append(("alert-outline", "Atención", f"Supera tu precio máximo ({format_price(req.max_price)})"))
+            rows.append(("alert-outline", tr('Atención'), tr('Supera tu precio máximo ({v1})', v1=format_price(req.max_price))))
         if req.accepted_condition != Condition.ANY and req.accepted_condition != offer.book_condition:
             rows.append((
                 "information-outline",
-                "Nota de condición",
-                f"Ofrecido como {Condition.LABELS[offer.book_condition].lower()} (solicitabas {Condition.LABELS[req.accepted_condition].lower()})",
+                tr('Nota de condición'),
+                tr('Ofrecido como {v1} (solicitabas {v3})', v1=tr(Condition.LABELS[offer.book_condition]).lower(), v3=tr(Condition.LABELS[req.accepted_condition]).lower()),
             ))
         self.ids.info.clear_widgets()
         for icon, label, value in rows:
@@ -387,9 +370,9 @@ class OfferDetailScreen(BaseScreen):
                 app.go("offer_accepted")
 
         app.confirm(
-            "¿Aceptar esta oferta?",
-            "La oferta pasará a estado 'Por concretar' y verás los datos de contacto del vendedor para coordinar la entrega. Las demás ofertas quedarán en espera.",
-            "Aceptar para coordinar", do_accept,
+            tr('¿Aceptar esta oferta?'),
+            tr("La oferta pasará a estado 'Por concretar' y verás los datos de contacto del vendedor para coordinar la entrega. Las demás ofertas quedarán en espera."),
+            tr('Aceptar para coordinar'), do_accept,
         )
 
     def confirm_deal(self):
@@ -397,13 +380,13 @@ class OfferDetailScreen(BaseScreen):
 
         def do_confirm():
             if app.safe(app.store.confirm_deal, app.user, app.current_offer_id):
-                app.notify("¡Trato concretado con éxito! La solicitud quedó resuelta.")
+                app.notify(tr('¡Trato concretado con éxito! La solicitud quedó resuelta.'))
                 self.refresh()
 
         app.confirm(
-            "¿Confirmar trato concretado?",
-            "Confirma que compraste/recibiste el libro. La solicitud quedará resuelta definitivamente y las demás ofertas se cerrarán.",
-            "Confirmar compra", do_confirm,
+            tr('¿Confirmar trato concretado?'),
+            tr('Confirma que compraste/recibiste el libro. La solicitud quedará resuelta definitivamente y las demás ofertas se cerrarán.'),
+            tr('Confirmar compra'), do_confirm,
         )
 
     def cancel_deal(self):
@@ -411,13 +394,13 @@ class OfferDetailScreen(BaseScreen):
 
         def do_cancel():
             if app.safe(app.store.cancel_deal, app.user, app.current_offer_id):
-                app.notify("Se canceló la coordinación. Las demás ofertas vuelven a estar activas.")
+                app.notify(tr('Se canceló la coordinación. Las demás ofertas vuelven a estar activas.'))
                 self.refresh()
 
         app.confirm(
-            "¿Desistir de este trato?",
-            "Se cancelará la coordinación con este vendedor y las otras ofertas volverán a estar activas para que puedas elegir otra opción.",
-            "Desistir del trato", do_cancel,
+            tr('¿Desistir de este trato?'),
+            tr('Se cancelará la coordinación con este vendedor y las otras ofertas volverán a estar activas para que puedas elegir otra opción.'),
+            tr('Desistir del trato'), do_cancel,
         )
 
 
@@ -432,12 +415,12 @@ class OfferAcceptedScreen(BaseScreen):
         seller = store.user(offer.seller_id)
         self.ids.summary.text = (
             f"{store.book(req.book_id).title}\n{format_price(offer.price)} · "
-            f"{Condition.LABELS[offer.book_condition]} · {seller.name}"
+            f"{tr(Condition.LABELS[offer.book_condition])} · {seller.name}"
         )
         rows = [
-            ("phone-outline", "Teléfono", contact.phone),
-            ("email-outline", "Correo", contact.email),
-            ("map-marker-outline", "Dirección / punto de entrega", contact.address_or_meeting_point),
+            ("phone-outline", tr('Teléfono'), contact.phone),
+            ("email-outline", tr('Correo'), contact.email),
+            ("map-marker-outline", tr('Dirección / punto de entrega'), contact.address_or_meeting_point),
         ]
         self.ids.contact.clear_widgets()
         for icon, label, value in rows:
@@ -459,12 +442,12 @@ class SellerHomeScreen(BaseScreen):
         )
         if items is None:
             return
-        self.ids.count.text = f"{len(items)} solicitud(es) abiertas"
+        self.ids.count.text = f"{len(items)} " + (tr('solicitud disponible') if len(items) == 1 else tr('solicitudes disponibles'))
         cards = [
             app.request_card(r, app.open_seller_request, for_seller=True)
             for r in items
         ]
-        self.fill(self.ids.list, cards, "No hay solicitudes que coincidan con los filtros.")
+        self.fill(self.ids.list, cards, tr('No hay solicitudes que coincidan con los filtros.'))
 
     def clear_filters(self):
         for field in ("text", "location", "budget"):
@@ -486,16 +469,16 @@ class SellerRequestDetailScreen(BaseScreen):
         app.fill_book_header(self, book)
         self.ids.status.status = req.status
         reader = store.user(req.reader_id)
-        rows = [("account-outline", "Lector", reader.first_name)] + app.request_info_rows(req)
+        rows = [("account-outline", tr('Lector'), reader.first_name)] + app.request_info_rows(req)
         self.ids.info.clear_widgets()
         for icon, label, value in rows:
             self.ids.info.add_widget(InfoRow(icon=icon, label=label, value=value))
 
         mine = store.seller_active_offer(app.user, req.id)
         if mine:
-            self.offer_note = f"Ya tienes una oferta activa de {format_price(mine.price)} para esta solicitud."
+            self.offer_note = tr('Ya tienes una oferta activa de {v1} para esta solicitud.', v1=format_price(mine.price))
         elif req.status not in RequestStatus.OPEN:
-            self.offer_note = "Esta solicitud ya no recibe ofertas."
+            self.offer_note = tr('Esta solicitud ya no recibe ofertas.')
         else:
             self.offer_note = ""
         self.can_offer = req.status in RequestStatus.OPEN and mine is None
@@ -510,8 +493,7 @@ class CreateOfferScreen(BaseScreen):
         book = store.book(req.book_id)
         self.ids.book_title.text = book.title
         self.ids.book_meta.text = (
-            f"Busca: {Condition.LABELS[req.accepted_condition]} · "
-            f"Máximo {format_price(req.max_price)} · {req.location}"
+            tr('Busca: {v1} · Máximo {v3} · {v5}', v1=tr(Condition.LABELS[req.accepted_condition]), v3=format_price(req.max_price), v5=req.location)
         )
         for field in ("price", "description", "notes"):
             self.ids[field].text = ""
@@ -538,8 +520,8 @@ class CreateOfferScreen(BaseScreen):
             self.ids.address.text,
         )
         if offer:
-            app.notify("¡Oferta publicada! El lector ya puede revisarla.")
-            notifications.send("Oferta publicada", "El lector recibirá tu oferta y podrá aceptarla.")
+            app.notify(tr('¡Oferta publicada! El lector ya puede revisarla.'))
+            notifications.send(tr('Oferta publicada'), tr('El lector recibirá tu oferta y podrá aceptarla.'))
             app.go("seller_offers", reset_to="seller_home")
 
 
@@ -551,55 +533,55 @@ class SellerOffersScreen(BaseScreen):
         for o in offers:
             req = store.requests[o.request_id]
             if o.status == OfferStatus.IN_DEAL:
-                meta = "¡En coordinación! El lector está revisando tus datos de contacto para cerrar la compra."
+                meta = tr('¡En coordinación! El lector está revisando tus datos de contacto para cerrar la compra.')
             elif o.status == OfferStatus.ON_HOLD:
-                meta = "En espera: el lector está coordinando con otra oferta. Si desiste, tu oferta volverá a activarse."
+                meta = tr('En espera: el lector está coordinando con otra oferta. Si desiste, tu oferta volverá a activarse.')
             elif o.status == OfferStatus.ACCEPTED:
-                meta = "¡Trato concretado! Compra finalizada con éxito."
+                meta = tr('¡Trato concretado! Compra finalizada con éxito.')
             elif o.status == OfferStatus.REJECTED:
-                meta = "El lector concretó otra oferta."
+                meta = tr('El lector concretó otra oferta.')
             else:
-                meta = f"Solicitud #{req.id} · {req.location} · máx. {format_price(req.max_price)}"
+                meta = tr('Solicitud #{v1} · {v3} · máx. {v5}', v1=req.id, v3=req.location, v5=format_price(req.max_price))
             # En coordinación ya no se cancela como oferta común: se desiste del trato (cancel_deal).
             if o.status == OfferStatus.IN_DEAL:
-                action_text, action = "Desistir del trato", self.desist
+                action_text, action = tr('Desistir del trato'), self.desist
             elif o.status in (OfferStatus.PUBLISHED, OfferStatus.ON_HOLD):
-                action_text, action = "Cancelar oferta", self.cancel
+                action_text, action = tr('Cancelar oferta'), self.cancel
             else:
                 action_text, action = "", None
             cards.append(ItemCard(
                 title=store.book(req.book_id).title,
-                subtitle=f"{format_price(o.price)} · {Condition.LABELS[o.book_condition]}",
+                subtitle=f"{format_price(o.price)} · {tr(Condition.LABELS[o.book_condition])}",
                 meta=meta,
                 status=o.status, kind="offer",
                 action_text=action_text,
                 action_callback=(lambda _c, oid=o.id, fn=action: fn(oid)) if action else None,
                 callback=lambda _c, rid=req.id: app.open_seller_request(rid),
             ))
-        self.fill(self.ids.list, cards, "No tienes ofertas en esta categoría.", "tag-outline")
+        self.fill(self.ids.list, cards, tr('No tienes ofertas en esta categoría.'), "tag-outline")
 
     def cancel(self, offer_id):
         app = self.app
 
         def do_cancel():
             if app.safe(app.store.cancel_offer, app.user, offer_id):
-                app.notify("Oferta cancelada.")
+                app.notify(tr('Oferta cancelada.'))
                 self.refresh()
 
-        app.confirm("¿Cancelar oferta?", "El lector ya no podrá aceptarla.", "Cancelar oferta", do_cancel)
+        app.confirm(tr('¿Cancelar oferta?'), tr('El lector ya no podrá aceptarla.'), tr('Cancelar oferta'), do_cancel)
 
     def desist(self, offer_id):
         app = self.app
 
         def do_desist():
             if app.safe(app.store.cancel_deal, app.user, offer_id):
-                app.notify("Desististe del trato. La solicitud vuelve a recibir ofertas.")
+                app.notify(tr('Desististe del trato. La solicitud vuelve a recibir ofertas.'))
                 self.refresh()
 
         app.confirm(
-            "¿Desistir del trato?",
-            "Tu oferta se cancelará y el lector podrá elegir otra oferta o recibir nuevas.",
-            "Desistir del trato", do_desist,
+            tr('¿Desistir del trato?'),
+            tr('Tu oferta se cancelará y el lector podrá elegir otra oferta o recibir nuevas.'),
+            tr('Desistir del trato'), do_desist,
         )
 
 
@@ -622,23 +604,23 @@ class AdminRequestsScreen(BaseScreen):
             reader = store.user(r.reader_id)
             cards.append(ItemCard(
                 title=f"#{r.id} · {book.title}",
-                subtitle=f"{reader.name} · {r.location} · máx. {format_price(r.max_price)}",
-                meta=f"{len(store.offers_for_request(app.user, r.id))} oferta(s) · actualizada {fmt_date(r.updated_at)}",
+                subtitle=tr('{v0} · {v2} · máx. {v4}', v0=reader.name, v2=r.location, v4=format_price(r.max_price)),
+                meta=tr('{v0} oferta(s) · actualizada {v2}', v0=len(store.offers_for_request(app.user, r.id)), v2=fmt_date(r.updated_at)),
                 status=r.status, kind="request",
-                action_text="Cancelar (moderar)" if r.status in RequestStatus.OPEN else "",
+                action_text=tr('Cancelar (moderar)') if r.status in RequestStatus.OPEN else "",
                 action_callback=lambda _c, rid=r.id: self.moderate(rid),
             ))
-        self.fill(self.ids.list, cards, "Sin registros.", "database-off-outline")
+        self.fill(self.ids.list, cards, tr('Sin registros.'), "database-off-outline")
 
     def moderate(self, request_id):
         app = self.app
 
         def do_cancel():
             if app.safe(app.store.cancel_request, app.user, request_id, reason="Moderación administrativa"):
-                app.notify(f"Solicitud #{request_id} cancelada por moderación.")
+                app.notify(tr('Solicitud #{v1} cancelada por moderación.', v1=request_id))
                 self.refresh()
 
-        app.confirm("¿Cancelar solicitud?", "Acción de moderación: quedará registrada en la actividad y el lector verá el motivo.", "Cancelar", do_cancel)
+        app.confirm(tr('¿Cancelar solicitud?'), tr('Acción de moderación: quedará registrada en la actividad y el lector verá el motivo.'), tr('Cancelar'), do_cancel)
 
 
 class AdminUsersScreen(BaseScreen):
@@ -648,23 +630,23 @@ class AdminUsersScreen(BaseScreen):
         for u in store.admin_users(app.user):
             action = ""
             if u.role != Role.ADMIN:
-                action = "Suspender" if u.status == UserStatus.ACTIVE else "Reactivar"
+                action = tr('Suspender') if u.status == UserStatus.ACTIVE else tr('Reactivar')
             cards.append(ItemCard(
                 title=u.name,
-                subtitle=f"{u.email} · {Role.LABELS[u.role]}",
-                meta=f"Alta: {fmt_date(u.created_at)}",
+                subtitle=f"{u.email} · {tr(Role.LABELS[u.role])}",
+                meta=tr('Alta: {v1}', v1=fmt_date(u.created_at)),
                 status=u.status, kind="user",
                 action_text=action,
                 action_callback=lambda _c, uid=u.id: self.toggle(uid),
             ))
-        self.fill(self.ids.list, cards, "Sin registros.", "database-off-outline")
+        self.fill(self.ids.list, cards, tr('Sin registros.'), "database-off-outline")
 
     def toggle(self, user_id):
         app = self.app
         target = app.store.user(user_id)
         new_status = UserStatus.SUSPENDED if target.status == UserStatus.ACTIVE else UserStatus.ACTIVE
         if app.safe(app.store.set_user_status, app.user, user_id, new_status):
-            app.notify(f"{target.name}: {STATUS_LABELS['user'][new_status].lower()}.")
+            app.notify(f"{target.name}: {tr(STATUS_LABELS['user'][new_status]).lower()}.")
             self.refresh()
 
 
@@ -675,12 +657,12 @@ class AdminOffersScreen(BaseScreen):
         for o in store.admin_offers(app.user):
             req = store.requests[o.request_id]
             cards.append(ItemCard(
-                title=f"Oferta #{o.id} · {store.book(req.book_id).title}",
-                subtitle=f"{format_price(o.price)} · {Condition.LABELS[o.book_condition]} · {store.user(o.seller_id).name}",
-                meta=f"Solicitud #{req.id} · {fmt_date(o.updated_at)}",
+                title=tr('Oferta #{v1} · {v3}', v1=o.id, v3=store.book(req.book_id).title),
+                subtitle=f"{format_price(o.price)} · {tr(Condition.LABELS[o.book_condition])} · {store.user(o.seller_id).name}",
+                meta=tr('Solicitud #{v1} · {v3}', v1=req.id, v3=fmt_date(o.updated_at)),
                 status=o.status, kind="offer",
             ))
-        self.fill(self.ids.list, cards, "Sin registros.", "database-off-outline")
+        self.fill(self.ids.list, cards, tr('Sin registros.'), "database-off-outline")
 
 
 class AdminActivityScreen(BaseScreen):
@@ -698,10 +680,10 @@ class AdminActivityScreen(BaseScreen):
             actor = store.users.get(entry.actor_id)
             cards.append(ItemCard(
                 title=entry.detail,
-                subtitle=f"{fmt_date(entry.at)} · {actor.name if actor else 'sistema'}",
+                subtitle=f"{fmt_date(entry.at)} · {actor.name if actor else tr('sistema')}",
                 meta=entry.action,
             ))
-        self.fill(self.ids.list, cards, "Sin registros de actividad.", "text-box-search-outline")
+        self.fill(self.ids.list, cards, tr('Sin registros de actividad.'), "text-box-search-outline")
 
     def export_logs(self):
         app = self.app
@@ -717,8 +699,8 @@ class AdminActivityScreen(BaseScreen):
             except OSError:
                 continue
             app.info_dialog(
-                "Logs exportados",
-                f"Se guardó el registro de actividad en:\n\n{path}",
+                tr('Logs exportados'),
+                tr('Se guardó el registro de actividad en:\n\n{v1}', v1=path),
             )
             return
-        app.notify("No se pudo exportar el registro de actividad.")
+        app.notify(tr('No se pudo exportar el registro de actividad.'))

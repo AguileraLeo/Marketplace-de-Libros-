@@ -21,13 +21,20 @@ from models.store import OfferStatus, RequestStatus, UserStatus
 from services.books_api import download_and_cache_cover, get_cover_cache_path
 
 
-ACCENT = "#1F4D3A"
-PAPER = "#FBFAF7"
+ACCENT = "#284DA6"
+PAPER = "#F5F7FC"
+INK = "#17243F"
+MUTED = "#52617B"
+RULE = "#DCE3EF"
+SOFT = "#E4EBFB"
+LIGHT_PALETTE = dict(ink=INK, muted=MUTED, rule=RULE, soft=SOFT,
+                     background=PAPER, surface="#FFFFFF", accent=ACCENT, on_accent="#FFFFFF")
+
 
 # (punto, texto) por estado — mismos colores en todas las pantallas.
 # Solicitud y oferta comparten "PUBLICADA" y "CANCELADA", así que comparten color.
-GRAY = ("#A8A397", "#3F3D38")
-GREEN = (ACCENT, ACCENT)
+GRAY = ("#748198", "#52617B")
+GREEN = ("#28734B", "#236543")
 AMBER = ("#B26B00", "#8A5300")
 RED = ("#A33A2F", "#7A1C14")
 STATUS_COLORS = {
@@ -92,6 +99,7 @@ class StatusChip(MDBoxLayout):
     text = StringProperty("")
     dot = ColorProperty(GRAY[0])
     fg = ColorProperty(GRAY[1])
+    bg = ColorProperty([.89, .92, .98, 1])
 
     def on_status(self, *_):
         self._update()
@@ -104,6 +112,7 @@ class StatusChip(MDBoxLayout):
 
         dot, fg = STATUS_COLORS.get((self.kind, self.status)) or STATUS_COLORS.get(self.status, GRAY)
         self.dot, self.fg = c(dot), c(fg)
+        self.bg = [*self.fg[:3], .08]
         self.text = STATUS_LABELS.get(self.kind, {}).get(self.status, self.status)
 
 
@@ -111,17 +120,31 @@ class WideButton(MDButton):
     """MDButton a todo el ancho con icono + texto centrados."""
 
     def __init__(self, *args, **kwargs):
+        self._center_trigger = Clock.create_trigger(self.adjust_pos)
         super().__init__(*args, **kwargs)
-        self.bind(size=Clock.create_trigger(self.adjust_pos))
+        self.bind(size=self._center_trigger)
+
+    def add_widget(self, widget, *args, **kwargs):
+        result = super().add_widget(widget, *args, **kwargs)
+        if widget is self._button_text or widget is self._button_icon:
+            widget.bind(size=self._center_trigger, texture_size=self._center_trigger)
+            self._center_trigger()
+        return result
 
     def adjust_pos(self, *args) -> None:
         text, icon = self._button_text, self._button_icon
-        text_w = text.texture_size[0] if text else 0
-        icon_w = icon.width + dp(8) if icon else 0
+        if text and not icon:
+            # RelativeLayout mantiene el centro incluso si la fuente carga después.
+            text.pos_hint = {"center_x": .5, "center_y": .5}
+            text.center_x = self.width / 2
+            return
+        text_w = text.width if text else 0
+        icon_w = icon.width + (dp(8) if text else 0) if icon else 0
         start = (self.width - text_w - icon_w) / 2
         if icon:
             icon.x = start
         if text:
+            text.pos_hint = {"center_y": .5}
             text.x = start + icon_w
 
 
