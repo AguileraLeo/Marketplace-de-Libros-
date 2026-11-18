@@ -94,12 +94,10 @@ python analitica.py data/simulacion/simulacion.json
 
 ![KPIs con datos simulados](docs/resultados/kpis_simulados.png)
 
-**Panel público:** [bookwho.quadcorestore.com](https://bookwho.quadcorestore.com) muestra los mismos KPIs con los datos simulados, el desglose y la verificación de las reglas de la app ([SPEC-004](docs/05-specs/SPEC-004-panel-de-metricas.md)). Es una página estática (`panel/index.html`) que lee `metricas.json` cada 5 segundos, sin datos personales:
+**Panel público:** [bookwho.quadcorestore.com/simulacion/](https://bookwho.quadcorestore.com/simulacion/) muestra los mismos KPIs con los datos simulados, el desglose y la verificación de las reglas de la app ([SPEC-004](docs/05-specs/SPEC-004-panel-de-metricas.md)). Es una página estática (`panel/index.html`) que lee `metricas.json` cada 5 segundos, sin datos personales. La sirve el servidor (ver «Modo servidor») con el `metricas.json` que escribe el simulador:
 
 ```bash
 python simulador.py --panel ~/bookwho/publico                # escribe ~/bookwho/publico/metricas.json
-cp panel/index.html ~/bookwho/publico/
-python -m http.server 8080 --bind 127.0.0.1 --directory ~/bookwho/publico
 python simulador.py --panel ~/bookwho/publico --en-vivo 10   # demo: un día más de actividad en 10 minutos
 ```
 
@@ -107,7 +105,7 @@ python simulador.py --panel ~/bookwho/publico --en-vivo 10   # demo: un día má
 
 ### Android
 
-El APK está en **[Releases](https://github.com/AguileraLeo/Marketplace-de-Libros-/releases/latest)**: descarga `bookwho.apk` en el teléfono, ábrelo y permite instalar apps de origen desconocido. Requiere Android 7.0 o superior, de 64 bits. Al abrirla por primera vez, acepta el permiso de notificaciones.
+Descarga el APK en el teléfono desde **[bookwho.quadcorestore.com](https://bookwho.quadcorestore.com)** (botón o código QR) o desde **[Releases](https://github.com/AguileraLeo/Marketplace-de-Libros-/releases/latest)**, ábrelo y permite instalar apps de origen desconocido. Requiere Android 7.0 o superior, de 64 bits. Al abrirla por primera vez, acepta el permiso de notificaciones.
 
 ### Escritorio
 
@@ -136,7 +134,7 @@ Opcional: define `GOOGLE_BOOKS_API_KEY` para usar Google Books. Sin clave, Googl
 | Vendedor      | pedro@demo.cl      | 1234       |
 | Administrador | admin@demo.cl      | admin      |
 
-También se pueden registrar cuentas nuevas de lector o vendedor. En el APK el login no muestra este panel, pero las cuentas siguen existiendo: ocultarlas no es una medida de seguridad. Por eso, en una prueba con usuarios reales, cada participante registra su propia cuenta.
+También se pueden registrar cuentas nuevas de lector o vendedor. El login ya no muestra este panel, pero en el modo local las cuentas siguen existiendo: ocultarlas no es una medida de seguridad. Por eso, en una prueba con usuarios reales, cada participante registra su propia cuenta.
 
 ### Pruebas
 
@@ -144,7 +142,7 @@ También se pueden registrar cuentas nuevas de lector o vendedor. En el APK el l
 python -m unittest discover -s tests -v
 ```
 
-81 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs, simulador, panel y servidor. Las del servidor necesitan `backend/requirements.txt`; sin esas librerías se omiten.
+94 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs, simulador, panel y servidor. Las del servidor necesitan `backend/requirements.txt`; sin esas librerías se omiten.
 
 ### Modo servidor: datos compartidos entre teléfonos
 
@@ -156,7 +154,17 @@ BOOKWHO_ADMIN_CORREO=... BOOKWHO_ADMIN_CLAVE=... \
   python3 -m uvicorn backend.servidor:app_desde_entorno --factory --host 127.0.0.1 --port 8080
 ```
 
-El panel con los datos del servidor queda en `/en-vivo/` y la documentación de la API en `/api/docs`. El servidor no tiene cuentas demo: si un archivo cargado las trae, las elimina al arrancar.
+El servidor no tiene cuentas demo: si un archivo cargado las trae, las elimina al arrancar. También publica el sitio del proyecto ([SPEC-008](docs/05-specs/SPEC-008-sitio-publico.md)):
+
+| Ruta | Qué es |
+|------|--------|
+| `/` | Landing: qué es la app, descarga con código QR (`sitio/qr.png` sirve para las diapositivas) y cifras en vivo |
+| `/descargar` | El APK: se publica copiándolo a `~/bookwho/publico/bookwho.apk` |
+| `/config.json` | Configuración remota de la app: se cambia en vivo editando `~/bookwho/publico/config.json` |
+| `/en-vivo/` | Panel con los datos del servidor: agentes simulados y personas, por separado |
+| `/simulacion/` | Panel de la simulación del informe (`~/bookwho/publico/metricas.json`) |
+| `/privacidad/` | Qué datos guarda la app, quién los ve y cómo pedir que se borren |
+| `/api/docs` | Documentación de la API |
 
 **Agentes simulados en vivo** ([SPEC-006](docs/05-specs/SPEC-006-agentes-en-vivo.md)): lectores y vendedores ficticios (cuentas `@bookwho.test`) que usan la app por la API, igual que un teléfono, y también interactúan con las personas. El panel los cuenta aparte como agentes simulados.
 
@@ -184,6 +192,7 @@ analitica.py             Herramienta de PC: KPIs de RA3 desde data.json (no va e
 simulador.py             Herramienta de PC: actividad ficticia para medir RA3 (no va en el APK)
 panel/                   Panel web de métricas (SPEC-004): se publica en el servidor, no va en el APK
 backend/                 Servidor compartido (SPEC-005): FastAPI con el mismo modelo, no va en el APK
+sitio/                   Sitio público (SPEC-008): landing, privacidad y QR; lo sirve el servidor, no va en el APK
 controllers/             Controlador: ciclo de vida, navegación y una clase por pantalla
 views/                   Vista: libros.kv y widgets reutilizables
 models/                  Modelo: dominio, reglas de negocio, permisos y eventos
@@ -233,7 +242,7 @@ Decisiones pendientes de spec (ver AGENTS.md §19):
 - Un vendedor solo puede tener una oferta activa por solicitud. Puede ofrecer el libro nuevo o usado aunque no coincida con lo que pidió el lector; el lector lo evalúa al revisar la oferta.
 - Si un vendedor cancela su última oferta activa, la solicitud vuelve a `PUBLICADA`. Una oferta que ya está en coordinación no se cancela como oferta común: el vendedor o el lector desisten del trato.
 - Una cuenta tiene un solo rol. Los usuarios suspendidos no pueden iniciar sesión ni operar.
-- "Recuperar contraseña" es simulado: no se envían correos.
+- La recuperación de contraseña no está disponible en esta versión: el login lo indica.
 
 ## Dificultades y cómo las resolvimos
 

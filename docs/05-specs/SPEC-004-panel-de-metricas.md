@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Mostrar en una página web pública (`bookwho.quadcorestore.com`) los KPIs de RA3 y la
+Mostrar en una página web pública (`bookwho.quadcorestore.com/simulacion/`) los KPIs de RA3 y la
 verificación de la app, con los datos del simulador (SPEC-003), y permitir una demostración
 "en vivo" durante la presentación.
 

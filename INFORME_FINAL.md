@@ -63,7 +63,7 @@ Ejemplos documentados de programación orientada a objetos: `User`, `Book`, `Boo
 
 La persistencia serializa entidades y fechas en JSON. Guarda tras acciones exitosas, al pausar y al cerrar; escribe primero un temporal y después reemplaza el destino. Si falla el guardado, informa al usuario y recupera el último estado persistido; los archivos corruptos se respaldan. En escritorio utiliza `data/user/data.json`; Android conserva los datos en el directorio privado de la aplicación. Fuentes: [README.md](README.md) y [ADR-002](docs/04-architecture/ADR-002-estructura-del-repositorio.md).
 
-La autenticación valida registro e inicio de sesión, bloquea cuentas suspendidas y almacena contraseñas mediante SHA-256. La recuperación de contraseña es simulada y no envía correos. Aceptar para coordinar deja la oferta `POR_CONCRETAR` y la solicitud `EN_COORDINACION`; confirmar el trato produce `ACEPTADA` y `RESUELTA`. Son estados declarados por usuarios, no comprobantes de transacciones verificadas. Fuente: [README.md](README.md).
+La autenticación valida registro e inicio de sesión, bloquea cuentas suspendidas y almacena contraseñas mediante SHA-256. La recuperación de contraseña no está disponible en esta versión, y el login lo indica. Aceptar para coordinar deja la oferta `POR_CONCRETAR` y la solicitud `EN_COORDINACION`; confirmar el trato produce `ACEPTADA` y `RESUELTA`. Son estados declarados por usuarios, no comprobantes de transacciones verificadas. Fuente: [README.md](README.md).
 
 Las notificaciones de plyer son locales: se generan al publicar una oferta y al entrar un lector con ofertas pendientes. La configuración remota obtiene el banner desde GitHub de forma asíncrona, valida la respuesta y usa valores predeterminados si falla. La búsqueda combina Google Books, Open Library y respaldo local, con caché de portadas. El APK se distribuye mediante Releases y se compila con Buildozer/Docker; requiere **Android 7.0 o superior, de 64 bits** según [README.md](README.md). Estas integraciones no equivalen a un backend compartido.
 
@@ -128,7 +128,7 @@ En la simulación se documentan **136 verificaciones** de contacto sin violacion
 
 ### Panel público de datos simulados
 
-Según [README.md, «Panel público»](README.md) y [SPEC-004-panel-de-metricas.md](docs/05-specs/SPEC-004-panel-de-metricas.md), [bookwho.quadcorestore.com](https://bookwho.quadcorestore.com) muestra los mismos KPIs **simulados** que `analitica.py` sobre los mismos datos. La página lee `metricas.json` cada **5 segundos** y ofrece un modo en vivo para demostrar actividad **simulada** adicional, sin alterar el periodo base. Publica agregados sin datos personales; no sincroniza los teléfonos ni constituye un backend. El 17-11-2026 se comprobó que el sitio responde y muestra los mismos KPIs simulados.
+Según [README.md, «Panel público»](README.md) y [SPEC-004-panel-de-metricas.md](docs/05-specs/SPEC-004-panel-de-metricas.md), [bookwho.quadcorestore.com/simulacion/](https://bookwho.quadcorestore.com/simulacion/) muestra los mismos KPIs **simulados** que `analitica.py` sobre los mismos datos. La página lee `metricas.json` cada **5 segundos** y ofrece un modo en vivo para demostrar actividad **simulada** adicional, sin alterar el periodo base. Publica agregados sin datos personales; no sincroniza los teléfonos ni constituye un backend. El 17-11-2026 se comprobó que el sitio responde y muestra los mismos KPIs simulados.
 
 ### Qué sostienen los datos y qué es supuesto
 

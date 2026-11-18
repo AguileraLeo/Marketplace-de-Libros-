@@ -24,7 +24,7 @@ try:
 except ImportError:  # el backend es opcional: sin FastAPI (p. ej. en el PC de un integrante) se omiten estas pruebas
     raise unittest.SkipTest("Instala backend/requirements.txt para probar el servidor.")
 
-from backend.servidor import crear_app
+from backend.servidor import RAIZ, crear_app, dias_seguidos
 from models.store import Condition, Delivery, OfferStatus, RequestStatus, Role
 from services.books_api import catalog_lookup
 from services.persistence import load_store
@@ -386,6 +386,53 @@ class BackendTest(unittest.TestCase):
         self.assertIn(lector["usuario"]["email"], [u.get("email") for u in usuarios])
         for usuario in usuarios:
             self.assertNotIn("password", usuario)
+
+
+class SitioTest(unittest.TestCase):
+    """Sitio público (SPEC-008): landing, privacidad, descarga del APK, configuración remota y paneles."""
+
+    def setUp(self):
+        carpeta = tempfile.TemporaryDirectory()
+        self.addCleanup(carpeta.cleanup)
+        self.publico = carpeta.name
+        self.client = TestClient(crear_app(os.path.join(carpeta.name, "bookwho.json"), publico=self.publico))
+        self.addCleanup(self.client.close)
+
+    def subir(self, nombre, contenido):  # lo que el equipo copia a BOOKWHO_PUBLICO en el servidor
+        with open(os.path.join(self.publico, nombre), "wb") as f:
+            f.write(contenido)
+
+    def test_paginas(self):
+        for ruta, texto in (("/", "Descargar para Android"), ("/privacidad", "Qué datos guarda la app"),
+                            ("/en-vivo/", "Panel de métricas"), ("/simulacion", "Panel de métricas")):
+            r = self.client.get(ruta)
+            self.assertEqual(r.status_code, 200, ruta)
+            self.assertIn(texto, r.text, ruta)
+        self.assertEqual(self.client.get("/qr.svg").headers["content-type"], "image/svg+xml")
+        self.assertEqual(self.client.get("/api/salud").json(), {"ok": True})  # el sitio no tapa la API
+
+    def test_descarga_del_apk(self):
+        self.assertEqual(self.client.get("/descargar").status_code, 404)
+        self.subir("bookwho.apk", b"PK apk de prueba")
+        r = self.client.get("/descargar")
+        self.assertEqual((r.status_code, r.content), (200, b"PK apk de prueba"))
+        self.assertEqual(r.headers["content-type"], "application/vnd.android.package-archive")
+        self.assertIn('filename="BookWho.apk"', r.headers["content-disposition"])
+
+    def test_configuracion_remota_editable_en_el_servidor(self):
+        with open(os.path.join(RAIZ, "data", "remote_config.json"), encoding="utf-8") as f:
+            self.assertEqual(self.client.get("/config.json").json(), json.load(f))
+        self.subir("config.json", json.dumps({"banner": "Demo en clase"}).encode())
+        r = self.client.get("/config.json")
+        self.assertEqual((r.json(), r.headers["cache-control"]), ({"banner": "Demo en clase"}, "no-store"))
+
+    def test_un_dia_sin_actividad_cuenta_como_cero(self):
+        self.assertEqual(dias_seguidos({"2026-11-16": 5, "2026-11-18": 2}), ["2026-11-16", "2026-11-17", "2026-11-18"])
+
+    def test_panel_de_la_simulacion(self):
+        self.assertEqual(self.client.get("/simulacion/metricas.json").status_code, 404)
+        self.subir("metricas.json", json.dumps({"simulado": True}).encode())
+        self.assertTrue(self.client.get("/simulacion/metricas.json").json()["simulado"])
 
 
 if __name__ == "__main__":

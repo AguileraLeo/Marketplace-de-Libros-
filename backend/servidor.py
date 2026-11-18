@@ -6,8 +6,8 @@ El actor de cada llamada sale del token de sesión, nunca de lo que envía el cl
 En el Z40, desde la raíz del repositorio:
     BOOKWHO_ADMIN_CORREO=... BOOKWHO_ADMIN_CLAVE=... \
     python3 -m uvicorn backend.servidor:app_desde_entorno --factory --host 127.0.0.1 --port 8080
-Variables: BOOKWHO_DATOS (datos reales), BOOKWHO_PUBLICO (carpeta del metricas.json simulado),
-BOOKWHO_EXCLUIR (correos del equipo, separados por comas, fuera de los KPIs).
+Variables: BOOKWHO_DATOS (datos reales), BOOKWHO_PUBLICO (carpeta con lo que sube el equipo: metricas.json
+simulado, bookwho.apk y config.json), BOOKWHO_EXCLUIR (correos del equipo, separados por comas, fuera de los KPIs).
 """
 import dataclasses
 import os
@@ -16,13 +16,14 @@ import tempfile
 import threading
 import time
 from collections import Counter, defaultdict, deque
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from statistics import median
 from typing import Optional
 
 from fastapi import Body, FastAPI, Header
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 import analitica
 from models.store import (
@@ -83,6 +84,14 @@ def error(exc: Exception, codigo: Optional[int] = None) -> JSONResponse:
 
 def no_autorizado() -> JSONResponse:
     return JSONResponse({"error": "Tu sesión venció: vuelve a iniciar sesión.", "tipo": "SesionVencida"}, 401)
+
+
+def dias_seguidos(uso: dict) -> list:
+    """Todos los días entre el primero y el último con eventos: un día sin actividad se ve como 0, no desaparece."""
+    if not uso:
+        return []
+    primero, ultimo = date.fromisoformat(min(uso)), date.fromisoformat(max(uso))
+    return [(primero + timedelta(days=n)).isoformat() for n in range((ultimo - primero).days + 1)]
 
 
 def quitar_cuentas_demo(store: Store) -> int:
@@ -251,7 +260,7 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
                             "solicitudes": r["solicitudes_publicadas"], "ofertas": tipos.get("oferta_publicada", 0),
                             "aceptadas_para_coordinar": tipos.get("oferta_por_concretar", 0),
                             "compras_confirmadas": tipos.get("trato_concretado", 0)},
-                "uso_diario": [{"dia": d, "eventos": n} for d, n in r["uso_diario"].items()],
+                "uso_diario": [{"dia": d, "eventos": r["uso_diario"].get(d, 0)} for d in dias_seguidos(r["uso_diario"])],
                 "solicitudes_por_estado": dict(sorted(Counter(RequestStatus.LABELS[q.status] for q in solicitudes).items())),
                 "desglose": desglose,
                 "verificacion": None,  # solo existe en la simulación
@@ -262,28 +271,44 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
     def metricas():
         return metricas_reales()
 
-    # El panel sale directo del repositorio: / con los datos simulados y /reales/ con los reales.
-    @app.get("/")
-    def panel_simulado():
-        return FileResponse(os.path.join(RAIZ, "panel", "index.html"))
+    def de_publico(nombre):  # archivo que el equipo subió a BOOKWHO_PUBLICO, si existe
+        ruta = os.path.join(publico, nombre) if publico else ""
+        return ruta if ruta and os.path.isfile(ruta) else None
 
-    @app.get("/metricas.json")
     def metricas_simuladas():
-        ruta = os.path.join(publico or "", "metricas.json")
-        if not os.path.isfile(ruta):
+        ruta = de_publico("metricas.json")
+        if not ruta:
             return error(NotFound("Todavía no hay métricas simuladas."))
         return FileResponse(ruta, headers={"Cache-Control": "no-store"})
 
-    # Datos del servidor: /en-vivo/ (con agentes simulados, SPEC-006) y /reales/ (mismo contenido, nombre anterior)
+    # Paneles (SPEC-004), directo del repositorio: /simulacion/ con la simulación del informe y /en-vivo/ con los
+    # datos del servidor (agentes simulados y personas, SPEC-006). /reales/ es el nombre anterior de /en-vivo/.
     def redirigir_a(destino):  # sin parámetros: nadie puede usar la redirección para mandar a otro sitio
         return lambda: RedirectResponse(destino)
 
-    for ruta in ("/en-vivo", "/reales"):
-        app.add_api_route(ruta, redirigir_a(f"{ruta}/"), methods=["GET"], include_in_schema=False)
-        app.add_api_route(f"{ruta}/", lambda: FileResponse(os.path.join(RAIZ, "panel", "index.html")),
-                          methods=["GET"], include_in_schema=False)
-        app.add_api_route(f"{ruta}/metricas.json", metricas_reales, methods=["GET"], include_in_schema=False)
+    def panel():
+        return FileResponse(os.path.join(RAIZ, "panel", "index.html"))
 
+    for ruta, datos in (("/simulacion", metricas_simuladas), ("/en-vivo", metricas_reales), ("/reales", metricas_reales)):
+        app.add_api_route(ruta, redirigir_a(f"{ruta}/"), methods=["GET"], include_in_schema=False)
+        app.add_api_route(f"{ruta}/", panel, methods=["GET"], include_in_schema=False)
+        app.add_api_route(f"{ruta}/metricas.json", datos, methods=["GET"], include_in_schema=False)
+
+    # Sitio público (SPEC-008)
+    @app.get("/descargar", include_in_schema=False)
+    def descargar():
+        apk = de_publico("bookwho.apk")
+        if not apk:
+            return PlainTextResponse("La app todavía no está publicada. Vuelve a intentarlo en un rato.", 404)
+        return FileResponse(apk, media_type="application/vnd.android.package-archive", filename="BookWho.apk")
+
+    @app.get("/config.json", include_in_schema=False)
+    def configuracion():  # el equipo la cambia en vivo editando BOOKWHO_PUBLICO/config.json, sin reiniciar
+        ruta = de_publico("config.json") or os.path.join(RAIZ, "data", "remote_config.json")
+        return FileResponse(ruta, media_type="application/json", headers={"Cache-Control": "no-store"})
+
+    app.mount("/fuentes", StaticFiles(directory=os.path.join(RAIZ, "assets", "fonts"), check_dir=False), name="fuentes")
+    app.mount("/", StaticFiles(directory=os.path.join(RAIZ, "sitio"), html=True, check_dir=False), name="sitio")  # al final
     return app
 
 

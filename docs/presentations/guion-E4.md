@@ -87,7 +87,7 @@ Regla de exposición: distinguir **encuesta real**, **resultados simulados** y *
 **04:45–05:15 · 30 segundos**
 
 - Persistencia JSON con escritura temporal y reemplazo atómico.
-- Autenticación local; recuperación de contraseña simulada, sin envío de correos.
+- Autenticación sin recuperación de contraseña: el login indica que todavía no está disponible.
 - Notificaciones locales y configuración remota con respaldo sin conexión.
 - APK Android; sin pagos, chat, logística ni sincronización entre teléfonos.
 
@@ -145,10 +145,13 @@ Regla de exposición: distinguir **encuesta real**, **resultados simulados** y *
 
 **07:15–07:50 · 35 segundos**
 
-- Abrir [bookwho.quadcorestore.com](https://bookwho.quadcorestore.com), con rótulo de datos simulados.
+- Abrir [bookwho.quadcorestore.com/simulacion/](https://bookwho.quadcorestore.com/simulacion/), con rótulo de datos simulados.
 - Mismos KPIs que `analitica.py` para el mismo conjunto de datos simulados.
 - La página consulta `metricas.json` cada 5 segundos; no expone datos personales.
 - El modo en vivo extiende la actividad simulada sin modificar el periodo base.
+- Opcional: dejar en pantalla el QR de la landing (`sitio/qr.png`) para que el curso instale la app. Quienes se registren aparecen en `/en-vivo/` como personas, aparte de los agentes simulados.
+  - Decirlo en vivo: que se registren con un correo inventado. La demo no necesita datos personales reales (minimización de datos).
+  - Las cuentas «(sim)» son agentes simulados: usan la app por la misma API que un teléfono, con cuentas del dominio reservado `bookwho.test` y contactos ficticios, y el panel las cuenta aparte de las personas. Las cifras de la landing las incluyen.
 
 **Qué decir y mostrar:** señalar tasas, mediana y verificaciones. Si el equipo ya activó el modo en vivo, observar una actualización y aclarar que sus valores pueden diferir del gráfico del periodo base simulado. No afirmar que los cambios corresponden a las acciones realizadas en el teléfono: son fuentes separadas. Si no hay actualización, explicar el mecanismo sin fingir actividad.
 

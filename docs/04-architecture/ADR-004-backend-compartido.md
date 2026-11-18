@@ -30,7 +30,7 @@ decidió construir el backend antes de la presentación de la E4.
 
 ## Consecuencias
 
-- Datos compartidos entre teléfonos y métricas reales en vivo (`/reales/`).
+- Datos compartidos entre teléfonos y métricas reales en vivo (`/en-vivo/`).
 - Depende de la red y del Z40: sin conexión, la app trabaja en modo local y esos datos no se
   sincronizan después.
 - Un solo proceso: no escala a muchos usuarios, pero alcanza para la prueba.

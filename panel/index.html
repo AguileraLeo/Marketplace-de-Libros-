@@ -5,27 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BookWho? · Panel de métricas</title>
 <meta name="description" content="KPIs de BookWho? con datos simulados (TINF1119, RA3).">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
 <style>
-  /* SPEC-004. Colores de serie validados con la guía de visualización (claro #177C52, oscuro #2CA470). */
+  /* SPEC-004 con la identidad de SPEC-007: azul tinta y Manrope, servida por el propio servidor (sin fuentes externas).
+     Colores de serie validados con la guía de visualización (claro #284DA6 sobre #FFFFFF, oscuro #5F86E6 sobre #161F33). */
+  @font-face { font-family: "Manrope"; font-weight: 400; font-display: swap; src: url("/fuentes/Manrope-Regular.ttf") format("truetype"); }
+  @font-face { font-family: "Manrope"; font-weight: 600; font-display: swap; src: url("/fuentes/Manrope-SemiBold.ttf") format("truetype"); }
   :root {
-    --fondo: #FBFAF7; --tarjeta: #FFFFFF; --tinta: #1C1B19; --tinta-2: #5E5A52; --linea: #E6E3DC;
-    --marca: #1F4D3A; --serie: #177C52; --aviso: #FAB219; --aviso-fondo: #FDF1D6; --bien: #006300; --mal: #B3261E;
+    --fondo: #F5F7FC; --tarjeta: #FFFFFF; --tinta: #17243F; --tinta-2: #52617B; --linea: #DCE3EF;
+    --marca: #284DA6; --serie: #284DA6; --aviso: #FAB219; --aviso-fondo: #FDF1D6; --bien: #006300; --mal: #B3261E;
     color-scheme: light;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --fondo: #1A1A19; --tarjeta: #222220; --tinta: #F0EFEC; --tinta-2: #C3C2B7; --linea: #383733;
-      --marca: #8FD3B0; --serie: #2CA470; --aviso-fondo: #3A2F14; --bien: #0CA30C; --mal: #FF8A80;
+      --fondo: #0E1424; --tarjeta: #161F33; --tinta: #E8EDF7; --tinta-2: #A9B4C9; --linea: #27324A;
+      --marca: #8FA9F0; --serie: #5F86E6; --aviso-fondo: #3A2F14; --bien: #0CA30C; --mal: #FF8A80;
       color-scheme: dark;
     }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--fondo); color: var(--tinta); font: 16px/1.5 "IBM Plex Sans", system-ui, sans-serif; }
+  body { margin: 0; background: var(--fondo); color: var(--tinta); font: 16px/1.5 Manrope, system-ui, sans-serif; }
   main { max-width: 1120px; margin: 0 auto; padding: 16px; }
-  h1, h2 { font-family: "Source Serif 4", Georgia, serif; font-weight: 600; color: var(--marca); margin: 0; }
+  h1, h2 { font-weight: 600; letter-spacing: -0.01em; color: var(--tinta); margin: 0; }
+  .volver { display: inline-block; padding: 8px 0; font-size: 14px; font-weight: 600; }
   h1 { font-size: clamp(24px, 4vw, 32px); line-height: 1.2; }
   h2 { font-size: 20px; }
   h3 { font-size: 15px; margin: 8px 0 4px; }
@@ -85,6 +86,7 @@
     y una oferta aceptada o una compra confirmada no es una venta verificada.</span></span></p>
   <header>
     <div>
+      <a class="volver" href="/">← BookWho?</a>
       <h1>BookWho? · Panel de métricas</h1>
       <p class="sub" id="periodo">Cargando datos…</p>
     </div>

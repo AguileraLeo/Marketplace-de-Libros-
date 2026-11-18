@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacidad · BookWho?</title>
+<meta name="description" content="Qué datos guarda BookWho?, quién los ve, dónde se guardan y cómo pedir que se borren.">
+<meta name="theme-color" content="#284DA6">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23284DA6'/%3E%3Ctext x='32' y='44' font-family='Arial,sans-serif' font-size='32' font-weight='700' text-anchor='middle' fill='white'%3EB%3F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/estilo.css">
+</head>
+<body>
+<header class="envoltura barra">
+  <a class="marca" href="/">BookWho<span>?</span></a>
+  <nav aria-label="Secciones"><a href="/en-vivo/">En vivo</a><a href="/privacidad/" aria-current="page">Privacidad</a></nav>
+</header>
+
+<main class="envoltura texto">
+  <span class="etiqueta">Actualizada el 18 de noviembre de 2026</span>
+  <h1>Privacidad</h1>
+  <p>BookWho? es una demo académica. Aquí explicamos qué datos guarda, quién los ve, dónde se guardan y cómo pedir que los borremos.</p>
+
+  <h2>Qué datos guarda la app</h2>
+  <ul>
+    <li><strong>Tu cuenta:</strong> nombre, correo, rol (lector o vendedor), comuna y contraseña.</li>
+    <li><strong>Lo que publicas:</strong> tus solicitudes (libro, precio máximo, estado que aceptas, comuna, forma de entrega y notas) y tus ofertas (precio, estado del libro y descripción).</li>
+    <li><strong>Tu contacto de vendedor:</strong> el teléfono, el correo y el punto de encuentro que escribas al ofertar.</li>
+    <li><strong>Un registro de uso:</strong> qué acción se hizo y cuándo (por ejemplo, «solicitud publicada»), para medir los indicadores del proyecto.</li>
+  </ul>
+  <p>La app no usa la ubicación GPS de tu teléfono: la comuna la eliges tú. No hay pagos ni publicidad.</p>
+
+  <h2>Quién ve qué</h2>
+  <ul>
+    <li>Los vendedores ven tus solicitudes publicadas con tu primer nombre, pero no tu correo.</li>
+    <li>Tu contacto de vendedor solo lo ve el lector que acepta tu oferta.</li>
+    <li>El panel público muestra cifras agregadas y actividad sin nombres ni correos.</li>
+    <li>El administrador del equipo ve las cuentas para moderar la plataforma.</li>
+  </ul>
+
+  <h2>Dónde se guardan</h2>
+  <p>En un servidor del equipo del proyecto. La conexión va cifrada (HTTPS) y pasa por Cloudflare, que publica el servidor en internet. Si el servidor no responde, la app trabaja sin conexión y guarda los datos solo en tu teléfono.</p>
+  <p>Al buscar un libro, la app consulta Google Books y Open Library: esos servicios reciben el texto que buscas.</p>
+
+  <h2>Contraseñas</h2>
+  <p>Se guardan como un hash SHA-256, nunca en texto plano. Es una protección básica, suficiente para una demo: antes de un lanzamiento público la cambiaremos por un método más robusto (PBKDF2). Por eso, usa una contraseña que no ocupes en ningún otro servicio.</p>
+
+  <h2>Agentes simulados</h2>
+  <p>Las cuentas cuyo nombre termina en «(sim)» y cuyo correo es del dominio reservado <code>bookwho.test</code> son agentes simulados del equipo: usan la app para la demostración y sus datos de contacto son ficticios. El panel los cuenta aparte de las personas.</p>
+
+  <h2>Cómo borrar tu cuenta</h2>
+  <p>Si quieres que borremos tu cuenta y tus datos, pídeselo al equipo del proyecto.</p>
+
+  <h2>Cookies</h2>
+  <p>Este sitio no usa cookies propias ni herramientas de analítica.</p>
+</main>
+
+<footer class="envoltura">
+  <div class="pie">
+    <p>BookWho? · Proyecto académico, 2026.</p>
+    <nav aria-label="Enlaces"><a href="/">Inicio</a><a href="/api/docs">API</a><a href="https://github.com/AguileraLeo/Marketplace-de-Libros-">Código en GitHub</a></nav>
+  </div>
+</footer>
+</body>
+</html>
