@@ -66,7 +66,7 @@ Programación orientada a objetos en el código:
 - **Jerarquía de excepciones:** `DomainError` y sus subclases `ValidationError`, `PermissionDenied`, `NotFound` e `InvalidTransition`; `app.safe()` las muestra como mensajes en vez de cerrar la app.
 - **Encapsulamiento:** solo `Store` modifica los datos, y revalida rol, propiedad y estado en cada caso de uso.
 
-Las decisiones de arquitectura están en [`docs/04-architecture/`](docs/04-architecture/) (ADR-001 a ADR-003).
+Las decisiones de arquitectura están en [`docs/04-architecture/`](docs/04-architecture/) (ADR-001 a ADR-004).
 
 ## Medición (RA3)
 
@@ -144,7 +144,19 @@ También se pueden registrar cuentas nuevas de lector o vendedor. En el APK el l
 python -m unittest discover -s tests -v
 ```
 
-63 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs, simulador y panel.
+81 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs, simulador, panel y servidor. Las del servidor necesitan `backend/requirements.txt`; sin esas librerías se omiten.
+
+### Modo servidor: datos compartidos entre teléfonos
+
+La app usa el servidor indicado en `data/servidor.json` si responde; si no, trabaja en modo local como siempre y lo avisa. Las pantallas son las mismas: solo cambia dónde vive el modelo ([SPEC-005](docs/05-specs/SPEC-005-backend-compartido.md), [ADR-004](docs/04-architecture/ADR-004-backend-compartido.md)). Para forzar el modo local: `BOOKWHO_SERVIDOR=local python main.py`.
+
+```bash
+# en el servidor, desde la raíz del repositorio (paquetes python3-fastapi y python3-uvicorn, o backend/requirements.txt)
+BOOKWHO_ADMIN_CORREO=... BOOKWHO_ADMIN_CLAVE=... \
+  python3 -m uvicorn backend.servidor:app_desde_entorno --factory --host 127.0.0.1 --port 8080
+```
+
+El panel con datos reales queda en `/reales/` y la documentación de la API en `/api/docs`. El servidor no tiene cuentas demo.
 
 ### Generar el APK (Linux, con Docker)
 
@@ -164,6 +176,7 @@ main.py                  Punto de entrada de la app
 analitica.py             Herramienta de PC: KPIs de RA3 desde data.json (no va en el APK)
 simulador.py             Herramienta de PC: actividad ficticia para medir RA3 (no va en el APK)
 panel/                   Panel web de métricas (SPEC-004): se publica en el servidor, no va en el APK
+backend/                 Servidor compartido (SPEC-005): FastAPI con el mismo modelo, no va en el APK
 controllers/             Controlador: ciclo de vida, navegación y una clase por pantalla
 views/                   Vista: libros.kv y widgets reutilizables
 models/                  Modelo: dominio, reglas de negocio, permisos y eventos
@@ -187,7 +200,7 @@ CLAUDE.md                Instrucciones para asistentes de IA
 | [`INFORME_FINAL.md`](INFORME_FINAL.md) | Informe Final de la Evaluación 4: problema, solución, medición, resultados y ética |
 | [`DOCUMENTATION.md`](DOCUMENTATION.md) | Medición y evaluación de funcionalidad (RA3) |
 | [`docs/04-architecture/DOCUMENTACION.md`](docs/04-architecture/DOCUMENTACION.md) | Documentación técnica del código, módulo por módulo |
-| [`docs/04-architecture/`](docs/04-architecture/) | Decisiones de arquitectura (ADR-001 a ADR-003) |
+| [`docs/04-architecture/`](docs/04-architecture/) | Decisiones de arquitectura (ADR-001 a ADR-004) |
 | [`docs/05-specs/`](docs/05-specs/) | Especificaciones: MVC, estructura del repositorio y simulador |
 | [`docs/01-requirements/FUNDAMENTACION-UX-UI.md`](docs/01-requirements/FUNDAMENTACION-UX-UI.md) | Diagnóstico (encuesta) y fundamentación UX/UI |
 | [`docs/06-process/USO_IA.md`](docs/06-process/USO_IA.md) | Declaración de uso de inteligencia artificial |
