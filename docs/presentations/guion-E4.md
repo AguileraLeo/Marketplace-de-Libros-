@@ -149,7 +149,7 @@ Regla de exposición: distinguir **encuesta real**, **resultados simulados** y *
 - Mismos KPIs que `analitica.py` para el mismo conjunto de datos simulados.
 - La página consulta `metricas.json` cada 5 segundos; no expone datos personales.
 - El modo en vivo extiende la actividad simulada sin modificar el periodo base.
-- Opcional: dejar en pantalla el QR de la landing (`sitio/qr.png`) para que el curso instale la app. Quienes se registren aparecen en `/en-vivo/` como personas, aparte de los agentes simulados.
+- Opcional: dejar en pantalla el QR de la landing (`sitio/qr-descarga.png`) para que el curso instale la app. Quienes se registren aparecen en `/en-vivo/` como personas, aparte de los agentes simulados.
   - Decirlo en vivo: que se registren con un correo inventado. La demo no necesita datos personales reales (minimización de datos).
   - Las cuentas «(sim)» son agentes simulados: usan la app por la misma API que un teléfono, con cuentas del dominio reservado `bookwho.test` y contactos ficticios, y el panel las cuenta aparte de las personas. Las cifras de la landing las incluyen.
 

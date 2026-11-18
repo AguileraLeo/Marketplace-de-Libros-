@@ -9,7 +9,8 @@ cambie el mensaje de la app sin compilar un APK nuevo.
 ## Alcance
 
 - `/`: landing con la identidad de SPEC-007 (azul tinta y Manrope): qué es, cómo funciona, botón de
-  descarga, código QR (`sitio/qr.svg`; `sitio/qr.png` para las diapositivas), cifras en vivo y cómo instalar.
+  descarga, código QR que descarga el APK directo (`sitio/qr-descarga.svg`; `sitio/qr-descarga.png` para las diapositivas),
+  cifras en vivo y cómo instalar.
 - `/descargar`: entrega `BOOKWHO_PUBLICO/bookwho.apk` como `BookWho.apk`, con el tipo de archivo de Android.
 - `/config.json`: configuración remota de la app. Sale de `BOOKWHO_PUBLICO/config.json`, que el equipo
   edita en el servidor sin reiniciarlo, o, si no existe, de `data/remote_config.json`. La app la pide a su

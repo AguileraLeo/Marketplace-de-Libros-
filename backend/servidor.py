@@ -295,7 +295,7 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
         app.add_api_route(f"{ruta}/metricas.json", datos, methods=["GET"], include_in_schema=False)
 
     # Sitio público (SPEC-008)
-    @app.get("/descargar", include_in_schema=False)
+    @app.api_route("/descargar", methods=["GET", "HEAD"], include_in_schema=False)  # HEAD: lectores de QR que revisan el enlace
     def descargar():
         apk = de_publico("bookwho.apk")
         if not apk:

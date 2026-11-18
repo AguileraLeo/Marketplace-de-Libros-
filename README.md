@@ -158,7 +158,7 @@ El servidor no tiene cuentas demo: si un archivo cargado las trae, las elimina a
 
 | Ruta | Qué es |
 |------|--------|
-| `/` | Landing: qué es la app, descarga con código QR (`sitio/qr.png` sirve para las diapositivas) y cifras en vivo |
+| `/` | Landing: qué es la app, descarga con código QR (`sitio/qr-descarga.png` sirve para las diapositivas) y cifras en vivo |
 | `/descargar` | El APK: se publica copiándolo a `~/bookwho/publico/bookwho.apk` |
 | `/config.json` | Configuración remota de la app: se cambia en vivo editando `~/bookwho/publico/config.json` |
 | `/en-vivo/` | Panel con los datos del servidor: agentes simulados y personas, por separado |
