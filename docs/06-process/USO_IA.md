@@ -131,7 +131,16 @@ Antecedentes proporcionados por el equipo para esta declaración; no constituyen
 
 ### E4
 
-[COMPLETAR: escrito por el equipo]
+- Retomé lo que quedó pendiente en la E3: llevar BookWho? a mi servidor Z40 con dominio propio. Pedí un backend compartido para que los datos de todos los teléfonos lleguen a un solo lugar y el panel muestre la prueba en vivo.
+- Usé datos simulados, autorizados por el docente, con una condición: que siempre se identifiquen como simulados. Los agentes usan cuentas `@bookwho.test` con "(sim)" en el nombre, tienen un panel separado del real y la página de privacidad lo explica.
+- Pedí una landing nueva en vez de reutilizar la del pitch anterior. Después hice sacar los avisos y las rotulaciones de las cifras: prefiero explicarlas en vivo y defender ahí las decisiones técnicas.
+- Probé el QR y me di cuenta de que abría la página en vez de descargar el APK. Pedí corregirlo para que la descarga fuera directa.
+- Filtré las sugerencias de Fredo. Aceptamos logo, favicon, animación, sombras, métricas destacadas, paginación y exportación a CSV; descarté la música.
+- Antes de cambiar la interfaz pedí primero una auditoría de UI/UX sin tocar archivos, y solo se implementó cuando la aprobé.
+- Repartí el trabajo entre dos IA: Codex implementaba y Claude Code revisaba antes de cada commit. En esas revisiones se descartó una afirmación incorrecta de Codex (que había que recompilar el APK) y se corrigió un estilo suyo que cortaba palabras en las tablas del panel.
+- Pedí una auditoría de seguridad antes de presentar. Al entender que la clave de los agentes está a la vista en el repositorio, decidí bloquear esas cuentas desde internet, ya que esconder la clave no era posible.
+- Dejé para después de la E4 la validación de correo, el paso a SQLite y un hash de contraseñas más fuerte (PBKDF2). Quedó declarado en `ADR-004` y `SEGURIDAD.md`.
+- Hice yo los commits, el despliegue en el Z40 y la subida del APK. La mañana de la presentación el servidor se reinició y perdió la conexión unos minutos. Al volver reprogramé los agentes, porque el reinicio había borrado su temporizador.
 
 ## 6. Reflexión en el uso de IA
 
@@ -155,5 +164,12 @@ Aprendí a compilar para Android. Antes lo había hecho para iOS en una aplicaci
 
 ### E4
 
-[COMPLETAR: escrito por el equipo]
+En esta etapa cambió mi forma de usar la IA. Ya no fue pedirle código a una sola herramienta: trabajé con dos a la vez. Codex implementaba y Claude Code orquestaba y revisaba. Aprendí que una IA puede afirmar algo con total seguridad y estar equivocada, así que la regla fue no hacer commit de nada sin revisar los cambios, correr las pruebas y mirar el resultado en pantalla.
+
+Por fin monté el servidor propio que quería desde la E3, y eso me mostró su costo real. Una solución propia da control y privacidad, pero exige mantenimiento. La misma mañana de la presentación el Z40 se reinició, el sitio estuvo caído unos minutos y hubo que volver a programar los agentes. Es lo que vimos en el RA3 al comparar una analítica construida por nosotros con una herramienta de la industria.
+
+Lo más delicado fue la honestidad con los datos. La IA puede generar usuarios y actividad que parecen reales, y justamente por eso decidí que todo lo simulado se vea como simulado. También entendí que publicar en internet cambia la responsabilidad. No había pensado mucho en la seguridad hasta la auditoría, que mostró que cualquiera con acceso al repositorio podía entrar como un agente.
+
+Me preocupa la cantidad de código que se escribió en pocos días. Para poder defenderlo revisé cada cambio antes de subirlo, desplegamos solo con las pruebas automáticas en verde (121 al final) y tengo claro qué quedó pendiente y por qué. Mi aprendizaje es que la IA acelera mucho el trabajo, pero las decisiones siguen siendo nuestras: qué medir, qué mostrar y qué no prometer.
+
 

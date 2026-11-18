@@ -42,7 +42,7 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Datos simulados para RA3 (autorizados por el docente) | Hecho: `simulador.py` (SPEC-003); resultados en `DOCUMENTATION.md` §7.1 |
 | Panel público de métricas | Hecho: `panel/index.html` + `simulador.py --panel` (SPEC-004), con modo en vivo |
 | Backend compartido | En prueba: `backend/servidor.py` + `services/remoto.py` (SPEC-005, ADR-004 pendiente de aprobación); la app vuelve al modo local si no hay servidor |
-| Seguridad del backend antes de la E4 | F1–F8 aplicados y probados; riesgos residuales y plan en [SEGURIDAD.md](docs/04-architecture/SEGURIDAD.md). El despliegue del Z40 no fue modificado. |
+| Seguridad del backend antes de la E4 | F1–F8 aplicados y probados; riesgos residuales y plan en [SEGURIDAD.md](docs/04-architecture/SEGURIDAD.md). Desplegado en el Z40 el 18-11-2026. |
 | Agentes simulados en vivo | Hecho: `backend/agentes.py` (SPEC-006), panel `/en-vivo/` |
 | Sitio público: landing con descarga del APK y QR, privacidad, configuración remota editable | Hecho: `sitio/` + `backend/servidor.py` (SPEC-008) |
 | Documentación SDD en `docs/` | ADR y specs de MVC y estructura creados; otras specs de producto siguen pendientes |
