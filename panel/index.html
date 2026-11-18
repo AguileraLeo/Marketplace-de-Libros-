@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BookWho? · Panel de métricas</title>
+<meta name="description" content="KPIs de BookWho? con datos simulados (TINF1119, RA3).">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" href="/logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+  /* SPEC-004 con la identidad de SPEC-007: azul tinta y Manrope, servida por el propio servidor (sin fuentes externas).
+     Colores de serie validados con la guía de visualización (claro #284DA6 sobre #FFFFFF, oscuro #5F86E6 sobre #161F33). */
+  @font-face { font-family: "Manrope"; font-weight: 400; font-display: swap; src: url("/fuentes/Manrope-Regular.ttf") format("truetype"); }
+  @font-face { font-family: "Manrope"; font-weight: 600; font-display: swap; src: url("/fuentes/Manrope-SemiBold.ttf") format("truetype"); }
+  :root {
+    --fondo: #F5F7FC; --tarjeta: #FFFFFF; --tinta: #17243F; --tinta-2: #52617B; --linea: #DCE3EF;
+    --marca: #284DA6; --serie: #284DA6; --bien: #006300; --mal: #B3261E;
+    --sombra: 0 1px 2px rgb(23 36 63 / .05), 0 6px 18px rgb(23 36 63 / .06); --suave: #E4EBFB;
+    --estado-gris: #748198; --estado-verde: #28734B; --estado-ambar: #B26B00; --estado-rojo: #A33A2F; --cebra: #F5F7FC;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #0E1424; --tarjeta: #161F33; --tinta: #E8EDF7; --tinta-2: #A9B4C9; --linea: #27324A;
+      --marca: #8FA9F0; --serie: #5F86E6; --bien: #0CA30C; --mal: #FF8A80;
+      --sombra: 0 1px 2px rgb(0 0 0 / .35), 0 6px 18px rgb(0 0 0 / .25); --suave: #1D2A47;
+      --estado-gris: #9AA6BD; --estado-verde: #4CB07A; --estado-ambar: #E3A13B; --estado-rojo: #E0786C; --cebra: #1B2540;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--tinta); font: 16px/1.5 Manrope, system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 16px; }
+  h1, h2 { font-weight: 600; letter-spacing: -0.01em; color: var(--tinta); margin: 0; }
+  h1 { font-size: clamp(24px, 4vw, 32px); line-height: 1.2; }
+  h1 a { color: inherit; text-decoration: none; white-space: nowrap; }
+  h1 a:hover { text-decoration: underline; }
+  h1 img { vertical-align: middle; margin-right: 12px; }
+  h1 a:focus-visible { outline: 3px solid var(--marca); outline-offset: 3px; border-radius: 4px; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 15px; margin: 8px 0 4px; }
+  p { margin: 0; }
+  a, summary { color: var(--marca); }
+  header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 8px 24px; margin-bottom: 12px; }
+  .sub, .nota, .etiqueta { color: var(--tinta-2); }
+  .nota, .etiqueta { font-size: 14px; }
+  #estado { display: flex; align-items: center; gap: 8px; color: var(--tinta-2); font-size: 14px; }
+  #punto { width: 10px; height: 10px; border-radius: 50%; background: var(--linea); }
+  #punto.vivo { background: var(--bien); }
+  @media (prefers-reduced-motion: no-preference) {
+    #punto.vivo { animation: latido 1.6s ease-in-out infinite; }
+    @keyframes latido { 50% { opacity: .35; } }
+    .destello { animation: destello 1.6s ease-out; }
+    @keyframes destello { 0%, 25% { background: var(--suave); border-color: var(--marca); } }
+  }
+  /* Filas que se reacomodan: una tarjeta sin datos se oculta y su vecina ocupa el espacio; en el teléfono, una por fila. */
+  .fila { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+  .fila > .tarjeta { flex: 1 1 300px; min-width: 0; }
+  .fila > .ancha { flex: 2 1 560px; }
+  .kpis > .tarjeta { flex-basis: 220px; background: var(--suave); border-color: transparent; border-top: 4px solid var(--marca); }
+  .kpis .valor { font-size: 52px; }
+  .tarjeta { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 16px 18px; box-shadow: var(--sombra); }
+  .valor { font-weight: 600; font-size: 40px; line-height: 1.1; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .grupos-cifras { display: grid; gap: 12px; margin-bottom: 12px; }
+  @media (min-width: 760px) { .grupos-cifras { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .grupo-cifras { min-width: 0; }
+  .rotulo-grupo { color: var(--tinta-2); font-size: 13px; font-weight: 400; margin-bottom: 6px; }
+  .cifras { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); margin: 0; padding: 0; list-style: none; }
+  .cifras li { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 10px 14px; }
+  .cifras b { display: block; font-size: 24px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .cifras span { display: block; color: var(--tinta-2); font-size: 13px; line-height: 1.3; }
+  .grafico { margin-top: 10px; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .eje { fill: var(--tinta-2); font-size: 11px; }
+  .rotulo { fill: var(--tinta); font-size: 12px; }
+  .regla { stroke: var(--linea); stroke-width: 1; }
+  .serie { fill: var(--serie); }
+  .marca { outline: none; }
+  .marca:hover .serie, .marca:focus .serie { opacity: .78; }
+  .marca:focus-visible .golpe { stroke: var(--tinta); stroke-width: 1; }
+  .multiples { display: grid; gap: 4px 28px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  ul.lista, ol.feed { list-style: none; margin: 8px 0 0; padding: 0; }
+  ul.lista li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--linea); }
+  ol.feed { max-height: 240px; overflow-y: auto; }  /* a la altura del gráfico de al lado; el resto, desplazando */
+  ol.feed li { display: grid; grid-template-columns: auto 1fr; gap: 0 10px; padding: 6px 0; border-bottom: 1px solid var(--linea); font-size: 14px; }
+  ul.lista li:last-child, ol.feed li:last-child { border-bottom: 0; }
+  #estados li { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto auto; align-items: center; gap: 6px 10px; }
+  .estado-punto { width: 10px; height: 10px; border-radius: 50%; background: var(--color-estado); }
+  .estado-porcentaje { color: var(--tinta-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+  .estado-barra { grid-column: 2 / -1; height: 6px; border-radius: 3px; background: var(--suave); overflow: hidden; }
+  .estado-barra span { display: block; height: 100%; border-radius: inherit; background: var(--color-estado); }
+  .chequeos { display: grid; gap: 8px 24px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); list-style: none; margin: 8px 0 0; padding: 0; }
+  .chequeos li { display: flex; flex-direction: column-reverse; gap: 2px; color: var(--tinta-2); font-size: 14px; }  /* resultado arriba */
+  .chequeos b { font-size: 20px; }
+  ol.feed time { color: var(--tinta-2); }
+  ol.feed span { grid-column: 2; color: var(--tinta-2); }
+  .ok { color: var(--bien); }
+  .error { color: var(--mal); }
+  summary { cursor: pointer; font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 12px 0; }
+  #tablas { columns: 2 380px; column-gap: 28px; }  /* hasta dos columnas parejas, sin huecos ni palabras cortadas */
+  .tabla-contenedor { break-inside: avoid; min-width: 0; margin-bottom: 18px; overflow-x: auto; }  /* en pantallas angostas, desplaza la tabla */
+  .tabla-paginacion { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; font-size: 13px; color: var(--tinta-2); }
+  thead { background: var(--suave); color: var(--tinta); font-weight: 600; }
+  tbody tr:nth-child(even) { background: var(--cebra); }
+  .acciones { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+  .boton { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid var(--linea);
+           border-radius: 10px; background: var(--tarjeta); color: var(--marca); font: 600 14px/1 Manrope, system-ui, sans-serif; cursor: pointer;
+           white-space: nowrap; }
+  .boton svg { width: 16px; height: 16px; flex: none; }
+  .boton:hover { border-color: var(--marca); }
+  .boton:disabled { opacity: .5; cursor: default; }
+  .boton:focus-visible { outline: 3px solid var(--marca); outline-offset: 2px; }
+  caption { text-align: left; font-weight: 600; padding-bottom: 4px; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--linea); }
+  td + td { text-align: right; font-variant-numeric: tabular-nums; }
+  #tip { position: fixed; z-index: 10; pointer-events: none; max-width: 260px; padding: 6px 10px; font-size: 13px;
+         background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 8px; box-shadow: 0 4px 16px rgb(0 0 0 / .14); }
+  #tip strong { display: block; font-size: 15px; }
+  #tip span { color: var(--tinta-2); }
+  footer { color: var(--tinta-2); font-size: 13px; margin: 16px 0 8px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1><a href="/"><img src="/logo.svg" alt="" width="36" height="36">BookWho?</a> · Panel de métricas</h1>
+      <p class="sub" id="periodo">Cargando datos…</p>
+    </div>
+    <div class="acciones">
+      <p id="estado"><span id="punto" aria-hidden="true"></span><span id="estado-texto">Conectando…</span></p>
+      <button type="button" class="boton" id="csv" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+        Descargar CSV
+      </button>
+    </div>
+  </header>
+  <noscript><p>Este panel necesita JavaScript para leer <code>metricas.json</code>.</p></noscript>
+
+  <div class="fila kpis">
+    <section class="tarjeta" aria-labelledby="t-kpi1">
+      <p class="etiqueta" id="t-kpi1">KPI 1 · Tasa de resolución</p>
+      <p class="valor" id="kpi-resolucion">—</p>
+      <p class="nota" id="kpi-resolucion-nota">Solicitudes con compra confirmada por el lector.</p>
+    </section>
+    <section class="tarjeta" aria-labelledby="t-kpi2">
+      <p class="etiqueta" id="t-kpi2">KPI 2 · Tasa de respuesta</p>
+      <p class="valor" id="kpi-respuesta">—</p>
+      <p class="nota">Recibieron al menos una oferta.</p>
+    </section>
+    <section class="tarjeta" aria-labelledby="t-kpi3">
+      <p class="etiqueta" id="t-kpi3">KPI 3 · Hasta la 1.ª oferta</p>
+      <p class="valor" id="kpi-horas">—</p>
+      <p class="nota">Mediana, solo solicitudes con oferta.</p>
+    </section>
+  </div>
+  <div class="grupos-cifras" id="totales" aria-label="Totales"></div>
+
+  <div class="fila">
+    <section class="tarjeta ancha" aria-labelledby="t-dias">
+      <h2 id="t-dias">Eventos por día</h2>
+      <p class="nota">Todas las acciones registradas, incluidos los inicios de sesión.</p>
+      <div class="grafico" id="grafico-dias"></div>
+    </section>
+    <section class="tarjeta" aria-labelledby="t-actividad" id="tarjeta-actividad">
+      <h2 id="t-actividad">Actividad reciente</h2>
+      <p class="nota">Sin nombres ni datos de contacto: solo la acción, el libro y la comuna.</p>
+      <ol class="feed" id="actividad"></ol>
+    </section>
+    <section class="tarjeta" aria-labelledby="t-reglas" id="tarjeta-reglas">
+      <h2 id="t-reglas">La app cumple sus reglas</h2>
+      <ul class="chequeos" id="verificacion"></ul>
+    </section>
+  </div>
+
+  <div class="fila">
+    <section class="tarjeta ancha" aria-labelledby="t-grupos">
+      <h2 id="t-grupos">¿Qué solicitudes reciben ofertas?</h2>
+      <p class="nota">Porcentaje de solicitudes con al menos una oferta. Las diferencias salen de los supuestos del simulador.</p>
+      <div class="multiples grafico">
+        <div><h3>Región</h3><div id="grafico-region"></div></div>
+        <div>
+          <h3>Entrega</h3><div id="grafico-entrega"></div>
+          <h3>Precio máximo</h3><div id="grafico-precio_maximo"></div>
+        </div>
+      </div>
+    </section>
+    <section class="tarjeta" aria-labelledby="t-estados">
+      <h2 id="t-estados">Estado de las solicitudes</h2>
+      <ul class="lista" id="estados"></ul>
+    </section>
+  </div>
+
+  <section class="tarjeta">
+    <details><summary>Ver los datos en tablas</summary><div id="tablas"></div></details>
+  </section>
+  <footer><span id="pie-fuente">Datos simulados según SPEC-003 y SPEC-004</span> · BookWho?, TINF1119 Desarrollo Móvil (A+S) ·
+    <a href="https://github.com/AguileraLeo/Marketplace-de-Libros-">Código en GitHub</a></footer>
+</main>
+<div id="tip" role="tooltip" hidden></div>
+
+<script>
+"use strict";
+// Todo texto que viene de metricas.json se inserta con textContent (nunca como HTML).
+const NS = "http://www.w3.org/2000/svg";
+const numero = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1 });
+const diaCorto = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", timeZone: "UTC" });
+const diaHora = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" });
+const pct = (v) => (v == null ? "—" : `${numero.format(v)} %`);
+const horas = (v) => (v == null ? "—" : `${numero.format(v)} h`);
+const fecha = (iso) => new Date(iso.length === 10 ? `${iso}T00:00:00Z` : `${iso.slice(0, 16)}:00Z`);
+const $ = (id) => document.getElementById(id);
+
+function el(tag, texto, clase) {
+  const n = document.createElement(tag);
+  if (clase) n.className = clase;
+  if (texto != null) n.textContent = texto;
+  return n;
+}
+function sv(tag, attrs, texto) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (texto != null) n.textContent = texto;
+  return n;
+}
+
+// ------------------------------------------------ tooltip: con mouse y con teclado
+const tip = $("tip");
+function conTip(nodo, fuerte, detalle) {
+  nodo.setAttribute("tabindex", "0");
+  nodo.setAttribute("role", "img");
+  nodo.setAttribute("aria-label", `${fuerte}. ${detalle}`);
+  const mostrar = (x, y) => {
+    tip.replaceChildren(el("strong", fuerte), el("span", detalle));
+    tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = `${Math.min(innerWidth - w - 8, Math.max(8, x - w / 2))}px`;
+    tip.style.top = `${y - h - 12 < 8 ? y + 18 : y - h - 12}px`;
+  };
+  nodo.addEventListener("pointermove", (e) => mostrar(e.clientX, e.clientY));
+  nodo.addEventListener("focus", () => { const r = nodo.getBoundingClientRect(); mostrar(r.left + r.width / 2, r.top); });
+  nodo.addEventListener("pointerleave", () => { tip.hidden = true; });
+  nodo.addEventListener("blur", () => { tip.hidden = true; });
+}
+
+// ------------------------------------------------ marcas: extremo redondeado de 4 px, base recta
+function columna(x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h));
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+function barra(x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, h / 2, w));
+  return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
+}
+function paso(max) {  // marcas del eje en números redondos
+  const bruto = Math.max(max, 1) / 4, mag = 10 ** Math.floor(Math.log10(bruto));
+  return [1, 2, 2.5, 5, 10].map((f) => f * mag).find((p) => p >= bruto);
+}
+
+const ancho = (cont, minimo) => Math.max(minimo, Math.round(cont.clientWidth) || minimo);  // el SVG se dibuja a su tamaño real: el texto no se encoge
+
+function graficoDias(cont, dias, hoy) {
+  const W = ancho(cont, 300), H = 260, m = { t: 22, r: 4, b: 26, l: 34 };
+  const max = Math.max(1, ...dias.map((d) => d.eventos));
+  const p = paso(max), tope = Math.ceil(max / p) * p;
+  const y = (v) => m.t + (H - m.t - m.b) * (1 - v / tope);
+  const ranura = (W - m.l - m.r) / Math.max(1, dias.length), grosor = Math.min(24, ranura - 2);
+  const s = sv("svg", { viewBox: `0 0 ${W} ${H}`, "aria-label": "Eventos por día" });
+  for (let v = 0; v <= tope; v += p) {
+    s.append(sv("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "regla" }));
+    s.append(sv("text", { x: m.l - 6, y: y(v) + 4, "text-anchor": "end", class: "eje" }, numero.format(v)));
+  }
+  const iMax = dias.findIndex((d) => d.eventos === max);
+  dias.forEach((d, i) => {
+    const x0 = m.l + i * ranura, x = x0 + (ranura - grosor) / 2, f = fecha(d.dia), g = sv("g", { class: "marca" });
+    g.append(sv("rect", { x: x0, y: m.t, width: ranura, height: H - m.t - m.b, fill: "transparent", class: "golpe" }));
+    g.append(sv("path", { d: columna(x, y(d.eventos), grosor, y(0) - y(d.eventos), 4), class: "serie" }));
+    g.append(sv("text", { x: x + grosor / 2, y: H - 8, "text-anchor": "middle", class: "eje" }, String(f.getUTCDate())));
+    const esHoy = i === dias.length - 1 && d.dia === hoy;
+    if (esHoy || i === iMax) {  // un solo rótulo si hoy también es el máximo
+      g.append(sv("text", { x: x + grosor / 2, y: y(d.eventos) - 6,
+        "text-anchor": esHoy ? "end" : "middle", class: "rotulo" },
+        esHoy ? `hoy · ${numero.format(d.eventos)}` : numero.format(d.eventos)));
+    }
+    conTip(g, `${numero.format(d.eventos)} eventos`, diaCorto.format(f));
+    s.append(g);
+  });
+  cont.replaceChildren(s);
+}
+
+function graficoGrupos(cont, filas, nombre) {
+  filas = [...filas].sort((a, b) => b.con_oferta_pct - a.con_oferta_pct);
+  const W = ancho(cont, 250), alto = 28, m = { l: 118, r: 50 }, H = Math.max(1, filas.length) * alto;
+  const x = (v) => m.l + (W - m.l - m.r) * v / 100;
+  const s = sv("svg", { viewBox: `0 0 ${W} ${H}`, "aria-label": `Porcentaje con oferta por ${nombre}` });
+  s.append(sv("line", { x1: m.l, x2: m.l, y1: 0, y2: H, class: "regla" }));
+  filas.forEach((f, i) => {
+    const y0 = i * alto, g = sv("g", { class: "marca" });
+    g.append(sv("rect", { x: 0, y: y0, width: W, height: alto, fill: "transparent", class: "golpe" }));
+    g.append(sv("text", { x: m.l - 8, y: y0 + alto / 2 + 4, "text-anchor": "end", class: "rotulo" }, f.grupo));
+    g.append(sv("path", { d: barra(m.l, y0 + 6, x(f.con_oferta_pct) - m.l, alto - 12, 4), class: "serie" }));
+    g.append(sv("text", { x: x(f.con_oferta_pct) + 6, y: y0 + alto / 2 + 4, class: "rotulo" }, pct(f.con_oferta_pct)));
+    conTip(g, `${pct(f.con_oferta_pct)} con oferta`,
+      `${f.grupo} · ${f.solicitudes} solicitudes · 1.ª oferta: ${horas(f.horas_primera_oferta_mediana)}`);
+    s.append(g);
+  });
+  cont.replaceChildren(s);
+}
+
+function lista(id, filas) {
+  $(id).replaceChildren(...filas.map(([izq, der, clase]) => {
+    const li = el("li");
+    li.append(el("span", izq), el("b", der, clase));
+    return li;
+  }));
+}
+
+// La página se conserva por título aunque se reemplace la tabla al actualizar los datos.
+const paginasTabla = new Map();
+function tabla(titulo, cabeza, filas) {
+  const contenedor = el("div", null, "tabla-contenedor");
+  const t = el("table"), cab = el("tr"), cuerpo = el("tbody"), encabezado = el("thead");
+  t.append(el("caption", titulo));
+  cabeza.forEach((c) => { const th = el("th", c); th.scope = "col"; cab.append(th); });
+  encabezado.append(cab);
+  t.append(encabezado, cuerpo);
+  contenedor.append(t);
+  const porPagina = 8, totalPaginas = Math.max(1, Math.ceil(filas.length / porPagina));
+  let pagina = Math.min(Math.max(1, paginasTabla.get(titulo) || 1), totalPaginas);
+  const anterior = el("button", "Anterior", "boton"), siguiente = el("button", "Siguiente", "boton");
+  anterior.type = siguiente.type = "button";
+  const estado = el("span");
+  estado.setAttribute("aria-live", "polite");
+  function mostrar() {
+    paginasTabla.set(titulo, pagina);
+    cuerpo.replaceChildren(...filas.slice((pagina - 1) * porPagina, pagina * porPagina).map((f) => {
+      const fila = el("tr");
+      f.forEach((v) => fila.append(el("td", v)));
+      return fila;
+    }));
+    estado.textContent = `Página ${pagina} de ${totalPaginas}`;
+    anterior.disabled = pagina === 1;
+    siguiente.disabled = pagina === totalPaginas;
+  }
+  anterior.addEventListener("click", () => { if (pagina > 1) { pagina--; mostrar(); } });
+  siguiente.addEventListener("click", () => { if (pagina < totalPaginas) { pagina++; mostrar(); } });
+  if (filas.length > porPagina) {
+    const controles = el("nav", null, "tabla-paginacion");
+    controles.setAttribute("aria-label", `Páginas de ${titulo}`);
+    controles.append(anterior, estado, siguiente);
+    contenedor.append(controles);
+  }
+  mostrar();
+  return contenedor;
+}
+
+const cifrasAnteriores = new Map();
+function destacarCambio(tarjeta, rotulo, valor) {
+  const cambio = cifrasAnteriores.has(rotulo) && cifrasAnteriores.get(rotulo) !== valor;
+  cifrasAnteriores.set(rotulo, valor);
+  if (cambio && matchMedia("(prefers-reduced-motion: no-preference)").matches) {
+    tarjeta.classList.remove("destello");
+    void tarjeta.offsetWidth;  // reinicia el destello si vuelve a cambiar antes de que termine
+    tarjeta.classList.add("destello");
+  }
+}
+function grupoCifras(titulo, filas) {
+  const grupo = el("section", null, "grupo-cifras"), lista = el("ul", null, "cifras");
+  grupo.setAttribute("aria-label", titulo);
+  grupo.append(el("h2", titulo, "rotulo-grupo"), lista);
+  filas.forEach(([valor, rotulo, ayuda]) => {
+    const tarjeta = el("li");
+    tarjeta.append(el("b", numero.format(valor)), el("span", rotulo));
+    if (ayuda) tarjeta.title = ayuda;
+    destacarCambio(tarjeta, rotulo, valor);
+    lista.append(tarjeta);
+  });
+  return grupo;
+}
+function estadosSolicitudes(filas, total) {
+  const colores = { Publicada: "gris", "Con ofertas": "verde", Resuelta: "verde", "En coordinación": "ambar", Cancelada: "rojo" };
+  $("estados").replaceChildren(...filas.map(([nombre, cantidad]) => {
+    const proporcion = total > 0 ? Math.min(100, Math.max(0, cantidad / total * 100)) : 0;
+    const fila = el("li"), punto = el("span", null, "estado-punto"), barra = el("div", null, "estado-barra"), relleno = el("span");
+    fila.style.setProperty("--color-estado", `var(--estado-${colores[nombre] || "gris"})`);
+    punto.setAttribute("aria-hidden", "true");
+    barra.setAttribute("aria-hidden", "true");
+    relleno.style.width = `${proporcion}%`;
+    barra.append(relleno);
+    fila.append(punto, el("span", nombre), el("b", numero.format(cantidad)), el("span", pct(proporcion), "estado-porcentaje"), barra);
+    return fila;
+  }));
+}
+
+const GRUPOS = { region: "Región", entrega: "Entrega", precio_maximo: "Precio máximo" };
+const ORDEN_ESTADOS = ["Resuelta", "En coordinación", "Con ofertas", "Publicada", "Cancelada"];
+
+function pintar(d) {
+  const mixto = d.simulado === false && Boolean(d.origen && d.origen.agentes_simulados);  // agentes (SPEC-006) y personas
+  const k = d.kpis, t = d.totales, v = d.verificacion, tipo = mixto ? "de la demo" : d.simulado === false ? "reales" : "simulados";
+  $("pie-fuente").textContent = mixto
+    ? "Datos de demostración: agentes simulados y personas (SPEC-005 y SPEC-006)"
+    : d.simulado === false ? "Datos reales del servidor (SPEC-005)" : "Datos simulados según SPEC-003 y SPEC-004";
+  if (d.periodo) {
+    const desde = fecha(d.periodo.desde), hasta = fecha(d.periodo.hasta);
+    $("periodo").textContent = `Del ${diaCorto.format(desde)} al ${diaCorto.format(hasta)} de ${hasta.getUTCFullYear()} · ` +
+      `${d.agentes.lectores} lectores y ${d.agentes.vendedores} vendedores ${tipo}`;
+  }
+  destacarCambio($("kpi-resolucion").closest(".tarjeta"), "KPI 1 · Tasa de resolución", k.resolucion_pct);
+  destacarCambio($("kpi-respuesta").closest(".tarjeta"), "KPI 2 · Tasa de respuesta", k.respuesta_pct);
+  destacarCambio($("kpi-horas").closest(".tarjeta"), "KPI 3 · Hasta la 1.ª oferta", k.horas_primera_oferta);
+  $("kpi-resolucion").textContent = pct(k.resolucion_pct);
+  $("kpi-resolucion-nota").textContent = `${Math.round(k.resolucion_pct * t.solicitudes / 100)} de ${t.solicitudes} ` +
+    "solicitudes con compra confirmada por el lector.";
+  $("kpi-respuesta").textContent = pct(k.respuesta_pct);
+  $("kpi-horas").textContent = horas(k.horas_primera_oferta);
+  const mercado = [
+    [t.solicitudes, "solicitudes"], [t.ofertas, "ofertas"], [t.aceptadas_para_coordinar, "aceptadas para coordinar"],
+    [t.compras_confirmadas, "compras confirmadas"],
+  ];
+  const uso = d.origen
+    ? [[d.origen.personas, "personas"], [d.origen.agentes_simulados, "agentes simulados"]]
+    : [[t.usuarios_activos, d.simulado === false ? "usuarios activos" : "usuarios simulados activos"]];
+  if (t.descargas_apk != null) uso.push([t.descargas_apk, "descargas del APK", "Desde el último reinicio del servidor"]);
+  uso.push([t.eventos, "eventos registrados"]);
+  $("totales").replaceChildren(grupoCifras("Mercado", mercado), grupoCifras("Uso", uso));
+
+  graficoDias($("grafico-dias"), d.uso_diario, d.en_vivo ? d.generado.slice(0, 10) : null);
+  for (const clave in GRUPOS) graficoGrupos($(`grafico-${clave}`), d.desglose[clave] || [], GRUPOS[clave].toLowerCase());
+
+  const estados = Object.entries(d.solicitudes_por_estado)
+    .sort(([a], [b]) => (ORDEN_ESTADOS.indexOf(a) + 99) % 99 - (ORDEN_ESTADOS.indexOf(b) + 99) % 99);
+  estadosSolicitudes(estados, t.solicitudes);
+
+  $("tarjeta-reglas").hidden = !v;  // las verificaciones solo existen en la simulación
+  if (v) {
+    const marca = (n) => (n === 0 ? ["✓", "ok"] : ["✗", "error"]);
+    const [i1, c1] = marca(v.contacto.violaciones), [i2, c2] = marca(v.acciones_invalidas.aceptadas), [i3, c3] = marca(v.fallas);
+    lista("verificacion", [
+      [`Contacto del vendedor revisado ${numero.format(v.contacto.verificaciones)} veces`, `${i1} ${v.contacto.violaciones} filtraciones`, c1],
+      [`${numero.format(v.acciones_invalidas.intentos)} acciones inválidas intentadas`, `${i2} ${v.acciones_invalidas.aceptadas} aceptadas`, c2],
+      ["Fallas inesperadas de la app", `${i3} ${v.fallas}`, c3],
+    ]);
+  }
+
+  $("tarjeta-actividad").hidden = !d.actividad.length;  // sin actividad, el gráfico usa todo el ancho
+  $("actividad").replaceChildren(...d.actividad.map((a) => {
+    const li = el("li"), hora = el("time", diaHora.format(fecha(a.hora)));
+    hora.dateTime = a.hora;
+    li.append(hora, el("b", a.tipo));
+    if (a.detalle) li.append(el("span", a.detalle));
+    return li;
+  }));
+
+  $("tablas").replaceChildren(
+    tabla("Eventos por día", ["Día", "Eventos"], d.uso_diario.map((x) => [diaCorto.format(fecha(x.dia)), numero.format(x.eventos)])),
+    ...Object.entries(GRUPOS).map(([clave, nombre]) => tabla(`Con oferta según ${nombre.toLowerCase()}`,
+      [nombre, "Solicitudes", "Con oferta", "1.ª oferta (mediana)"],
+      (d.desglose[clave] || []).map((f) => [f.grupo, String(f.solicitudes), pct(f.con_oferta_pct), horas(f.horas_primera_oferta_mediana)]))),
+  );
+
+  $("punto").className = d.en_vivo ? "vivo" : "";
+  $("estado-texto").textContent = `${d.en_vivo ? "En vivo · " : ""}actualizado a las ${d.generado.slice(11, 19)}`;
+}
+
+// ------------------------------------------------ CSV: separador ";" y coma decimal, como lo abre Excel en español
+function filasCsv(d) {
+  const n = (v) => (v == null ? "" : String(v).replace(".", ","));
+  const filas = [["seccion", "indicador", "grupo", "valor"],
+    ["kpi", "tasa_de_resolucion_pct", "", n(d.kpis.resolucion_pct)],
+    ["kpi", "tasa_de_respuesta_pct", "", n(d.kpis.respuesta_pct)],
+    ["kpi", "horas_hasta_primera_oferta", "", n(d.kpis.horas_primera_oferta)]];
+  for (const [k, v] of Object.entries(d.totales)) filas.push(["totales", k, "", n(v)]);
+  for (const [k, v] of Object.entries(d.origen || {})) filas.push(["origen", k, "", n(v)]);
+  d.uso_diario.forEach((x) => filas.push(["eventos_por_dia", "eventos", x.dia, n(x.eventos)]));
+  for (const clave in GRUPOS) (d.desglose[clave] || []).forEach((f) => filas.push(
+    [`por_${clave}`, "solicitudes", f.grupo, n(f.solicitudes)],
+    [`por_${clave}`, "con_oferta_pct", f.grupo, n(f.con_oferta_pct)],
+    [`por_${clave}`, "horas_primera_oferta_mediana", f.grupo, n(f.horas_primera_oferta_mediana)]));
+  for (const [estado, v] of Object.entries(d.solicitudes_por_estado)) filas.push(["solicitudes_por_estado", "solicitudes", estado, n(v)]);
+  return filas;
+}
+function textoCsv(filas) {  // comillas donde hace falta; un texto que empieza con = + - @ no se abre como fórmula
+  const celda = (v) => {
+    v = /^[=+\-@]/.test(v) && !/^-?\d/.test(v) ? `'${v}` : v;
+    return /[";\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+  };
+  return "\ufeff" + filas.map((f) => f.map((v) => celda(String(v))).join(";")).join("\r\n") + "\r\n";
+}
+function descargarCsv() {
+  if (!datos) return;
+  const url = URL.createObjectURL(new Blob([textoCsv(filasCsv(datos))], { type: "text/csv;charset=utf-8" }));
+  const enlace = el("a");
+  enlace.href = url;
+  enlace.download = `bookwho-metricas-${datos.generado.slice(0, 10)}.csv`;
+  document.body.append(enlace);
+  enlace.click();
+  enlace.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+$("csv").addEventListener("click", descargarCsv);
+
+// ------------------------------------------------ carga cada 5 s; si falla, se mantiene lo último que se mostró
+let ultimo = "", datos = null, espera;
+addEventListener("resize", () => {  // al girar el teléfono o cambiar la ventana, se redibuja al nuevo ancho
+  clearTimeout(espera);
+  espera = setTimeout(() => datos && pintar(datos), 150);
+});
+async function cargar() {
+  try {
+    const r = await fetch("metricas.json", { cache: "no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const texto = await r.text();
+    if (texto === ultimo) return;
+    const d = JSON.parse(texto);
+    if (!d || !d.kpis || !d.totales || !Array.isArray(d.uso_diario) || !d.desglose) {
+      throw new Error("formato inesperado");
+    }
+    pintar(d);
+    ultimo = texto;
+    datos = d;
+    $("csv").disabled = false;
+  } catch (e) {
+    $("punto").className = "";
+    $("estado-texto").textContent = ultimo
+      ? "No se pudieron actualizar los datos: se muestran los últimos recibidos."
+      : "Todavía no hay datos: falta metricas.json o viene incompleto.";
+  }
+}
+cargar();
+setInterval(cargar, 5000);
+</script>
+</body>
+</html>

@@ -25,7 +25,7 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 
 | Área | Estado |
 |------|--------|
-| Login, registro (lector/vendedor), recuperar contraseña (simulado) | Hecho |
+| Login y registro (lector/vendedor); recuperar contraseña no está disponible en esta versión y el login lo indica | Hecho |
 | Búsqueda de libros (Google Books → Open Library → catálogo local) con caché de portadas en disco | Hecho |
 | Lector: crear, ver y cancelar solicitudes; selector de comuna/ciudad; ver, coordinar y aceptar ofertas | Hecho |
 | Vendedor: feed con filtros (excluye solicitudes ya ofertadas), detalle, crear/cancelar oferta, desistir de un trato, mis ofertas | Hecho |
@@ -33,12 +33,18 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Admin: búsqueda y exportación de logs de actividad a `.log` | Hecho |
 | Máquinas de estado de solicitud y oferta (estados intermedios) | Hecho, en `models/store.py` |
 | Permisos por rol en la capa de dominio (no solo en la UI) | Hecho |
-| Pruebas automatizadas (50 tests) | Pasan |
+| Pruebas automatizadas (121 tests) | Pasan; incluyen 21 pruebas de seguridad del backend |
 | Fundamentación UX/UI con encuesta real (18 respuestas) | Hecho, en `docs/01-requirements/FUNDAMENTACION-UX-UI.md` |
 | Persistencia JSON | Hecha en `services/persistence.py`: escritorio usa `data/user/data.json` y Android su directorio privado; sin base de datos ni servidor |
 | Notificaciones locales (plyer) y configuración remota | Hecho, en `services/` |
 | APK Android (Buildozer) | Hecho, `buildozer.spec` |
 | Registro de eventos y KPIs (RA3) | Hecho: `models/store.py` (`_log`) + `analitica.py`. **Faltan los datos reales** (ver `DOCUMENTATION.md`) |
+| Datos simulados para RA3 (autorizados por el docente) | Hecho: `simulador.py` (SPEC-003); resultados en `DOCUMENTATION.md` §7.1 |
+| Panel público de métricas | Hecho: `panel/index.html` + `simulador.py --panel` (SPEC-004), con modo en vivo |
+| Backend compartido | En prueba: `backend/servidor.py` + `services/remoto.py` (SPEC-005, ADR-004 pendiente de aprobación); la app vuelve al modo local si no hay servidor |
+| Seguridad del backend antes de la E4 | F1–F8 aplicados y probados; riesgos residuales y plan en [SEGURIDAD.md](docs/04-architecture/SEGURIDAD.md). Desplegado en el Z40 el 18-11-2026. |
+| Agentes simulados en vivo | Hecho: `backend/agentes.py` (SPEC-006), panel `/en-vivo/` |
+| Sitio público: landing con descarga del APK y QR, privacidad, configuración remota editable | Hecho: `sitio/` + `backend/servidor.py` (SPEC-008) |
 | Documentación SDD en `docs/` | ADR y specs de MVC y estructura creados; otras specs de producto siguen pendientes |
 | Reportes y auditoría formal | Fuera del demo |
 
@@ -68,6 +74,10 @@ data/                           Catálogo de comunas y configuración remota.
 assets/                         Fuentes tipográficas y capturas.
 
 analitica.py                    Fuera de la app: KPIs de RA3 a partir de data/user/data.json.
+simulador.py                    Fuera de la app: actividad ficticia para medir RA3 (SPEC-003).
+panel/                          Fuera de la app: panel web de métricas en el servidor (SPEC-004).
+backend/                        Fuera de la app: servidor compartido con el mismo modelo (SPEC-005).
+sitio/                          Fuera de la app: landing y privacidad que publica el servidor (SPEC-008).
 ```
 
 Regla: **toda regla de negocio y todo chequeo de permisos va en `models/store.py`**, y la UI solo llama a sus métodos. Así se puede probar sin interfaz y cambiar la UI o la persistencia sin romper el dominio.
@@ -98,7 +108,7 @@ Se tomaron para que el demo funcionara y se actualizaron con las Fases 1 a 4 del
 6. El vendedor puede ofertar cualquier condición (nuevo o usado) y método de entrega; el lector evalúa la oferta al revisarla.
 7. Un vendedor tiene como máximo una oferta activa por solicitud.
 8. Cada cuenta tiene un solo rol. Un usuario suspendido no puede iniciar sesión ni operar.
-9. No hay base de datos: la app persiste en JSON local (`data/user/data.json` en escritorio, directorio privado en Android). Las cuentas demo se crean solo la primera vez (si todavía no existe el archivo); en el APK el login no muestra el panel de cuentas demo.
+9. No hay base de datos: la app persiste en JSON local (`data/user/data.json` en escritorio, directorio privado en Android). Las cuentas demo se crean solo la primera vez (si todavía no existe el archivo); el login ya no muestra el panel de cuentas demo.
 10. Stack del demo: Python 3.10/3.11 + Kivy 2.3.1 + KivyMD 2.0.1.dev0.
 11. El feed del vendedor excluye las solicitudes donde ya tiene una oferta activa; esas se gestionan desde "Mis ofertas".
 12. El admin consulta la actividad en una subpantalla dedicada (con búsqueda) y puede exportarla a un archivo `.log`.

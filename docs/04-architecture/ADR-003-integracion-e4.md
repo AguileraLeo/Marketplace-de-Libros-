@@ -17,6 +17,8 @@ carpeta `.agents/` (skills de un asistente de IA, unas 95.000 líneas) y copias 
 
 ## Decisión
 
+- `simulador.py` (SPEC-003) también queda en la raíz y fuera del APK, por la misma razón que
+  `analitica.py`. Sus datos van a `data/simulacion/`, que Git ignora.
 - `analitica.py` queda en la raíz, junto a `main.py`: es el punto de entrada de la herramienta
   de medición que se ejecuta en el PC. Lee el modelo (`models/store.py`), pero la app no lo
   importa y `buildozer.spec` lo excluye del APK.

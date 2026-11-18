@@ -13,6 +13,7 @@ La contraseña se guarda como hash SHA-256 (nunca en texto plano).
 from __future__ import annotations
 
 import hashlib
+import hmac
 import itertools
 import os
 import re
@@ -337,11 +338,11 @@ class Store:
 
     def authenticate(self, email: str, password: str) -> User:
         user = self.find_user_by_email(email)
-        if user is None or user.password != hash_password(user.email, password):
+        if user is None or not hmac.compare_digest(user.password, hash_password(user.email, password)):
             raise ValidationError("Correo o contraseña incorrectos.")
         if user.status != UserStatus.ACTIVE:
             raise PermissionDenied("Tu cuenta está suspendida. Contacta a soporte.")
-        self._log(user, "login", f"{user.email} inició sesión")
+        self._log(user, "login", "El usuario inició sesión")
         return user
 
     def register(self, name: str, email: str, password: str, role: str, location: str = "") -> User:
@@ -360,7 +361,7 @@ class Store:
         if self.find_user_by_email(email):
             raise ValidationError("Ya existe una cuenta con ese correo.")
         user = self.add_user(name, email, password, role, location)
-        self._log(user, "registro", f"Nuevo {Role.LABELS[role].lower()}: {email}")
+        self._log(user, "registro", f"Nuevo {Role.LABELS[role].lower()} registrado")
         return user
 
     def recover_password(self, email: str) -> None:

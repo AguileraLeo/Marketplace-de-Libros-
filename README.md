@@ -66,7 +66,7 @@ Programación orientada a objetos en el código:
 - **Jerarquía de excepciones:** `DomainError` y sus subclases `ValidationError`, `PermissionDenied`, `NotFound` e `InvalidTransition`; `app.safe()` las muestra como mensajes en vez de cerrar la app.
 - **Encapsulamiento:** solo `Store` modifica los datos, y revalida rol, propiedad y estado en cada caso de uso.
 
-Las decisiones de arquitectura están en [`docs/04-architecture/`](docs/04-architecture/) (ADR-001 a ADR-003).
+Las decisiones de arquitectura están en [`docs/04-architecture/`](docs/04-architecture/) (ADR-001 a ADR-004).
 
 ## Medición (RA3)
 
@@ -85,11 +85,27 @@ python analitica.py data_telefono.json   # datos exportados de un teléfono (ver
 
 Imprime solo conteos (nunca correos ni detalles) y genera `kpis.png` si `matplotlib` está instalado. El método MJV App, los eventos, las limitaciones y los resultados están en [`DOCUMENTATION.md`](DOCUMENTATION.md).
 
+Mientras no haya uso real, `simulador.py` genera actividad **ficticia** con la lógica real de la app: 24 lectores y 10 vendedores simulados (cuentas `@bookwho.test`) durante 14 días. Mientras simula, verifica que el contacto del vendedor lo vea solo quien corresponde y que se rechacen acciones inválidas. `analitica.py` rotula esos resultados como **DATOS SIMULADOS** ([SPEC-003](docs/05-specs/SPEC-003-simulador-de-uso.md)):
+
+```bash
+python simulador.py                                    # datos ficticios en data/simulacion/
+python analitica.py data/simulacion/simulacion.json
+```
+
+![KPIs con datos simulados](docs/resultados/kpis_simulados.png)
+
+**Panel público:** [bookwho.quadcorestore.com/simulacion/](https://bookwho.quadcorestore.com/simulacion/) muestra los mismos KPIs con los datos simulados, el desglose y la verificación de las reglas de la app ([SPEC-004](docs/05-specs/SPEC-004-panel-de-metricas.md)). Es una página estática (`panel/index.html`) que lee `metricas.json` cada 5 segundos, sin datos personales. La sirve el servidor (ver «Modo servidor») con el `metricas.json` que escribe el simulador:
+
+```bash
+python simulador.py --panel ~/bookwho/publico                # escribe ~/bookwho/publico/metricas.json
+python simulador.py --panel ~/bookwho/publico --en-vivo 10   # demo: un día más de actividad en 10 minutos
+```
+
 ## Instalación y uso
 
 ### Android
 
-El APK está en **[Releases](https://github.com/AguileraLeo/Marketplace-de-Libros-/releases/latest)**: descarga `bookwho.apk` en el teléfono, ábrelo y permite instalar apps de origen desconocido. Requiere Android 7.0 o superior, de 64 bits. Al abrirla por primera vez, acepta el permiso de notificaciones.
+Descarga el APK en el teléfono desde **[bookwho.quadcorestore.com](https://bookwho.quadcorestore.com)** (botón o código QR) o desde **[Releases](https://github.com/AguileraLeo/Marketplace-de-Libros-/releases/latest)**, ábrelo y permite instalar apps de origen desconocido. Requiere Android 7.0 o superior, de 64 bits. Al abrirla por primera vez, acepta el permiso de notificaciones.
 
 ### Escritorio
 
@@ -118,7 +134,7 @@ Opcional: define `GOOGLE_BOOKS_API_KEY` para usar Google Books. Sin clave, Googl
 | Vendedor      | pedro@demo.cl      | 1234       |
 | Administrador | admin@demo.cl      | admin      |
 
-También se pueden registrar cuentas nuevas de lector o vendedor. En el APK el login no muestra este panel, pero las cuentas siguen existiendo: ocultarlas no es una medida de seguridad. Por eso, en una prueba con usuarios reales, cada participante registra su propia cuenta.
+También se pueden registrar cuentas nuevas de lector o vendedor. El login ya no muestra este panel, pero en el modo local las cuentas siguen existiendo: ocultarlas no es una medida de seguridad. Por eso, en una prueba con usuarios reales, cada participante registra su propia cuenta.
 
 ### Pruebas
 
@@ -126,7 +142,38 @@ También se pueden registrar cuentas nuevas de lector o vendedor. En el APK el l
 python -m unittest discover -s tests -v
 ```
 
-50 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas y cálculo de KPIs.
+94 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs, simulador, panel y servidor. Las del servidor necesitan `backend/requirements.txt`; sin esas librerías se omiten.
+
+### Modo servidor: datos compartidos entre teléfonos
+
+Auditoría, mitigaciones de la E4 y tareas pendientes: [Seguridad del servidor](docs/04-architecture/SEGURIDAD.md).
+
+La app usa el servidor indicado en `data/servidor.json` si responde; si no, trabaja en modo local como siempre y lo avisa. Las pantallas son las mismas: solo cambia dónde vive el modelo ([SPEC-005](docs/05-specs/SPEC-005-backend-compartido.md), [ADR-004](docs/04-architecture/ADR-004-backend-compartido.md)). Para forzar el modo local: `BOOKWHO_SERVIDOR=local python main.py`.
+
+```bash
+# en el servidor, desde la raíz del repositorio (paquetes python3-fastapi y python3-uvicorn, o backend/requirements.txt)
+BOOKWHO_ADMIN_CORREO=... BOOKWHO_ADMIN_CLAVE=... \
+  python3 -m uvicorn backend.servidor:app_desde_entorno --factory --host 127.0.0.1 --port 8080
+```
+
+El servidor no tiene cuentas demo: si un archivo cargado las trae, las elimina al arrancar. También publica el sitio del proyecto ([SPEC-008](docs/05-specs/SPEC-008-sitio-publico.md)):
+
+| Ruta | Qué es |
+|------|--------|
+| `/` | Landing: qué es la app, descarga con código QR (`sitio/qr-descarga.png` sirve para las diapositivas) y cifras en vivo |
+| `/descargar` | El APK: se publica copiándolo a `~/bookwho/publico/bookwho.apk` |
+| `/config.json` | Configuración remota de la app: se cambia en vivo editando `~/bookwho/publico/config.json` |
+| `/en-vivo/` | Panel con los datos del servidor: agentes simulados y personas, por separado |
+| `/simulacion/` | Panel de la simulación del informe (`~/bookwho/publico/metricas.json`) |
+| `/privacidad/` | Qué datos guarda la app, quién los ve y cómo pedir que se borren |
+| `/api/docs` | Documentación de la API |
+
+**Agentes simulados en vivo** ([SPEC-006](docs/05-specs/SPEC-006-agentes-en-vivo.md)): lectores y vendedores ficticios (cuentas `@bookwho.test`) que usan la app por la API, igual que un teléfono, y también interactúan con las personas. El panel los cuenta aparte como agentes simulados.
+
+```bash
+python3 simulador.py --salida ~/bookwho/datos/bookwho.json   # con el servidor detenido: carga los 14 días simulados del informe
+python3 -m backend.agentes --minutos 180                      # agentes en vivo durante 3 horas
+```
 
 ### Generar el APK (Linux, con Docker)
 
@@ -144,6 +191,10 @@ La segunda línea guarda la llave de firma de depuración fuera del contenedor (
 ```text
 main.py                  Punto de entrada de la app
 analitica.py             Herramienta de PC: KPIs de RA3 desde data.json (no va en el APK)
+simulador.py             Herramienta de PC: actividad ficticia para medir RA3 (no va en el APK)
+panel/                   Panel web de métricas (SPEC-004): se publica en el servidor, no va en el APK
+backend/                 Servidor compartido (SPEC-005): FastAPI con el mismo modelo, no va en el APK
+sitio/                   Sitio público (SPEC-008): landing, privacidad y QR; lo sirve el servidor, no va en el APK
 controllers/             Controlador: ciclo de vida, navegación y una clase por pantalla
 views/                   Vista: libros.kv y widgets reutilizables
 models/                  Modelo: dominio, reglas de negocio, permisos y eventos
@@ -155,6 +206,7 @@ docs/                    Requisitos, arquitectura (ADR), specs, proceso y presen
 buildozer.spec           Compilación del APK
 requirements.txt         Dependencias de escritorio
 DOCUMENTATION.md         Medición RA3: eventos, KPIs, método MJV App y resultados
+INFORME_FINAL.md         Informe Final de la Evaluación 4
 AGENTS.md, CONTEXTO.md   Visión y reglas del producto; estado actual del proyecto
 CLAUDE.md                Instrucciones para asistentes de IA
 ```
@@ -163,10 +215,11 @@ CLAUDE.md                Instrucciones para asistentes de IA
 
 | Documento | Contenido |
 |---|---|
+| [`INFORME_FINAL.md`](INFORME_FINAL.md) | Informe Final de la Evaluación 4: problema, solución, medición, resultados y ética |
 | [`DOCUMENTATION.md`](DOCUMENTATION.md) | Medición y evaluación de funcionalidad (RA3) |
 | [`docs/04-architecture/DOCUMENTACION.md`](docs/04-architecture/DOCUMENTACION.md) | Documentación técnica del código, módulo por módulo |
-| [`docs/04-architecture/`](docs/04-architecture/) | Decisiones de arquitectura (ADR-001 a ADR-003) |
-| [`docs/05-specs/`](docs/05-specs/) | Especificaciones de los cambios estructurales |
+| [`docs/04-architecture/`](docs/04-architecture/) | Decisiones de arquitectura (ADR-001 a ADR-004) |
+| [`docs/05-specs/`](docs/05-specs/) | Especificaciones: MVC, estructura del repositorio y simulador |
 | [`docs/01-requirements/FUNDAMENTACION-UX-UI.md`](docs/01-requirements/FUNDAMENTACION-UX-UI.md) | Diagnóstico (encuesta) y fundamentación UX/UI |
 | [`docs/06-process/USO_IA.md`](docs/06-process/USO_IA.md) | Declaración de uso de inteligencia artificial |
 | [`docs/presentations/`](docs/presentations/) | Presentación del proyecto y landing del pitch |
@@ -191,7 +244,7 @@ Decisiones pendientes de spec (ver AGENTS.md §19):
 - Un vendedor solo puede tener una oferta activa por solicitud. Puede ofrecer el libro nuevo o usado aunque no coincida con lo que pidió el lector; el lector lo evalúa al revisar la oferta.
 - Si un vendedor cancela su última oferta activa, la solicitud vuelve a `PUBLICADA`. Una oferta que ya está en coordinación no se cancela como oferta común: el vendedor o el lector desisten del trato.
 - Una cuenta tiene un solo rol. Los usuarios suspendidos no pueden iniciar sesión ni operar.
-- "Recuperar contraseña" es simulado: no se envían correos.
+- La recuperación de contraseña no está disponible en esta versión: el login lo indica.
 
 ## Dificultades y cómo las resolvimos
 

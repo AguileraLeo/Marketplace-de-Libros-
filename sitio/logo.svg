@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104" role="img" aria-label="BookWho?">
+  <title>BookWho?</title>
+  <!-- Réplica del logo de la app (<BrandMark> en views/libros.kv); íconos "book-open-page-variant" y "help" de Material Design Icons (Apache 2.0) -->
+  <rect width="104" height="104" rx="14" fill="#284DA6"/>
+  <path transform="translate(18 77.5) scale(0.1328125 -0.1328125)" fill="#FFFFFF" d="M405 405 299 309V75L405 171ZM139 341Q105 341 76 334Q43 326 21 309V-3Q21 -7 24.5 -10.5Q28 -14 32 -14L37 -13Q59 -2 87.0 4.5Q115 11 139 11Q173 11 201 3Q234 -5 256 -21Q277 -8 311.5 1.5Q346 11 373 11Q432 11 475 -12Q476 -13 479 -13H480Q484 -13 487.5 -9.5Q491 -6 491 -2V309Q474 322 448 331V43Q414 53 373 53Q346 53 311.5 44.0Q277 35 256 21V309Q234 326 201 334Q173 341 139 341Z"/>
+  <line x1="52" y1="29" x2="52" y2="71" stroke="#F3C66E" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="89" cy="89" r="14.5" fill="#F5F7FC" stroke="#284DA6" stroke-width="1"/>
+  <path transform="translate(80 95.75) scale(0.03515625 -0.03515625)" fill="#284DA6" d="M213 43H277V-21H213ZM256 405Q311 403 347 369Q380 337 382.5 289.0Q385 241 352 199Q343 188 320 171Q299 154 292 146Q282 134 279 117Q277 107 277 85H213Q213 120 215 134Q218 158 228 172Q234 182 246 192Q253 197 267.5 206.5Q282 216 288 220Q313 244 318.0 271.5Q323 299 306.5 319.0Q290 339 256 341Q229 341 210.5 322.5Q192 304 192 277H128Q128 312 145.0 341.5Q162 371 191.5 388.0Q221 405 256 405Z"/>
+</svg>
