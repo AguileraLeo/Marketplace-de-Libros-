@@ -156,7 +156,14 @@ BOOKWHO_ADMIN_CORREO=... BOOKWHO_ADMIN_CLAVE=... \
   python3 -m uvicorn backend.servidor:app_desde_entorno --factory --host 127.0.0.1 --port 8080
 ```
 
-El panel con datos reales queda en `/reales/` y la documentación de la API en `/api/docs`. El servidor no tiene cuentas demo.
+El panel con los datos del servidor queda en `/en-vivo/` y la documentación de la API en `/api/docs`. El servidor no tiene cuentas demo: si un archivo cargado las trae, las elimina al arrancar.
+
+**Agentes simulados en vivo** ([SPEC-006](docs/05-specs/SPEC-006-agentes-en-vivo.md)): lectores y vendedores ficticios (cuentas `@bookwho.test`) que usan la app por la API, igual que un teléfono, y también interactúan con las personas. El panel los cuenta aparte como agentes simulados.
+
+```bash
+python3 simulador.py --salida ~/bookwho/datos/bookwho.json   # con el servidor detenido: carga los 14 días simulados del informe
+python3 -m backend.agentes --minutos 180                      # agentes en vivo durante 3 horas
+```
 
 ### Generar el APK (Linux, con Docker)
 

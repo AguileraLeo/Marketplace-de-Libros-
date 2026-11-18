@@ -85,8 +85,24 @@ def no_autorizado() -> JSONResponse:
     return JSONResponse({"error": "Tu sesión venció: vuelve a iniciar sesión.", "tipo": "SesionVencida"}, 401)
 
 
+def quitar_cuentas_demo(store: Store) -> int:
+    """Ninguna cuenta demo (su clave es pública) llega al servidor, aunque venga en un archivo cargado,
+    como el historial de la simulación. Se van con sus solicitudes, ofertas, contactos y eventos."""
+    demo = {u.id for u in store.users.values() if u.email in analitica.CORREOS_DEMO}
+    solicitudes = {q.id for q in store.requests.values() if q.reader_id in demo}
+    ofertas = {o.id for o in store.offers.values() if o.seller_id in demo or o.request_id in solicitudes}
+    for tabla, fuera in ((store.users, demo), (store.requests, solicitudes), (store.offers, ofertas), (store.contacts, demo)):
+        for clave in [c for c in tabla if c in fuera]:
+            del tabla[clave]
+    store.activity = [e for e in store.activity if e.actor_id not in demo
+                      and analitica.numero(analitica.OFERTA, {"detail": e.detail}) not in ofertas
+                      and analitica.numero(analitica.SOLICITUD, {"detail": e.detail}) not in solicitudes]
+    return len(demo)
+
+
 def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, excluir=()) -> FastAPI:
-    store = persistence.load_store(ruta_datos) or Store()  # sin cuentas demo: arranca vacío
+    store = persistence.load_store(ruta_datos) or Store()
+    quitar_cuentas_demo(store)
     if admin and not store.find_user_by_email(admin[0]):
         store.add_user("Administrador", admin[0], admin[1], Role.ADMIN)
     candado = threading.Lock()  # un solo Store y un solo escritor: cada llamada pasa de a una
@@ -258,17 +274,15 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
             return error(NotFound("Todavía no hay métricas simuladas."))
         return FileResponse(ruta, headers={"Cache-Control": "no-store"})
 
-    @app.get("/reales")
-    def reales_sin_barra():
-        return RedirectResponse("/reales/")
+    # Datos del servidor: /en-vivo/ (con agentes simulados, SPEC-006) y /reales/ (mismo contenido, nombre anterior)
+    def redirigir_a(destino):  # sin parámetros: nadie puede usar la redirección para mandar a otro sitio
+        return lambda: RedirectResponse(destino)
 
-    @app.get("/reales/")
-    def reales():
-        return FileResponse(os.path.join(RAIZ, "panel", "index.html"))
-
-    @app.get("/reales/metricas.json")
-    def reales_metricas():
-        return metricas_reales()
+    for ruta in ("/en-vivo", "/reales"):
+        app.add_api_route(ruta, redirigir_a(f"{ruta}/"), methods=["GET"], include_in_schema=False)
+        app.add_api_route(f"{ruta}/", lambda: FileResponse(os.path.join(RAIZ, "panel", "index.html")),
+                          methods=["GET"], include_in_schema=False)
+        app.add_api_route(f"{ruta}/metricas.json", metricas_reales, methods=["GET"], include_in_schema=False)
 
     return app
 
