@@ -33,13 +33,14 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Admin: búsqueda y exportación de logs de actividad a `.log` | Hecho |
 | Máquinas de estado de solicitud y oferta (estados intermedios) | Hecho, en `models/store.py` |
 | Permisos por rol en la capa de dominio (no solo en la UI) | Hecho |
-| Pruebas automatizadas (56 tests) | Pasan |
+| Pruebas automatizadas (63 tests) | Pasan |
 | Fundamentación UX/UI con encuesta real (18 respuestas) | Hecho, en `docs/01-requirements/FUNDAMENTACION-UX-UI.md` |
 | Persistencia JSON | Hecha en `services/persistence.py`: escritorio usa `data/user/data.json` y Android su directorio privado; sin base de datos ni servidor |
 | Notificaciones locales (plyer) y configuración remota | Hecho, en `services/` |
 | APK Android (Buildozer) | Hecho, `buildozer.spec` |
 | Registro de eventos y KPIs (RA3) | Hecho: `models/store.py` (`_log`) + `analitica.py`. **Faltan los datos reales** (ver `DOCUMENTATION.md`) |
 | Datos simulados para RA3 (autorizados por el docente) | Hecho: `simulador.py` (SPEC-003); resultados en `DOCUMENTATION.md` §7.1 |
+| Panel público de métricas | Hecho: `panel/index.html` + `simulador.py --panel` (SPEC-004), con modo en vivo |
 | Documentación SDD en `docs/` | ADR y specs de MVC y estructura creados; otras specs de producto siguen pendientes |
 | Reportes y auditoría formal | Fuera del demo |
 
@@ -70,6 +71,7 @@ assets/                         Fuentes tipográficas y capturas.
 
 analitica.py                    Fuera de la app: KPIs de RA3 a partir de data/user/data.json.
 simulador.py                    Fuera de la app: actividad ficticia para medir RA3 (SPEC-003).
+panel/                          Fuera de la app: panel web de métricas en el servidor (SPEC-004).
 ```
 
 Regla: **toda regla de negocio y todo chequeo de permisos va en `models/store.py`**, y la UI solo llama a sus métodos. Así se puede probar sin interfaz y cambiar la UI o la persistencia sin romper el dominio.

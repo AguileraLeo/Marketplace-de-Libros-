@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BookWho? · Panel de métricas</title>
+<meta name="description" content="KPIs de BookWho? con datos simulados (TINF1119, RA3).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+  /* SPEC-004. Colores de serie validados con la guía de visualización (claro #177C52, oscuro #2CA470). */
+  :root {
+    --fondo: #FBFAF7; --tarjeta: #FFFFFF; --tinta: #1C1B19; --tinta-2: #5E5A52; --linea: #E6E3DC;
+    --marca: #1F4D3A; --serie: #177C52; --aviso: #FAB219; --aviso-fondo: #FDF1D6; --bien: #006300; --mal: #B3261E;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fondo: #1A1A19; --tarjeta: #222220; --tinta: #F0EFEC; --tinta-2: #C3C2B7; --linea: #383733;
+      --marca: #8FD3B0; --serie: #2CA470; --aviso-fondo: #3A2F14; --bien: #0CA30C; --mal: #FF8A80;
+      color-scheme: dark;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--tinta); font: 16px/1.5 "IBM Plex Sans", system-ui, sans-serif; }
+  main { max-width: 1120px; margin: 0 auto; padding: 16px; }
+  h1, h2 { font-family: "Source Serif 4", Georgia, serif; font-weight: 600; color: var(--marca); margin: 0; }
+  h1 { font-size: clamp(24px, 4vw, 32px); line-height: 1.2; }
+  h2 { font-size: 20px; }
+  h3 { font-size: 15px; margin: 8px 0 4px; }
+  p { margin: 0; }
+  a, summary { color: var(--marca); }
+  .aviso { display: flex; gap: 10px; background: var(--aviso-fondo); border-left: 6px solid var(--aviso);
+           padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; }
+  header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 8px 24px; margin-bottom: 16px; }
+  .sub, .nota, .etiqueta { color: var(--tinta-2); }
+  .nota, .etiqueta { font-size: 14px; }
+  #estado { display: flex; align-items: center; gap: 8px; color: var(--tinta-2); font-size: 14px; }
+  #punto { width: 10px; height: 10px; border-radius: 50%; background: var(--linea); }
+  #punto.vivo { background: var(--bien); animation: latido 1.6s ease-in-out infinite; }
+  @keyframes latido { 50% { opacity: .35; } }
+  @media (prefers-reduced-motion: reduce) { #punto.vivo { animation: none; } }
+  .grilla { display: grid; gap: 16px; grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .tarjeta { grid-column: span 12; background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 12px; padding: 18px 20px; }
+  @media (min-width: 760px) { .principal, .mitad { grid-column: span 6; } .kpi { grid-column: span 3; } }
+  .valor { font-weight: 600; font-size: 36px; line-height: 1.1; margin: 6px 0 4px; }
+  .principal .valor { font-size: 56px; }
+  .totales { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 0; padding: 0; list-style: none; color: var(--tinta-2); font-size: 14px; }
+  .totales b { color: var(--tinta); }
+  .grafico { margin-top: 10px; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .eje { fill: var(--tinta-2); font-size: 11px; }
+  .rotulo { fill: var(--tinta); font-size: 12px; }
+  .regla { stroke: var(--linea); stroke-width: 1; }
+  .serie { fill: var(--serie); }
+  .marca { outline: none; }
+  .marca:hover .serie, .marca:focus .serie { opacity: .78; }
+  .marca:focus-visible .golpe { stroke: var(--tinta); stroke-width: 1; }
+  .multiples { display: grid; gap: 8px 24px; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
+  ul.lista, ol.feed { list-style: none; margin: 8px 0 0; padding: 0; }
+  ul.lista li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--linea); }
+  ol.feed li { display: grid; grid-template-columns: 112px 1fr; gap: 0 12px; padding: 6px 0; border-bottom: 1px solid var(--linea); font-size: 14px; }
+  ul.lista li:last-child, ol.feed li:last-child { border-bottom: 0; }
+  ol.feed time { color: var(--tinta-2); }
+  ol.feed span { grid-column: 2; color: var(--tinta-2); }
+  .ok { color: var(--bien); }
+  .error { color: var(--mal); }
+  summary { cursor: pointer; font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; margin: 12px 0; }
+  caption { text-align: left; font-weight: 600; padding-bottom: 4px; }
+  th, td { text-align: left; padding: 4px 8px; border-bottom: 1px solid var(--linea); }
+  td + td { text-align: right; font-variant-numeric: tabular-nums; }
+  #tip { position: fixed; z-index: 10; pointer-events: none; max-width: 260px; padding: 6px 10px; font-size: 13px;
+         background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 8px; box-shadow: 0 4px 16px rgb(0 0 0 / .14); }
+  #tip strong { display: block; font-size: 15px; }
+  #tip span { color: var(--tinta-2); }
+  footer { color: var(--tinta-2); font-size: 13px; margin: 24px 0 8px; }
+</style>
+</head>
+<body>
+<main>
+  <p class="aviso" role="note"><span aria-hidden="true">⚠</span><span><strong>Datos simulados.</strong>
+    Actividad ficticia generada por <code>simulador.py</code> con la lógica real de BookWho?: no son usuarios reales,
+    y una oferta aceptada o una compra confirmada no es una venta verificada.</span></p>
+  <header>
+    <div>
+      <h1>BookWho? · Panel de métricas</h1>
+      <p class="sub" id="periodo">Cargando datos…</p>
+    </div>
+    <p id="estado"><span id="punto" aria-hidden="true"></span><span id="estado-texto">Conectando…</span></p>
+  </header>
+  <noscript><p>Este panel necesita JavaScript para leer <code>metricas.json</code>.</p></noscript>
+
+  <div class="grilla">
+    <section class="tarjeta principal" aria-labelledby="t-kpi1">
+      <p class="etiqueta" id="t-kpi1">KPI 1 · Tasa de resolución</p>
+      <p class="valor" id="kpi-resolucion">—</p>
+      <p class="nota" id="kpi-resolucion-nota">Solicitudes con compra confirmada por el lector.</p>
+    </section>
+    <section class="tarjeta kpi" aria-labelledby="t-kpi2">
+      <p class="etiqueta" id="t-kpi2">KPI 2 · Tasa de respuesta</p>
+      <p class="valor" id="kpi-respuesta">—</p>
+      <p class="nota">Recibieron al menos una oferta.</p>
+    </section>
+    <section class="tarjeta kpi" aria-labelledby="t-kpi3">
+      <p class="etiqueta" id="t-kpi3">KPI 3 · Hasta la 1.ª oferta</p>
+      <p class="valor" id="kpi-horas">—</p>
+      <p class="nota">Mediana, solo solicitudes con oferta.</p>
+    </section>
+    <section class="tarjeta" aria-label="Totales"><ul class="totales" id="totales"></ul></section>
+
+    <section class="tarjeta" aria-labelledby="t-dias">
+      <h2 id="t-dias">Eventos por día</h2>
+      <p class="nota">Todas las acciones registradas, incluidos los inicios de sesión.</p>
+      <div class="grafico" id="grafico-dias"></div>
+    </section>
+
+    <section class="tarjeta" aria-labelledby="t-grupos">
+      <h2 id="t-grupos">¿Qué solicitudes reciben ofertas?</h2>
+      <p class="nota">Porcentaje de solicitudes con al menos una oferta. Las diferencias salen de los supuestos del simulador.</p>
+      <div class="multiples grafico">
+        <div><h3>Región</h3><div id="grafico-region"></div></div>
+        <div><h3>Entrega</h3><div id="grafico-entrega"></div></div>
+        <div><h3>Precio máximo</h3><div id="grafico-precio_maximo"></div></div>
+      </div>
+    </section>
+
+    <section class="tarjeta mitad" aria-labelledby="t-estados">
+      <h2 id="t-estados">Estado de las solicitudes</h2>
+      <ul class="lista" id="estados"></ul>
+    </section>
+    <section class="tarjeta mitad" aria-labelledby="t-reglas">
+      <h2 id="t-reglas">La app cumple sus reglas</h2>
+      <ul class="lista" id="verificacion"></ul>
+    </section>
+
+    <section class="tarjeta" aria-labelledby="t-actividad">
+      <h2 id="t-actividad">Actividad reciente</h2>
+      <p class="nota">Sin nombres ni datos de contacto: solo la acción, el libro y la comuna.</p>
+      <ol class="feed" id="actividad"></ol>
+    </section>
+
+    <section class="tarjeta">
+      <details><summary>Ver los datos en tablas</summary><div id="tablas"></div></details>
+    </section>
+  </div>
+  <footer>Datos ficticios según SPEC-003 y SPEC-004 · BookWho?, TINF1119 Desarrollo Móvil (A+S) ·
+    <a href="https://github.com/AguileraLeo/Marketplace-de-Libros-">Código en GitHub</a></footer>
+</main>
+<div id="tip" role="tooltip" hidden></div>
+
+<script>
+"use strict";
+// Todo texto que viene de metricas.json se inserta con textContent (nunca como HTML).
+const NS = "http://www.w3.org/2000/svg";
+const numero = new Intl.NumberFormat("es-CL", { maximumFractionDigits: 1 });
+const diaCorto = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", timeZone: "UTC" });
+const diaHora = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" });
+const pct = (v) => (v == null ? "—" : `${numero.format(v)} %`);
+const horas = (v) => (v == null ? "—" : `${numero.format(v)} h`);
+const fecha = (iso) => new Date(iso.length === 10 ? `${iso}T00:00:00Z` : `${iso.slice(0, 16)}:00Z`);
+const $ = (id) => document.getElementById(id);
+
+function el(tag, texto, clase) {
+  const n = document.createElement(tag);
+  if (clase) n.className = clase;
+  if (texto != null) n.textContent = texto;
+  return n;
+}
+function sv(tag, attrs, texto) {
+  const n = document.createElementNS(NS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (texto != null) n.textContent = texto;
+  return n;
+}
+
+// ------------------------------------------------ tooltip: con mouse y con teclado
+const tip = $("tip");
+function conTip(nodo, fuerte, detalle) {
+  nodo.setAttribute("tabindex", "0");
+  nodo.setAttribute("role", "img");
+  nodo.setAttribute("aria-label", `${fuerte}. ${detalle}`);
+  const mostrar = (x, y) => {
+    tip.replaceChildren(el("strong", fuerte), el("span", detalle));
+    tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    tip.style.left = `${Math.min(innerWidth - w - 8, Math.max(8, x - w / 2))}px`;
+    tip.style.top = `${y - h - 12 < 8 ? y + 18 : y - h - 12}px`;
+  };
+  nodo.addEventListener("pointermove", (e) => mostrar(e.clientX, e.clientY));
+  nodo.addEventListener("focus", () => { const r = nodo.getBoundingClientRect(); mostrar(r.left + r.width / 2, r.top); });
+  nodo.addEventListener("pointerleave", () => { tip.hidden = true; });
+  nodo.addEventListener("blur", () => { tip.hidden = true; });
+}
+
+// ------------------------------------------------ marcas: extremo redondeado de 4 px, base recta
+function columna(x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, w / 2, h));
+  return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+}
+function barra(x, y, w, h, r) {
+  r = Math.max(0, Math.min(r, h / 2, w));
+  return `M${x},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h - r}Q${x + w},${y + h} ${x + w - r},${y + h}H${x}Z`;
+}
+function paso(max) {  // marcas del eje en números redondos
+  const bruto = Math.max(max, 1) / 4, mag = 10 ** Math.floor(Math.log10(bruto));
+  return [1, 2, 2.5, 5, 10].map((f) => f * mag).find((p) => p >= bruto);
+}
+
+const ancho = (cont, minimo) => Math.max(minimo, Math.round(cont.clientWidth) || minimo);  // el SVG se dibuja a su tamaño real: el texto no se encoge
+
+function graficoDias(cont, dias) {
+  const W = ancho(cont, 300), H = 230, m = { t: 22, r: 4, b: 26, l: 34 };
+  const max = Math.max(1, ...dias.map((d) => d.eventos));
+  const p = paso(max), tope = Math.ceil(max / p) * p;
+  const y = (v) => m.t + (H - m.t - m.b) * (1 - v / tope);
+  const ranura = (W - m.l - m.r) / Math.max(1, dias.length), grosor = Math.min(24, ranura - 2);
+  const s = sv("svg", { viewBox: `0 0 ${W} ${H}`, "aria-label": "Eventos por día" });
+  for (let v = 0; v <= tope; v += p) {
+    s.append(sv("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: "regla" }));
+    s.append(sv("text", { x: m.l - 6, y: y(v) + 4, "text-anchor": "end", class: "eje" }, numero.format(v)));
+  }
+  const iMax = dias.findIndex((d) => d.eventos === max);
+  dias.forEach((d, i) => {
+    const x0 = m.l + i * ranura, x = x0 + (ranura - grosor) / 2, f = fecha(d.dia), g = sv("g", { class: "marca" });
+    g.append(sv("rect", { x: x0, y: m.t, width: ranura, height: H - m.t - m.b, fill: "transparent", class: "golpe" }));
+    g.append(sv("path", { d: columna(x, y(d.eventos), grosor, y(0) - y(d.eventos), 4), class: "serie" }));
+    g.append(sv("text", { x: x + grosor / 2, y: H - 8, "text-anchor": "middle", class: "eje" }, String(f.getUTCDate())));
+    if (i === iMax) {  // rótulo directo solo en el máximo; el resto, en el eje, el tooltip y la tabla
+      g.append(sv("text", { x: x + grosor / 2, y: y(d.eventos) - 6, "text-anchor": "middle", class: "rotulo" }, numero.format(d.eventos)));
+    }
+    conTip(g, `${numero.format(d.eventos)} eventos`, diaCorto.format(f));
+    s.append(g);
+  });
+  cont.replaceChildren(s);
+}
+
+function graficoGrupos(cont, filas, nombre) {
+  filas = [...filas].sort((a, b) => b.con_oferta_pct - a.con_oferta_pct);
+  const W = ancho(cont, 250), alto = 28, m = { l: 118, r: 50 }, H = Math.max(1, filas.length) * alto;
+  const x = (v) => m.l + (W - m.l - m.r) * v / 100;
+  const s = sv("svg", { viewBox: `0 0 ${W} ${H}`, "aria-label": `Porcentaje con oferta por ${nombre}` });
+  s.append(sv("line", { x1: m.l, x2: m.l, y1: 0, y2: H, class: "regla" }));
+  filas.forEach((f, i) => {
+    const y0 = i * alto, g = sv("g", { class: "marca" });
+    g.append(sv("rect", { x: 0, y: y0, width: W, height: alto, fill: "transparent", class: "golpe" }));
+    g.append(sv("text", { x: m.l - 8, y: y0 + alto / 2 + 4, "text-anchor": "end", class: "rotulo" }, f.grupo));
+    g.append(sv("path", { d: barra(m.l, y0 + 6, x(f.con_oferta_pct) - m.l, alto - 12, 4), class: "serie" }));
+    g.append(sv("text", { x: x(f.con_oferta_pct) + 6, y: y0 + alto / 2 + 4, class: "rotulo" }, pct(f.con_oferta_pct)));
+    conTip(g, `${pct(f.con_oferta_pct)} con oferta`,
+      `${f.grupo} · ${f.solicitudes} solicitudes · 1.ª oferta: ${horas(f.horas_primera_oferta_mediana)}`);
+    s.append(g);
+  });
+  cont.replaceChildren(s);
+}
+
+function lista(id, filas) {
+  $(id).replaceChildren(...filas.map(([izq, der, clase]) => {
+    const li = el("li");
+    li.append(el("span", izq), el("b", der, clase));
+    return li;
+  }));
+}
+
+function tabla(titulo, cabeza, filas) {
+  const t = el("table"), cab = el("tr"), cuerpo = el("tbody");
+  t.append(el("caption", titulo));
+  cabeza.forEach((c) => cab.append(el("th", c)));
+  t.append(el("thead"));
+  t.tHead.append(cab);
+  filas.forEach((f) => { const tr = el("tr"); f.forEach((v) => tr.append(el("td", v))); cuerpo.append(tr); });
+  t.append(cuerpo);
+  return t;
+}
+
+const GRUPOS = { region: "Región", entrega: "Entrega", precio_maximo: "Precio máximo" };
+const ORDEN_ESTADOS = ["Resuelta", "En coordinación", "Con ofertas", "Publicada", "Cancelada"];
+
+function pintar(d) {
+  const k = d.kpis, t = d.totales, v = d.verificacion;
+  if (d.periodo) {
+    const desde = fecha(d.periodo.desde), hasta = fecha(d.periodo.hasta);
+    $("periodo").textContent = `Del ${diaCorto.format(desde)} al ${diaCorto.format(hasta)} de ${hasta.getUTCFullYear()} · ` +
+      `${d.agentes.lectores} lectores y ${d.agentes.vendedores} vendedores simulados`;
+  }
+  $("kpi-resolucion").textContent = pct(k.resolucion_pct);
+  $("kpi-resolucion-nota").textContent = `${Math.round(k.resolucion_pct * t.solicitudes / 100)} de ${t.solicitudes} ` +
+    "solicitudes con compra confirmada por el lector.";
+  $("kpi-respuesta").textContent = pct(k.respuesta_pct);
+  $("kpi-horas").textContent = horas(k.horas_primera_oferta);
+  $("totales").replaceChildren(...[
+    [t.eventos, "eventos"], [t.usuarios_activos, "usuarios simulados activos"], [t.solicitudes, "solicitudes"],
+    [t.ofertas, "ofertas"], [t.aceptadas_para_coordinar, "aceptadas para coordinar"],
+    [t.compras_confirmadas, "compras confirmadas por el lector"],
+  ].map(([n, texto]) => { const li = el("li"); li.append(el("b", numero.format(n)), ` ${texto}`); return li; }));
+
+  graficoDias($("grafico-dias"), d.uso_diario);
+  for (const clave in GRUPOS) graficoGrupos($(`grafico-${clave}`), d.desglose[clave] || [], GRUPOS[clave].toLowerCase());
+
+  const estados = Object.entries(d.solicitudes_por_estado)
+    .sort(([a], [b]) => (ORDEN_ESTADOS.indexOf(a) + 99) % 99 - (ORDEN_ESTADOS.indexOf(b) + 99) % 99);
+  lista("estados", estados.map(([nombre, n]) => [nombre, numero.format(n)]));
+
+  const marca = (n) => (n === 0 ? ["✓", "ok"] : ["✗", "error"]);
+  const [i1, c1] = marca(v.contacto.violaciones), [i2, c2] = marca(v.acciones_invalidas.aceptadas), [i3, c3] = marca(v.fallas);
+  lista("verificacion", [
+    [`Contacto del vendedor revisado ${numero.format(v.contacto.verificaciones)} veces`, `${i1} ${v.contacto.violaciones} filtraciones`, c1],
+    [`${numero.format(v.acciones_invalidas.intentos)} acciones inválidas intentadas`, `${i2} ${v.acciones_invalidas.aceptadas} aceptadas`, c2],
+    ["Fallas inesperadas de la app", `${i3} ${v.fallas}`, c3],
+  ]);
+
+  $("actividad").replaceChildren(...d.actividad.map((a) => {
+    const li = el("li"), hora = el("time", diaHora.format(fecha(a.hora)));
+    hora.dateTime = a.hora;
+    li.append(hora, el("b", a.tipo));
+    if (a.detalle) li.append(el("span", a.detalle));
+    return li;
+  }));
+
+  $("tablas").replaceChildren(
+    tabla("Eventos por día", ["Día", "Eventos"], d.uso_diario.map((x) => [diaCorto.format(fecha(x.dia)), numero.format(x.eventos)])),
+    ...Object.entries(GRUPOS).map(([clave, nombre]) => tabla(`Con oferta según ${nombre.toLowerCase()}`,
+      [nombre, "Solicitudes", "Con oferta", "1.ª oferta (mediana)"],
+      (d.desglose[clave] || []).map((f) => [f.grupo, String(f.solicitudes), pct(f.con_oferta_pct), horas(f.horas_primera_oferta_mediana)]))),
+  );
+
+  $("punto").className = d.en_vivo ? "vivo" : "";
+  $("estado-texto").textContent = `${d.en_vivo ? "En vivo · " : ""}actualizado a las ${d.generado.slice(11, 19)}`;
+}
+
+// ------------------------------------------------ carga cada 5 s; si falla, se mantiene lo último que se mostró
+let ultimo = "", datos = null, espera;
+addEventListener("resize", () => {  // al girar el teléfono o cambiar la ventana, se redibuja al nuevo ancho
+  clearTimeout(espera);
+  espera = setTimeout(() => datos && pintar(datos), 150);
+});
+async function cargar() {
+  try {
+    const r = await fetch("metricas.json", { cache: "no-store" });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const texto = await r.text();
+    if (texto === ultimo) return;
+    const d = JSON.parse(texto);
+    if (!d || !d.kpis || !d.totales || !Array.isArray(d.uso_diario) || !d.desglose || !d.verificacion) {
+      throw new Error("formato inesperado");
+    }
+    pintar(d);
+    ultimo = texto;
+    datos = d;
+  } catch (e) {
+    $("punto").className = "";
+    $("estado-texto").textContent = ultimo
+      ? "No se pudieron actualizar los datos: se muestran los últimos recibidos."
+      : "Todavía no hay datos: falta metricas.json o viene incompleto.";
+  }
+}
+cargar();
+setInterval(cargar, 5000);
+</script>
+</body>
+</html>

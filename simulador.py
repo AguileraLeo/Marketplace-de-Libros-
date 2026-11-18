@@ -12,6 +12,8 @@ no la conducta de usuarios reales: validan la medición y la app, no el mercado.
 
 Uso:   python simulador.py [--semilla 42] [--dias 14] [--inicio 2026-11-03] [--salida RUTA.json]
 Luego: python analitica.py data/simulacion/simulacion.json
+Panel (SPEC-004): --panel CARPETA escribe CARPETA/metricas.json para panel/index.html, y
+--en-vivo MINUTOS sigue la simulación un día más repartido en esos minutos reales.
 """
 import argparse
 import heapq
@@ -22,13 +24,16 @@ import statistics
 import sys
 import time
 import unicodedata
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, deque
 from contextlib import contextmanager
 from datetime import datetime, timedelta
 from types import SimpleNamespace
 
+import analitica
 import models.store as modelo
-from models.store import Condition, Delivery, DomainError, OfferStatus, RequestStatus, Role, build_demo_store
+from models.store import (
+    Condition, Delivery, DomainError, OfferStatus, RequestStatus, Role, build_demo_store, format_price,
+)
 from services.books_api import catalog_lookup
 from services.locations import normalize_location_name, proximity_label
 from services.persistence import save_store
@@ -135,6 +140,13 @@ def region(ubicacion):
     return ubicacion[ubicacion.find("(") + 1:-1] if ubicacion.endswith(")") else ubicacion
 
 
+def guardar_json(ruta, datos):
+    """Escritura atómica: quien lea el archivo (el panel) nunca ve uno a medio escribir."""
+    with open(ruta + ".tmp", "w", encoding="utf-8") as f:
+        json.dump(datos, f, ensure_ascii=False, indent=1)
+    os.replace(ruta + ".tmp", ruta)
+
+
 @contextmanager
 def reloj_simulado(sim):
     """La app toma la hora con datetime.now(): durante la simulación responde la hora simulada."""
@@ -171,6 +183,13 @@ class Simulacion:
         self.contacto = {"verificaciones": 0, "violaciones": []}
         self.sondas = {"verificaciones": 0, "violaciones": []}
         self.fallas = []
+        self.actividad = deque(maxlen=12)  # para el panel: tipo de acción, libro y comuna; nunca personas
+
+    def anotar(self, tipo, detalle=""):
+        self.actividad.append({"hora": self.reloj.isoformat(timespec="minutes"), "tipo": tipo, "detalle": detalle})
+
+    def titulo(self, request_id):
+        return self.store.book(self.store.requests[request_id].book_id).title
 
     @staticmethod
     def agente(nombre, comuna, rol, **extra):
@@ -244,6 +263,7 @@ class Simulacion:
         if not v.usuario:
             return
         v.usuario.created_at = self.reloj
+        self.anotar("Nueva cuenta de vendedor")
         for d in range((self.reloj - self.inicio).days, (self.fin - self.inicio).days):
             for _ in range(v.tipo["revisiones"]):
                 self.agendar(self.momento(d, v.tipo["horario"]), self.sesion_vendedor, v)
@@ -286,12 +306,16 @@ class Simulacion:
                                  v.telefono, v.correo, v.punto)
             if oferta:
                 oferta.created_at = oferta.updated_at = self.reloj
+                self.anotar("Oferta recibida", f"{self.titulo(req.id)} · {format_price(precio)} · "
+                                               f"{Condition.LABELS[condicion].lower()}")
         for o in st.seller_offers(v.usuario):
             if o.status == OfferStatus.IN_DEAL and self.rnd.random() < P_DESISTIR_VENDEDOR:
-                self.accion("desistir (vendedor)", st.cancel_deal, v.usuario, o.id, "Ya no tengo el libro (simulado)")
+                if self.accion("desistir (vendedor)", st.cancel_deal, v.usuario, o.id, "Ya no tengo el libro (simulado)"):
+                    self.anotar("Trato desistido por el vendedor", self.titulo(o.request_id))
             elif (o.status == OfferStatus.PUBLISHED and self.reloj - o.created_at >= timedelta(days=3)
                   and self.rnd.random() < P_CANCELAR_OFERTA):
-                self.accion("cancelar oferta", st.cancel_offer, v.usuario, o.id)
+                if self.accion("cancelar oferta", st.cancel_offer, v.usuario, o.id):
+                    self.anotar("Oferta retirada", self.titulo(o.request_id))
         if self.rnd.random() < P_SONDA:
             self.sonda_vendedor(v)
 
@@ -314,6 +338,7 @@ class Simulacion:
         if not lec.usuario:
             return
         lec.usuario.created_at = self.reloj
+        self.anotar("Nueva cuenta de lector")
         hoy, dias = (self.reloj - self.inicio).days, (self.fin - self.inicio).days
         libros = self.rnd.sample(list(self.libros), self.rnd.choice((1, 1, 2, 2, 3)))
         self.agendar(self.en((0.1, 0.6)), self.publicar, lec, libros[0])
@@ -333,6 +358,7 @@ class Simulacion:
                           self.rnd.choice(perfil["notas"]))
         if req:
             req.created_at = self.reloj
+            self.anotar("Solicitud publicada", f"{self.store.book(req.book_id).title} · {lec.comuna}")
 
     def costo(self, req, oferta):
         """Cómo compara el lector: precio, más un castigo si no es la condición que pidió o el vendedor está lejos."""
@@ -360,12 +386,14 @@ class Simulacion:
             if vivas and self.rnd.random() < P_ACEPTAR[len(vivas) > 1]:
                 mejor = min(vivas, key=lambda o: self.costo(req, o))
                 if self.accion("aceptar para coordinar", st.accept_offer, lec.usuario, mejor.id):
+                    self.anotar("Aceptada para coordinar", self.titulo(req.id))
                     self.verificar_contacto(lec, mejor)
                     self.agendar(self.en(HORAS_PARA_CERRAR), self.cerrar_trato, lec, mejor.id)
             elif (not vivas and req.status == RequestStatus.PUBLISHED
                   and self.reloj - req.created_at >= timedelta(days=DIAS_PARA_RENDIRSE)
                   and self.rnd.random() < P_CANCELAR_SOLICITUD):
-                self.accion("cancelar solicitud", st.cancel_request, lec.usuario, req.id, "Ya no lo necesito (simulado)")
+                if self.accion("cancelar solicitud", st.cancel_request, lec.usuario, req.id, "Ya no lo necesito (simulado)"):
+                    self.anotar("Solicitud cancelada", self.titulo(req.id))
         if self.rnd.random() < P_SONDA:
             ajenas = [o for o in st.offers.values() if o.status == OfferStatus.PUBLISHED
                       and st.requests[o.request_id].reader_id != lec.usuario.id]
@@ -392,10 +420,13 @@ class Simulacion:
         if st.offers[oferta_id].status != OfferStatus.IN_DEAL or not self.login(lec):
             return  # el vendedor desistió antes
         r = self.rnd.random()
+        titulo = self.titulo(st.offers[oferta_id].request_id)
         if r < P_CONFIRMAR:
-            self.accion("confirmar compra", st.confirm_deal, lec.usuario, oferta_id)
+            if self.accion("confirmar compra", st.confirm_deal, lec.usuario, oferta_id):
+                self.anotar("Compra confirmada por el lector", titulo)
         elif r < P_CONFIRMAR + P_DESISTIR_LECTOR:
-            self.accion("desistir (lector)", st.cancel_deal, lec.usuario, oferta_id, "No nos pusimos de acuerdo (simulado)")
+            if self.accion("desistir (lector)", st.cancel_deal, lec.usuario, oferta_id, "No nos pusimos de acuerdo (simulado)"):
+                self.anotar("Trato desistido por el lector", titulo)
 
     # ---------------------------------------------------------------- resumen
     def resumen(self):
@@ -441,20 +472,92 @@ class Simulacion:
             },
         }
 
+    # ---------------------------------------------------------------- modo en vivo (SPEC-004)
+    def continuar_en_vivo(self, minutos, al_actuar, dias=1):
+        """Sigue la simulación `dias` días más, repartidos en `minutos` reales, y avisa tras cada acción."""
+        self.rnd = random.Random(self.parametros["semilla"] + 1)  # otra secuencia: el periodo base no cambia
+        dia0 = (self.fin - self.inicio).days
+        self.reloj, self.fin = self.fin, self.fin + timedelta(days=dias)
+        ritmo = dias * 86400 / max(minutos * 60, 0.001)  # segundos simulados por cada segundo real
+        lector_de = {lec.usuario.id: lec for lec in self.lectores if lec.usuario}
+        with reloj_simulado(self):
+            for d in range(dia0, dia0 + dias):
+                for v in self.vendedores:
+                    for _ in range(v.tipo["revisiones"] if v.usuario else 0):
+                        self.agendar(self.momento(d, v.tipo["horario"]), self.sesion_vendedor, v)
+                for lec in lector_de.values():
+                    self.agendar(self.momento(d, (9, 23)), self.sesion_lector, lec)
+                    if self.rnd.random() < 0.3:
+                        self.agendar(self.momento(d, (9, 23)), self.publicar, lec, self.rnd.choice(list(self.libros)))
+            for o in list(self.store.offers.values()):  # los tratos abiertos se cierran durante la demo
+                lec = lector_de.get(self.store.requests[o.request_id].reader_id)
+                if o.status == OfferStatus.IN_DEAL and lec:
+                    self.agendar(self.en((1, 20)), self.cerrar_trato, lec, o.id)
+            while self.cola:
+                momento, _, accion, args = heapq.heappop(self.cola)
+                time.sleep((momento - self.reloj).total_seconds() / ritmo)
+                self.reloj = momento
+                accion(*args)
+                al_actuar()
 
-def simular(semilla=42, dias=14, inicio=INICIO, lectores=len(LECTORES), vendedores=len(VENDEDORES), salida=SALIDA):
-    """Corre la simulación, guarda el data.json simulado y su resumen, y devuelve el resumen."""
+
+def exportar_panel(sim, ruta_datos, carpeta, en_vivo=False):
+    """metricas.json para panel/index.html (SPEC-004): conteos y KPIs, nunca datos de personas."""
+    usuarios, eventos = analitica.cargar(ruta_datos)
+    r = analitica.calcular(eventos, analitica.ids_excluidos(usuarios, analitica.CORREOS_DEMO | analitica.CORREOS_EQUIPO))
+    res, tipos = sim.resumen(), r["eventos_por_tipo"]
+    os.makedirs(carpeta, exist_ok=True)
+    guardar_json(os.path.join(carpeta, "metricas.json"), {
+        "simulado": True,
+        "aviso": res["aviso"],
+        "generado": datetime.now().isoformat(timespec="seconds"),
+        "en_vivo": en_vivo,
+        "periodo": {"desde": r["periodo"][0], "hasta": r["periodo"][1]} if r["periodo"] else None,
+        "agentes": res["agentes"],
+        "kpis": {"resolucion_pct": r["kpi_tasa_resolucion"], "respuesta_pct": r["kpi_tasa_respuesta"],
+                 "horas_primera_oferta": r["kpi_horas_primera_oferta"]},
+        "totales": {"eventos": r["eventos_reales"], "usuarios_activos": r["usuarios_activos"],
+                    "solicitudes": r["solicitudes_publicadas"], "ofertas": tipos.get("oferta_publicada", 0),
+                    "aceptadas_para_coordinar": tipos.get("oferta_por_concretar", 0),
+                    "compras_confirmadas": tipos.get("trato_concretado", 0)},
+        "uso_diario": [{"dia": d, "eventos": n} for d, n in r["uso_diario"].items()],
+        "solicitudes_por_estado": res["solicitudes_por_estado"],
+        "desglose": {k: [{"grupo": g, **v} for g, v in grupos.items()] for k, grupos in res["desglose"].items()},
+        "verificacion": {
+            "contacto": {"verificaciones": res["contacto"]["verificaciones"],
+                         "violaciones": len(res["contacto"]["violaciones"])},
+            "acciones_invalidas": {"intentos": res["sondas"]["verificaciones"],
+                                   "aceptadas": len(res["sondas"]["violaciones"])},
+            "fallas": len(res["fallas_inesperadas"]),
+        },
+        "actividad": list(reversed(sim.actividad)),  # la más reciente primero
+    })
+
+
+def simular(semilla=42, dias=14, inicio=INICIO, lectores=len(LECTORES), vendedores=len(VENDEDORES), salida=SALIDA,
+            panel=None, en_vivo=None):
+    """Corre la simulación y guarda el data.json simulado, su resumen y, si se pide, el metricas.json del panel."""
     salida = os.path.abspath(salida)
     if salida.startswith(os.path.join(RAIZ, "data", "user") + os.sep):
         raise SystemExit("La simulación no se escribe en data/user/: ahí están los datos de la app.")
     sim = Simulacion(semilla, dias, inicio, lectores, vendedores)
-    store = sim.ejecutar()
+    sim.ejecutar()
     os.makedirs(os.path.dirname(salida), exist_ok=True)
-    save_store(store, salida)
-    resumen = sim.resumen()
-    with open(os.path.splitext(salida)[0] + "_resumen.json", "w", encoding="utf-8") as f:
-        json.dump(resumen, f, ensure_ascii=False, indent=2)
-    return resumen
+
+    def guardar(vivo=False):
+        save_store(sim.store, salida)
+        guardar_json(os.path.splitext(salida)[0] + "_resumen.json", sim.resumen())
+        if panel:
+            exportar_panel(sim, salida, panel, vivo)
+
+    guardar()
+    if en_vivo:
+        print(f"En vivo: un día simulado más en {en_vivo:g} minutos (Ctrl+C para detener).", flush=True)
+        try:
+            sim.continuar_en_vivo(en_vivo, lambda: guardar(vivo=True))
+        finally:
+            guardar()  # al terminar, o con Ctrl+C, el panel deja de decir "en vivo"
+    return sim.resumen()
 
 
 def main(argv=None):
@@ -465,8 +568,14 @@ def main(argv=None):
     p.add_argument("--lectores", type=int, default=len(LECTORES))
     p.add_argument("--vendedores", type=int, default=len(VENDEDORES))
     p.add_argument("--salida", default=SALIDA)
+    p.add_argument("--panel", metavar="CARPETA", help="escribe CARPETA/metricas.json para panel/index.html")
+    p.add_argument("--en-vivo", type=float, metavar="MINUTOS", help="sigue un día más, repartido en esos minutos")
     a = p.parse_args(argv)
-    r = simular(a.semilla, a.dias, a.inicio, a.lectores, a.vendedores, a.salida)
+    try:
+        r = simular(a.semilla, a.dias, a.inicio, a.lectores, a.vendedores, a.salida, a.panel, a.en_vivo)
+    except KeyboardInterrupt:
+        print("Simulación en vivo detenida: los datos y el panel quedaron guardados.")
+        return 0
     estados = ", ".join(f"{n} {e.lower()}" for e, n in r["solicitudes_por_estado"].items())
     print(f"SIMULACIÓN (datos ficticios) · semilla {a.semilla} · {r['periodo'][0]} a {r['periodo'][1]} · "
           f"{r['agentes']['lectores']} lectores y {r['agentes']['vendedores']} vendedores simulados")
@@ -475,6 +584,8 @@ def main(argv=None):
           f"sondas: {r['sondas']['verificaciones']} acciones inválidas, {len(r['sondas']['violaciones'])} aceptadas por error")
     print(f"Fallas inesperadas: {len(r['fallas_inesperadas'])}")
     print(f"Datos: {os.path.relpath(a.salida)} · siguiente paso: python analitica.py {os.path.relpath(a.salida)}")
+    if a.panel:
+        print(f"Panel: {os.path.join(a.panel, 'metricas.json')} (se ve con panel/index.html en la misma carpeta)")
     return 1 if (r["contacto"]["violaciones"] or r["sondas"]["violaciones"] or r["fallas_inesperadas"]) else 0
 
 

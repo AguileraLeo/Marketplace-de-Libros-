@@ -21,6 +21,7 @@ bin/
 /data.json
 data/user/
 data/simulacion/
+panel/metricas.json
 data_*.json
 *.json.corrupto
 *.json.tmp

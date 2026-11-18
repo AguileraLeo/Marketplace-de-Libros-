@@ -129,6 +129,10 @@ python analitica.py data/simulacion/simulacion.json    # KPIs rotulados como DAT
   `data/simulacion/simulacion_resumen.json`, con el desglose por región, entrega y precio máximo.
 - **Verlo en la app:** respaldar `data/user/data.json`, copiar ahí `data/simulacion/simulacion.json`
   y abrir la app; por ejemplo, con `admin@demo.cl` se ve el panel de métricas.
+- **Verlo en la web:** `python simulador.py --panel CARPETA` escribe `CARPETA/metricas.json`, que
+  lee `panel/index.html` ([SPEC-004](docs/05-specs/SPEC-004-panel-de-metricas.md)). Con
+  `--en-vivo MINUTOS`, la simulación continúa un día más en tiempo real para la demostración,
+  sin alterar el periodo base.
 
 ## 6. Limitaciones metodológicas (declarar en el informe)
 

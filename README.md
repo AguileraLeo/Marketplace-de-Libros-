@@ -94,6 +94,15 @@ python analitica.py data/simulacion/simulacion.json
 
 ![KPIs con datos simulados](docs/resultados/kpis_simulados.png)
 
+**Panel público:** [bookwho.quadcorestore.com](https://bookwho.quadcorestore.com) muestra los mismos KPIs con los datos simulados, el desglose y la verificación de las reglas de la app ([SPEC-004](docs/05-specs/SPEC-004-panel-de-metricas.md)). Es una página estática (`panel/index.html`) que lee `metricas.json` cada 5 segundos, sin datos personales:
+
+```bash
+python simulador.py --panel ~/bookwho/publico                # escribe ~/bookwho/publico/metricas.json
+cp panel/index.html ~/bookwho/publico/
+python -m http.server 8080 --bind 127.0.0.1 --directory ~/bookwho/publico
+python simulador.py --panel ~/bookwho/publico --en-vivo 10   # demo: un día más de actividad en 10 minutos
+```
+
 ## Instalación y uso
 
 ### Android
@@ -135,7 +144,7 @@ También se pueden registrar cuentas nuevas de lector o vendedor. En el APK el l
 python -m unittest discover -s tests -v
 ```
 
-56 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs y simulador.
+63 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs, simulador y panel.
 
 ### Generar el APK (Linux, con Docker)
 
@@ -154,6 +163,7 @@ La segunda línea guarda la llave de firma de depuración fuera del contenedor (
 main.py                  Punto de entrada de la app
 analitica.py             Herramienta de PC: KPIs de RA3 desde data.json (no va en el APK)
 simulador.py             Herramienta de PC: actividad ficticia para medir RA3 (no va en el APK)
+panel/                   Panel web de métricas (SPEC-004): se publica en el servidor, no va en el APK
 controllers/             Controlador: ciclo de vida, navegación y una clase por pantalla
 views/                   Vista: libros.kv y widgets reutilizables
 models/                  Modelo: dominio, reglas de negocio, permisos y eventos
