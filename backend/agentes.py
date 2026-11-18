@@ -15,7 +15,9 @@ En el Z40, desde la raíz del repositorio:
 """
 import argparse
 import random
+import re
 import time
+import unicodedata
 from datetime import datetime, timedelta
 
 import simulador
@@ -35,6 +37,21 @@ NUEVOS_VENDEDORES = [
     ("Librería La Frontera", "Temuco", "libreria", ["rayuela", "1984", "principito", "ficciones", "hobbit"]),
     ("Rodrigo Saavedra", "Concepción", "particular", ["sapiens", "cien-anos", "pedro-paramo"]),
 ]
+
+
+def _normalizar(texto):
+    sin_tildes = unicodedata.normalize("NFKD", texto.casefold())
+    return " ".join(re.findall(r"[a-z0-9]+", "".join(c for c in sin_tildes if not unicodedata.combining(c))))
+
+
+# Un libro que una persona buscó en Google Books u Open Library se reconoce por el título.
+CLAVE_POR_TITULO = {_normalizar(catalog_lookup(f"demo-{k}")["title"]): k for k in simulador.PRECIO_REF}
+
+
+def clave_del_libro(libro):
+    """Clave del catálogo de los agentes (simulador.PRECIO_REF), o None si no lo conocen."""
+    clave = libro.external_id.removeprefix("demo-")
+    return clave if clave in simulador.PRECIO_REF else CLAVE_POR_TITULO.get(_normalizar(libro.title))
 
 
 class Agente:
@@ -146,7 +163,7 @@ class Demo:
                 continue
             v.vistas.add(q.id)
             libro = cli.book(q.book_id)
-            clave = libro.external_id.removeprefix("demo-")
+            clave = clave_del_libro(libro)
             p = simulador.P_OFERTA.get(proximity_label(v.comuna, q.location))
             if p is None:
                 p = simulador.P_OFERTA["lejos con envío"] if q.delivery_preference != Delivery.IN_PERSON else 0

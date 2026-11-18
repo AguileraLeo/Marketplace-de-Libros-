@@ -17,7 +17,8 @@ usan la app **por la misma API que un teléfono** (SPEC-005), y el panel `/en-vi
   informe (`simulador.py --salida`, con el servicio detenido). Al arrancar elimina las cuentas demo,
   y los agentes siguen con las cuentas del historial.
 - Los agentes también interactúan con las personas: ofertan a solicitudes publicadas desde los
-  teléfonos y aceptan ofertas que reciben de ellos.
+  teléfonos y aceptan ofertas que reciben de ellos. Un libro que la persona buscó en Google Books u
+  Open Library se reconoce por el título (sin tildes ni mayúsculas) si está en el catálogo de los agentes.
 - La API informa cuántos agentes simulados y cuántas personas hay activos. El
   panel identifica la demo con una fuente discreta al pie, sin advertencia
   superior, por solicitud del usuario; el equipo explica el detalle en vivo.

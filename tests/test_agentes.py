@@ -98,6 +98,17 @@ class AgentesTest(unittest.TestCase):
         conexion.close()
 
 
+class CatalogoTest(unittest.TestCase):
+    def test_reconoce_por_titulo_los_libros_buscados_en_la_app(self):
+        from types import SimpleNamespace as Libro
+        from backend.agentes import clave_del_libro
+        self.assertEqual(clave_del_libro(Libro(external_id="demo-rayuela", title="x")), "rayuela")
+        self.assertEqual(clave_del_libro(Libro(external_id="OL123M", title="EL HOBBIT")), "hobbit")
+        self.assertEqual(clave_del_libro(Libro(external_id="gb-9", title="Sapiens: de animales a dioses")), "sapiens")
+        self.assertEqual(clave_del_libro(Libro(external_id="gb-2", title="Pedro Paramo")), "pedro-paramo")
+        self.assertIsNone(clave_del_libro(Libro(external_id="gb-1", title="Niebla")))
+
+
 class HistorialTest(unittest.TestCase):
     """El historial de la simulación cargado en el servidor: sin cuentas demo y con los mismos KPIs."""
 
