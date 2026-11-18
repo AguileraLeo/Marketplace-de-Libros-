@@ -9,13 +9,19 @@ Los argumentos RPC son posicionales del Store, siempre sin el actor.
 """
 
 import json
+import hmac
+import inspect
 import os
 import re
 import sys
 import tempfile
+import threading
+import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import ExitStack
 from datetime import datetime
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -25,6 +31,7 @@ except ImportError:  # el backend es opcional: sin FastAPI (p. ej. en el PC de u
     raise unittest.SkipTest("Instala backend/requirements.txt para probar el servidor.")
 
 from backend.servidor import RAIZ, crear_app, dias_seguidos
+import analitica
 from models.store import Condition, Delivery, OfferStatus, RequestStatus, Role
 from services.books_api import catalog_lookup
 from services.persistence import load_store
@@ -386,6 +393,350 @@ class BackendTest(unittest.TestCase):
         self.assertIn(lector["usuario"]["email"], [u.get("email") for u in usuarios])
         for usuario in usuarios:
             self.assertNotIn("password", usuario)
+
+
+class SeguridadTest(unittest.TestCase):
+    """F1–F8: transporte compatible con los teléfonos y datos solo temporales."""
+
+    ADMIN = ("admin@prueba.cl", "clave-admin")
+    IP = "203.0.113.10"
+    MENSAJE_LIMITE = {"error": "Demasiados intentos. Espera unos minutos.",
+                      "tipo": "PermissionDenied"}
+
+    def setUp(self):
+        carpeta = tempfile.TemporaryDirectory()
+        self.addCleanup(carpeta.cleanup)
+        self.ruta = os.path.join(carpeta.name, "seguridad.json")
+        self.app = crear_app(self.ruta, admin=self.ADMIN)
+        contextos = ExitStack()
+        self.addCleanup(contextos.close)
+        self.client = contextos.enter_context(TestClient(self.app))
+
+    def registro(self, correo="lector@prueba.cl", ip=None, **cambios):
+        datos = {"nombre": "Persona de prueba", "correo": correo, "clave": "clave-prueba",
+                 "rol": Role.READER, "comuna": ""}
+        datos.update(cambios)
+        return self.client.post("/api/registro", json=datos,
+                                headers={"cf-connecting-ip": ip} if ip is not None else {})
+
+    def sesion(self, correo="lector@prueba.cl", clave="clave-prueba", ip=None):
+        return self.client.post("/api/sesion", json={"correo": correo, "clave": clave},
+                                headers={"cf-connecting-ip": ip} if ip is not None else {})
+
+    def rpc(self, sesion, metodo, args=()):
+        return self.client.post("/api/rpc", json={"metodo": metodo, "args": list(args)},
+                                headers={"Authorization": "Bearer " + sesion["token"]})
+
+    def reloj(self, ahora=1000.0):
+        # Reemplazar la referencia del backend evita congelar los relojes de AnyIO/httpx.
+        reloj = Mock(wraps=time)
+        reloj.time.return_value = reloj.monotonic.return_value = ahora
+        self.enterContext(patch("backend.servidor.time", reloj))
+        return reloj
+
+    def assert_limite(self, respuesta):
+        self.assertEqual(respuesta.status_code, 429, respuesta.text)
+        self.assertEqual(respuesta.json(), self.MENSAJE_LIMITE)
+
+    def test_cuentas_de_agentes_solo_entran_y_se_registran_sin_cloudflare(self):
+        correo = "agente@" + analitica.DOMINIO_SIMULADO
+        self.assertEqual(self.registro(correo).status_code, 200)
+        self.assertEqual(self.sesion(correo).status_code, 200)
+        esperado = {"error": "Esta cuenta está reservada para la demostración.",
+                    "tipo": "PermissionDenied"}
+        for intento in (
+            self.sesion("  " + correo.upper() + "  ", ip=self.IP),
+            self.registro("nuevo@" + analitica.DOMINIO_SIMULADO, self.IP),
+        ):
+            self.assertEqual(intento.status_code, 403, intento.text)
+            self.assertEqual(intento.json(), esperado)
+        self.assertIsNone(load_store(self.ruta).find_user_by_email("nuevo@" + analitica.DOMINIO_SIMULADO))
+        # El dominio reservado no incluye sufijos parecidos de dominios distintos.
+        self.assertEqual(self.registro("lector@" + analitica.DOMINIO_SIMULADO + ".example", self.IP).status_code, 200)
+
+    def test_ocho_fallos_por_correo_normalizado_aunque_cambie_la_ip(self):
+        self.reloj()
+        self.assertEqual(self.registro().status_code, 200)
+        for i in range(8):
+            correo = "  LECTOR@PRUEBA.CL  " if i % 2 else "lector@prueba.cl"
+            r = self.sesion(correo, "incorrecta", f"203.0.113.{i + 20}")
+            self.assertEqual(r.status_code, 400, r.text)
+        self.assert_limite(self.sesion(ip="203.0.113.80"))
+        self.assertEqual(self.sesion().status_code, 200)  # agente/local: no aplica el límite
+
+    def test_registro_no_elude_la_reserva_con_un_correo_que_el_modelo_recorta(self):
+        sufijo = "@" + analitica.DOMINIO_SIMULADO
+        efectivo = "a" * (120 - len(sufijo)) + sufijo
+        r = self.registro(efectivo + ".otro", self.IP)
+        self.assertEqual(r.status_code, 403, r.text)
+        self.assertEqual(r.json(), {"error": "Esta cuenta está reservada para la demostración.",
+                                    "tipo": "PermissionDenied"})
+        self.assertIsNone(load_store(self.ruta).find_user_by_email(efectivo))
+
+    def test_treinta_fallos_por_ip_aunque_cambie_el_correo(self):
+        self.reloj()
+        for i in range(30):
+            r = self.sesion(f"desconocido-{i}@prueba.cl", "incorrecta", self.IP)
+            self.assertEqual(r.status_code, 400, r.text)
+        self.assert_limite(self.sesion("otro@prueba.cl", "incorrecta", self.IP))
+        r = self.sesion("otro@prueba.cl", "incorrecta", "203.0.113.11")
+        self.assertEqual(r.status_code, 400)
+
+    def test_login_correcto_reinicia_correo_y_conserva_los_fallos_de_la_ip(self):
+        self.reloj()
+        self.assertEqual(self.registro().status_code, 200)
+        for _ in range(7):
+            self.assertEqual(self.sesion(clave="incorrecta", ip=self.IP).status_code, 400)
+        self.assertEqual(self.sesion(ip=self.IP).status_code, 200)
+        for _ in range(8):
+            self.assertEqual(self.sesion(clave="incorrecta", ip=self.IP).status_code, 400)
+        self.assert_limite(self.sesion(ip=self.IP))
+        for i in range(15):
+            self.assertEqual(self.sesion(f"otro-{i}@prueba.cl", "incorrecta", self.IP).status_code, 400)
+        self.assert_limite(self.sesion("ultimo@prueba.cl", "incorrecta", self.IP))
+
+    def test_fallos_de_correo_e_ip_caducan_a_los_diez_minutos(self):
+        reloj = self.reloj()
+        for _ in range(8):
+            self.assertEqual(self.sesion(clave="incorrecta", ip=self.IP).status_code, 400)
+        self.assert_limite(self.sesion(clave="incorrecta", ip=self.IP))
+        reloj.time.return_value = reloj.monotonic.return_value = 1601.0
+        self.assertEqual(self.sesion(clave="incorrecta", ip=self.IP).status_code, 400)
+        for i in range(29):
+            self.assertEqual(self.sesion(f"otro-{i}@prueba.cl", "incorrecta", self.IP).status_code, 400)
+        self.assert_limite(self.sesion("ultimo@prueba.cl", "incorrecta", self.IP))
+        reloj.time.return_value = reloj.monotonic.return_value = 2202.0
+        self.assertEqual(self.sesion("ultimo@prueba.cl", "incorrecta", self.IP).status_code, 400)
+
+    def test_los_contadores_descartan_las_claves_que_ya_no_tienen_eventos_vigentes(self):
+        reloj = self.reloj()
+        self.assertEqual(self.sesion("anterior@prueba.cl", "incorrecta", self.IP).status_code, 400)
+        self.assertEqual(self.registro("anterior@prueba.cl", self.IP).status_code, 200)
+        login = next(r.endpoint for r in self.app.routes
+                     if getattr(r, "path", None) == "/api/sesion" and "POST" in r.methods)
+        registro = next(r.endpoint for r in self.app.routes if getattr(r, "path", None) == "/api/registro")
+        contadores = inspect.getclosurevars(login).nonlocals
+        registros = inspect.getclosurevars(registro).nonlocals["registros_ip"]
+        self.assertIn("anterior@prueba.cl", contadores["fallos_correo"])
+        self.assertIn(self.IP, contadores["fallos_ip"])
+        self.assertIn(self.IP, registros)
+        reloj.time.return_value = reloj.monotonic.return_value = 4601.0
+        self.assertEqual(self.sesion("actual@prueba.cl", "incorrecta", "203.0.113.11").status_code, 400)
+        self.assertNotIn("anterior@prueba.cl", contadores["fallos_correo"])
+        self.assertNotIn(self.IP, contadores["fallos_ip"])
+        self.assertNotIn(self.IP, registros)
+
+    def test_intentos_concurrentes_no_rebasan_los_ocho_fallos_por_correo(self):
+        self.reloj()
+        barrera = threading.Barrier(12)
+
+        def intentar(i):
+            barrera.wait(timeout=3)
+            return self.sesion("concurrente@prueba.cl", "incorrecta", f"203.0.113.{i + 20}")
+
+        with ThreadPoolExecutor(max_workers=12) as pool:
+            respuestas = list(pool.map(intentar, range(12)))
+        self.assertEqual(sum(r.status_code == 400 for r in respuestas), 8)
+        self.assertEqual(sum(r.status_code == 429 for r in respuestas), 4)
+
+    def test_registro_admite_cuarenta_por_ip_y_libera_el_cupo_despues_de_una_hora(self):
+        reloj = self.reloj()
+        # Un registro inválido no consume uno de los cuarenta registros exitosos.
+        self.assertEqual(self.registro("invalido", self.IP).status_code, 400)
+        for i in range(40):
+            r = self.registro(f"alumno-{i}@prueba.cl", self.IP)
+            self.assertEqual(r.status_code, 200, r.text)
+        self.assert_limite(self.registro("alumno-40@prueba.cl", self.IP))
+        self.assertEqual(self.registro("otra-ip@prueba.cl", "203.0.113.11").status_code, 200)
+        reloj.time.return_value = reloj.monotonic.return_value = 4601.0
+        self.assertEqual(self.registro("alumno-40@prueba.cl", self.IP).status_code, 200)
+
+    def test_los_agentes_locales_no_tienen_los_limites_de_cloudflare(self):
+        self.reloj()
+        for i in range(41):
+            correo = f"agente-{i}@" + analitica.DOMINIO_SIMULADO
+            self.assertEqual(self.registro(correo).status_code, 200)
+        for _ in range(31):
+            r = self.sesion("agente-0@" + analitica.DOMINIO_SIMULADO, "incorrecta")
+            self.assertEqual(r.status_code, 400, r.text)
+        self.assertEqual(self.sesion("agente-0@" + analitica.DOMINIO_SIMULADO).status_code, 200)
+
+    def test_transfer_encoding_en_api_se_rechaza_antes_de_leer_el_cuerpo(self):
+        for codificacion in ("chunked", "identity"):
+            with self.subTest(codificacion=codificacion):
+                r = self.client.post("/api/sesion", content=iter([b'{"correo":', b'"prueba"}']),
+                                     headers={"Transfer-Encoding": codificacion,
+                                              "Content-Type": "application/json"})
+                self.assertEqual(r.status_code, 411, r.text)
+                self.assertEqual(r.json()["tipo"], "ValidationError")
+                self.assertIsInstance(r.json()["error"], str)
+        self.assertEqual(self.client.get("/", headers={"Transfer-Encoding": "chunked"}).status_code, 200)
+
+    def test_cerrar_sesion_sin_content_length_sigue_devolviendo_204(self):
+        sesion = self.registro().json()
+        request = self.client.build_request("DELETE", "/api/sesion", headers={"Authorization": "Bearer " + sesion["token"]})
+        request.headers.pop("Content-Length", None)
+        self.assertNotIn("Content-Length", request.headers)
+        r = self.client.send(request)
+        self.assertEqual((r.status_code, r.content), (204, b""))
+        self.assertEqual(self.rpc(sesion, "reader_requests").status_code, 401)
+
+    def test_tamano_y_longitud_invalida_siguen_dando_errores_json(self):
+        grande = self.client.post("/api/sesion", content=b"x" * (16 * 1024 + 1))
+        self.assertEqual(grande.status_code, 413)
+        self.assertEqual(grande.json()["tipo"], "ValidationError")
+        invalida = self.client.post("/api/sesion", content=b"{}", headers={"Content-Length": "no-es-numero"})
+        self.assertEqual(invalida.status_code, 400)
+        self.assertEqual(invalida.json()["tipo"], "ValidationError")
+
+    def test_metricas_comparten_cache_tres_segundos_entre_las_tres_rutas(self):
+        reloj = self.reloj()
+        original = analitica.cargar
+        with patch("backend.servidor.analitica.cargar", wraps=original) as cargar:
+            uno = self.client.get("/api/metricas")
+            dos = self.client.get("/en-vivo/metricas.json")
+            tres = self.client.get("/reales/metricas.json")
+            self.assertEqual(uno.status_code, 200)
+            self.assertEqual(uno.json(), dos.json())
+            self.assertEqual(uno.json(), tres.json())
+            self.assertEqual(cargar.call_count, 1)
+            reloj.time.return_value = reloj.monotonic.return_value = 1002.9
+            self.assertEqual(self.client.get("/en-vivo/metricas.json").status_code, 200)
+            self.assertEqual(cargar.call_count, 1)
+            reloj.time.return_value = reloj.monotonic.return_value = 1003.1
+            self.assertEqual(self.client.get("/reales/metricas.json").status_code, 200)
+            self.assertEqual(cargar.call_count, 2)
+
+    def test_lecturas_concurrentes_de_metricas_comparten_un_solo_calculo(self):
+        self.reloj()
+        original = analitica.cargar
+        barrera = threading.Barrier(8)
+        empezo, liberar = threading.Event(), threading.Event()
+
+        def cargar_lento(*args):
+            empezo.set()
+            self.assertTrue(liberar.wait(3), "No se liberó la lectura de prueba")
+            return original(*args)
+
+        def pedir(indice):
+            barrera.wait(timeout=3)
+            ruta = ("/api/metricas", "/en-vivo/metricas.json", "/reales/metricas.json")[indice % 3]
+            return self.client.get(ruta)
+
+        with patch("backend.servidor.analitica.cargar", side_effect=cargar_lento) as cargar:
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                futuros = [pool.submit(pedir, i) for i in range(8)]
+                try:
+                    self.assertTrue(empezo.wait(3))
+                finally:
+                    liberar.set()
+                respuestas = [f.result(timeout=5) for f in futuros]
+            self.assertTrue(all(r.status_code == 200 for r in respuestas))
+            self.assertEqual(cargar.call_count, 1)
+            self.assertTrue(all(r.json() == respuestas[0].json() for r in respuestas))
+
+    def assert_cabeceras(self, respuesta):
+        esperado = {
+            "x-content-type-options": "nosniff",
+            "referrer-policy": "strict-origin-when-cross-origin",
+            "x-frame-options": "DENY",
+            "permissions-policy": "camera=(), microphone=(), geolocation=()",
+            "strict-transport-security": "max-age=31536000",
+        }
+        for nombre, valor in esperado.items():
+            self.assertEqual(respuesta.headers.get(nombre), valor, (respuesta.url, nombre))
+
+    def test_cabeceras_cubren_paginas_recursos_y_errores_incluidos_los_del_middleware(self):
+        casos = [self.client.get(ruta) for ruta in (
+            "/", "/privacidad/", "/en-vivo/", "/api/salud", "/api/docs", "/api/openapi.json",
+            "/demo/app.mp4", "/demo/app.jpg", "/og-image.jpg", "/no-existe", "/descargar",
+        )]
+        casos += [self.client.post("/api/rpc", json={"metodo": "reader_requests"}),
+                  self.client.post("/api/sesion", content=b"no es json"),
+                  self.client.post("/api/sesion", content=b"x" * (16 * 1024 + 1)),
+                  self.client.post("/api/sesion", content=b"{}", headers={"Transfer-Encoding": "chunked"})]
+        for respuesta in casos:
+            with self.subTest(ruta=str(respuesta.url), codigo=respuesta.status_code):
+                self.assert_cabeceras(respuesta)
+        for _ in range(8):
+            self.sesion(clave="incorrecta", ip=self.IP)
+        limitada = self.sesion(clave="incorrecta", ip=self.IP)
+        self.assert_limite(limitada)
+        self.assert_cabeceras(limitada)
+
+    def test_csp_html_permite_los_recursos_actuales_y_excluye_solo_api_docs(self):
+        esperado = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+                    "img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; "
+                    "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'")
+        for ruta in ("/", "/privacidad/", "/en-vivo/", "/simulacion/"):
+            respuesta = self.client.get(ruta)
+            self.assertEqual(respuesta.status_code, 200)
+            self.assertEqual(respuesta.headers.get("content-security-policy"), esperado, ruta)
+        docs = self.client.get("/api/docs")
+        self.assertEqual(docs.status_code, 200)
+        self.assertNotIn("content-security-policy", docs.headers)
+        self.assertNotIn("content-security-policy", self.client.get("/api/salud").headers)
+
+    def test_error_interno_conserva_cabeceras_y_no_revela_el_detalle_de_la_excepcion(self):
+        @self.app.get("/api/fallo-exclusivo-de-la-prueba")
+        def fallo():
+            raise RuntimeError("Detalle interno exclusivo de la prueba")
+
+        # El sitio está montado en "/": esta ruta de prueba debe preceder ese montaje.
+        self.app.router.routes.insert(0, self.app.router.routes.pop())
+        with self.assertLogs("backend.servidor", level="ERROR"):
+            respuesta = self.client.get("/api/fallo-exclusivo-de-la-prueba")
+        self.assertEqual(respuesta.status_code, 500)
+        self.assert_cabeceras(respuesta)
+        self.assertEqual(set(respuesta.json()), {"error", "tipo"})
+        self.assertNotIn("Detalle interno exclusivo de la prueba", respuesta.text)
+
+    def test_login_usa_comparacion_constante_sin_migrar_el_hash_existente(self):
+        self.assertEqual(self.registro().status_code, 200)
+        hash_antes = load_store(self.ruta).find_user_by_email("lector@prueba.cl").password
+        comparador = hmac.compare_digest
+        with patch("models.store.hmac.compare_digest", wraps=comparador) as comparar:
+            self.assertEqual(self.sesion().status_code, 200)
+            self.assertEqual(self.sesion(clave="incorrecta").status_code, 400)
+            self.assertEqual(comparar.call_count, 2)
+        self.assertEqual(load_store(self.ruta).find_user_by_email("lector@prueba.cl").password, hash_antes)
+
+    def test_crear_una_sesion_elimina_las_expiradas_sin_usar_sus_tokens(self):
+        reloj = self.reloj()
+        uno = self.registro().json()
+        dos = self.registro("otro@prueba.cl").json()
+        endpoint = next(r.endpoint for r in self.app.routes if getattr(r, "path", None) == "/api/registro")
+        crear_sesion = inspect.getclosurevars(endpoint).nonlocals["nueva_sesion"]
+        sesiones = inspect.getclosurevars(crear_sesion).nonlocals["sesiones"]
+        self.assertIn(uno["token"], sesiones)
+        self.assertIn(dos["token"], sesiones)
+        from backend.servidor import DURACION_SESION
+        reloj.time.return_value = reloj.monotonic.return_value = 1000.0 + DURACION_SESION + 1
+        nueva = self.sesion().json()
+        self.assertEqual(set(sesiones), {nueva["token"]})
+        self.assertEqual(self.rpc(nueva, "reader_requests").status_code, 200)
+        self.assertEqual(self.rpc(uno, "reader_requests").status_code, 401)
+
+    def test_actividad_sin_correo_en_detalle_conserva_actor_busqueda_y_exportacion_admin(self):
+        persona = self.registro().json()
+        self.assertEqual(self.sesion().status_code, 200)
+        admin = self.sesion(self.ADMIN[0], self.ADMIN[1]).json()
+        respuesta = self.rpc(admin, "admin_activity", [50, "lector@prueba.cl"])
+        self.assertEqual(respuesta.status_code, 200, respuesta.text)
+        entradas = respuesta.json()["resultado"]
+        self.assertEqual({e["action"] for e in entradas}, {"registro", "login"})
+        for entrada in entradas:
+            self.assertNotIn("@", entrada["detail"])
+            self.assertEqual(entrada["actor_id"], persona["usuario"]["id"])
+            autor = self.rpc(admin, "user", [entrada["actor_id"]]).json()["resultado"]
+            self.assertEqual(autor["name"], "Persona de prueba")
+        exportado = self.rpc(admin, "export_activity_log")
+        self.assertEqual(exportado.status_code, 200)
+        texto = exportado.json()["resultado"]
+        self.assertIn("Actor:  Persona de prueba (lector@prueba.cl)", texto)
+        for linea in texto.splitlines():
+            if "Detalle:" in linea:
+                self.assertNotIn("@", linea)
 
 
 class SitioTest(unittest.TestCase):

@@ -10,6 +10,7 @@ Variables: BOOKWHO_DATOS (datos reales), BOOKWHO_PUBLICO (carpeta con lo que sub
 simulado, bookwho.apk y config.json), BOOKWHO_EXCLUIR (correos del equipo, separados por comas, fuera de los KPIs).
 """
 import dataclasses
+import logging
 import os
 import secrets
 import tempfile
@@ -50,7 +51,7 @@ SOLO_LECTURA = {
     "admin_activity", "book", "user", "active_offer_count", "recover_password", "export_activity_log",
 }
 CODIGOS = {ValidationError: 400, PermissionDenied: 403, NotFound: 404, InvalidTransition: 409}
-ETIQUETAS = {  # actividad que el panel puede mostrar: nunca login ni registro (traen correos)
+ETIQUETAS = {  # actividad de mercado que puede mostrar el panel; excluye login y registro
     "solicitud_publicada": "Solicitud publicada", "oferta_publicada": "Oferta recibida",
     "oferta_por_concretar": "Aceptada para coordinar", "trato_concretado": "Compra confirmada por el lector",
     "trato_desistido": "Trato desistido", "solicitud_cancelada": "Solicitud cancelada",
@@ -117,20 +118,51 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
     candado = threading.Lock()  # un solo Store y un solo escritor: cada llamada pasa de a una
     sesiones: dict[str, tuple[int, float]] = {}
     descargas = [0]  # ponytail: en memoria, desde el último reinicio; guardarlas en disco si importa el histórico
+    revision = [0]
+    candado_limites = threading.Lock()
+    fallos_correo, fallos_ip, registros_ip = {}, {}, {}
+    candado_metricas = threading.Lock()
+    cache_metricas = {"datos": None, "vence": 0, "revision": -1}
+
+    def podar_limites(ahora):
+        # Siempre bajo candado_limites. No conservar identificadores sin eventos vigentes.
+        for contadores, ventana in ((fallos_correo, 600), (fallos_ip, 600), (registros_ip, 3600)):
+            for clave, marcas in list(contadores.items()):
+                while marcas and marcas[0] <= ahora - ventana:
+                    marcas.popleft()
+                if not marcas:
+                    del contadores[clave]
+
+    def origen_externo(request, datos):
+        externo = "cf-connecting-ip" in request.headers
+        correo = str(datos.get("correo", "")).strip().lower()
+        return externo, request.headers.get("cf-connecting-ip", ""), correo
+
+    def cuenta_reservada(externo, correo):
+        return externo and correo.endswith("@" + analitica.DOMINIO_SIMULADO)
+
+    def demasiados_intentos():
+        return error(PermissionDenied("Demasiados intentos. Espera unos minutos."), 429)
 
     def guardar():
         os.makedirs(os.path.dirname(os.path.abspath(ruta_datos)), exist_ok=True)
         persistence.save_store(store, ruta_datos)
+        # Invalidar por versión no adquiere el candado de métricas dentro del Store.
+        revision[0] += 1
 
     def nueva_sesion(usuario: User) -> dict:
+        ahora = time.time()  # los llamadores mantienen el candado del Store
+        for anterior, (_, vence) in list(sesiones.items()):
+            if vence <= ahora:
+                del sesiones[anterior]
         token = secrets.token_urlsafe(32)
-        sesiones[token] = (usuario.id, time.time() + DURACION_SESION)
+        sesiones[token] = (usuario.id, ahora + DURACION_SESION)
         return {"token": token, "usuario": a_json(usuario, usuario)}
 
     def usuario_de(authorization: Optional[str]) -> Optional[User]:
         token = (authorization or "").removeprefix("Bearer ").strip()
         user_id, vence = sesiones.get(token, (None, 0))
-        if user_id is None or vence < time.time():
+        if user_id is None or vence <= time.time():
             sesiones.pop(token, None)
             return None
         return store.users.get(user_id)
@@ -146,37 +178,104 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
 
     @app.middleware("http")
     async def limitar_cuerpo(request, call_next):
-        if int(request.headers.get("content-length") or 0) > LIMITE_CUERPO:
+        if request.url.path.startswith("/api/") and "transfer-encoding" in request.headers:
+            return error(ValidationError("No se admite Transfer-Encoding en la API."), 411)
+        try:
+            longitud = int(request.headers.get("content-length") or 0)
+            if longitud < 0:
+                raise ValueError
+        except ValueError:
+            return error(ValidationError("La longitud de la solicitud no es válida."))
+        if longitud > LIMITE_CUERPO:
             return JSONResponse({"error": "La solicitud es demasiado grande.", "tipo": "ValidationError"}, 413)
         return await call_next(request)
+
+    @app.middleware("http")
+    async def cabeceras_seguras(request, call_next):
+        # Se registra después para envolver también los rechazos del límite de cuerpo.
+        try:
+            respuesta = await call_next(request)
+        except Exception:
+            logging.getLogger(__name__).exception("Error interno al procesar una solicitud")
+            respuesta = error(DomainError("No se pudo procesar la solicitud."), 500)
+        respuesta.headers.update({
+            "X-Content-Type-Options": "nosniff",
+            "Referrer-Policy": "strict-origin-when-cross-origin",
+            "X-Frame-Options": "DENY",
+            "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+            "Strict-Transport-Security": "max-age=31536000",
+        })
+        if respuesta.headers.get("content-type", "").startswith("text/html") and request.url.path != "/api/docs":
+            respuesta.headers["Content-Security-Policy"] = (
+                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
+                "img-src 'self' data:; media-src 'self'; font-src 'self'; connect-src 'self'; "
+                "object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+            )
+        return respuesta
 
     @app.get("/api/salud")
     def salud():
         return {"ok": True}
 
     @app.post("/api/sesion")
-    def iniciar_sesion(datos: dict = Body(...)):
+    def iniciar_sesion(request: Request, datos: dict = Body(...)):
+        externo, ip, correo = origen_externo(request, datos)
+        if cuenta_reservada(externo, correo):
+            return error(PermissionDenied("Esta cuenta está reservada para la demostración."))
         with candado:
+            # Store -> límites en ambos handlers: comprobar y contabilizar un intento
+            # completo no deja pasar solicitudes concurrentes por encima del umbral.
+            if externo:
+                with candado_limites:
+                    podar_limites(time.monotonic())
+                    if len(fallos_correo.get(correo, ())) >= 8 or len(fallos_ip.get(ip, ())) >= 30:
+                        return demasiados_intentos()
             try:
                 usuario = store.authenticate(str(datos.get("correo", "")), str(datos.get("clave", "")))
             except DomainError as exc:
+                if externo:
+                    with candado_limites:
+                        ahora = time.monotonic()
+                        podar_limites(ahora)
+                        fallos_correo.setdefault(correo, deque()).append(ahora)
+                        fallos_ip.setdefault(ip, deque()).append(ahora)
                 return error(exc)
+            if externo:
+                with candado_limites:
+                    fallos_correo.pop(correo, None)
             guardar()  # el login queda en el registro de eventos
             return nueva_sesion(usuario)
 
     @app.post("/api/registro")
-    def registrar(datos: dict = Body(...)):
+    def registrar(request: Request, datos: dict = Body(...)):
+        externo, ip, correo = origen_externo(request, datos)
+        # Comprobar también el correo efectivo que persistirá Store.register:
+        # el modelo trunca a 120 caracteres antes de convertir a minúsculas.
+        correo_guardado = str(datos.get("correo", "")).strip()[:120].lower()
+        if cuenta_reservada(externo, correo) or cuenta_reservada(externo, correo_guardado):
+            return error(PermissionDenied("Esta cuenta está reservada para la demostración."))
         with candado:
+            if externo:
+                with candado_limites:
+                    podar_limites(time.monotonic())
+                    if len(registros_ip.get(ip, ())) >= 40:
+                        return demasiados_intentos()
             try:
                 usuario = store.register(*(str(datos.get(k, "")) for k in ("nombre", "correo", "clave", "rol", "comuna")))
             except DomainError as exc:
                 return error(exc)
+            if externo:
+                with candado_limites:
+                    ahora = time.monotonic()
+                    podar_limites(ahora)
+                    registros_ip.setdefault(ip, deque()).append(ahora)
             guardar()
             return nueva_sesion(usuario)
 
     @app.delete("/api/sesion")
     def cerrar_sesion(authorization: Optional[str] = Header(default=None)):
-        sesiones.pop((authorization or "").removeprefix("Bearer ").strip(), None)
+        with candado:
+            sesiones.pop((authorization or "").removeprefix("Bearer ").strip(), None)
         return Response(status_code=204)
 
     @app.post("/api/rpc")
@@ -209,64 +308,71 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
 
     def metricas_reales() -> dict:
         """Mismo formato que metricas.json (SPEC-004), con datos reales y sin datos personales."""
-        with candado:
-            usuarios, eventos = analitica.cargar(ruta_datos)
-            excluidos = analitica.ids_excluidos(usuarios, analitica.CORREOS_DEMO | set(excluir))
-            excluidos |= {u.id for u in store.users.values() if u.role == Role.ADMIN}  # la moderación no es uso
-            r = analitica.calcular(eventos, excluidos)
-            reales = {u.id for u in store.users.values() if u.id not in excluidos}
-            agentes = {u.id for u in store.users.values() if u.email.endswith("@" + analitica.DOMINIO_SIMULADO)}
-            activos = {e.actor_id for e in store.activity}
-            origen = {"agentes_simulados": len(agentes & reales & activos), "personas": len((reales - agentes) & activos)}
-            solicitudes = [q for q in store.requests.values() if q.reader_id in reales]
-            primera = {}
-            for o in store.offers.values():
-                primera[o.request_id] = min(primera.get(o.request_id, o.created_at), o.created_at)
-            # ponytail: repite el desglose de simulador.Simulacion.resumen; si crece, pasarlo a un módulo común
-            desglose = {}
-            for nombre, clave in (("region", lambda q: q.location[q.location.find("(") + 1:-1] if q.location.endswith(")") else q.location),
-                                  ("entrega", lambda q: Delivery.LABELS[q.delivery_preference]),
-                                  ("precio_maximo", lambda q: "con precio máximo" if q.max_price else "sin precio máximo")):
-                grupos = defaultdict(list)
-                for q in solicitudes:
-                    grupos[clave(q)].append(q)
-                desglose[nombre] = []
-                for grupo, qs in sorted(grupos.items()):
-                    horas = [(primera[q.id] - q.created_at).total_seconds() / 3600 for q in qs if q.id in primera]
-                    desglose[nombre].append({"grupo": grupo, "solicitudes": len(qs),
-                                             "con_oferta_pct": round(100 * len(horas) / len(qs), 1),
-                                             "horas_primera_oferta_mediana": round(median(horas), 1) if horas else None})
-            actividad = deque(maxlen=12)
-            for e in store.activity:
-                if e.action in ETIQUETAS and e.actor_id in reales:
-                    numero = analitica.numero(analitica.SOLICITUD, {"detail": e.detail})
-                    q = store.requests.get(numero)
-                    detalle = f"{store.book(q.book_id).title} · {q.location}" if q else ""
-                    actividad.append({"hora": e.at.isoformat(timespec="minutes"), "tipo": ETIQUETAS[e.action], "detalle": detalle})
-            tipos = r["eventos_por_tipo"]
-            return {
-                "simulado": False,
-                "aviso": (f"Demo en vivo: {origen['agentes_simulados']} agentes simulados (cuentas del dominio bookwho.test) "
-                          f"y {origen['personas']} personas usan la app con datos de prueba." if origen["agentes_simulados"]
-                          else "Datos reales de la prueba en vivo: personas que usan la app con datos de prueba."),
-                "origen": origen,
-                "generado": datetime.now().isoformat(timespec="seconds"),
-                "en_vivo": True,
-                "periodo": {"desde": r["periodo"][0], "hasta": r["periodo"][1]} if r["periodo"] else None,
-                "agentes": {"lectores": sum(store.users[i].role == Role.READER for i in reales),
-                            "vendedores": sum(store.users[i].role == Role.SELLER for i in reales)},
-                "kpis": {"resolucion_pct": r["kpi_tasa_resolucion"], "respuesta_pct": r["kpi_tasa_respuesta"],
-                         "horas_primera_oferta": r["kpi_horas_primera_oferta"]},
-                "totales": {"eventos": r["eventos_reales"], "usuarios_activos": r["usuarios_activos"],
-                            "solicitudes": r["solicitudes_publicadas"], "ofertas": tipos.get("oferta_publicada", 0),
-                            "aceptadas_para_coordinar": tipos.get("oferta_por_concretar", 0),
-                            "compras_confirmadas": tipos.get("trato_concretado", 0), "descargas_apk": descargas[0]},
-                "uso_diario": [{"dia": d, "eventos": r["uso_diario"].get(d, 0)} for d in dias_seguidos(r["uso_diario"])],
-                "solicitudes_por_estado": dict(sorted(Counter(RequestStatus.LABELS[q.status] for q in solicitudes).items())),
-                "desglose": desglose,
-                "verificacion": None,  # solo existe en la simulación
-                "actividad": list(reversed(actividad)),
-            }
+        with candado_metricas:
+            ahora = time.monotonic()
+            if (cache_metricas["datos"] is not None and ahora < cache_metricas["vence"]
+                    and cache_metricas["revision"] == revision[0]):
+                return cache_metricas["datos"]
+            with candado:
+                usuarios, eventos = analitica.cargar(ruta_datos)
+                excluidos = analitica.ids_excluidos(usuarios, analitica.CORREOS_DEMO | set(excluir))
+                excluidos |= {u.id for u in store.users.values() if u.role == Role.ADMIN}  # la moderación no es uso
+                r = analitica.calcular(eventos, excluidos)
+                reales = {u.id for u in store.users.values() if u.id not in excluidos}
+                agentes = {u.id for u in store.users.values() if u.email.endswith("@" + analitica.DOMINIO_SIMULADO)}
+                activos = {e.actor_id for e in store.activity}
+                origen = {"agentes_simulados": len(agentes & reales & activos), "personas": len((reales - agentes) & activos)}
+                solicitudes = [q for q in store.requests.values() if q.reader_id in reales]
+                primera = {}
+                for o in store.offers.values():
+                    primera[o.request_id] = min(primera.get(o.request_id, o.created_at), o.created_at)
+                # ponytail: repite el desglose de simulador.Simulacion.resumen; si crece, pasarlo a un módulo común
+                desglose = {}
+                for nombre, clave in (("region", lambda q: q.location[q.location.find("(") + 1:-1] if q.location.endswith(")") else q.location),
+                                      ("entrega", lambda q: Delivery.LABELS[q.delivery_preference]),
+                                      ("precio_maximo", lambda q: "con precio máximo" if q.max_price else "sin precio máximo")):
+                    grupos = defaultdict(list)
+                    for q in solicitudes:
+                        grupos[clave(q)].append(q)
+                    desglose[nombre] = []
+                    for grupo, qs in sorted(grupos.items()):
+                        horas = [(primera[q.id] - q.created_at).total_seconds() / 3600 for q in qs if q.id in primera]
+                        desglose[nombre].append({"grupo": grupo, "solicitudes": len(qs),
+                                                 "con_oferta_pct": round(100 * len(horas) / len(qs), 1),
+                                                 "horas_primera_oferta_mediana": round(median(horas), 1) if horas else None})
+                actividad = deque(maxlen=12)
+                for e in store.activity:
+                    if e.action in ETIQUETAS and e.actor_id in reales:
+                        numero = analitica.numero(analitica.SOLICITUD, {"detail": e.detail})
+                        q = store.requests.get(numero)
+                        detalle = f"{store.book(q.book_id).title} · {q.location}" if q else ""
+                        actividad.append({"hora": e.at.isoformat(timespec="minutes"), "tipo": ETIQUETAS[e.action], "detalle": detalle})
+                tipos = r["eventos_por_tipo"]
+                resultado = {
+                    "simulado": False,
+                    "aviso": (f"Demo en vivo: {origen['agentes_simulados']} agentes simulados (cuentas del dominio bookwho.test) "
+                              f"y {origen['personas']} personas usan la app con datos de prueba." if origen["agentes_simulados"]
+                              else "Datos reales de la prueba en vivo: personas que usan la app con datos de prueba."),
+                    "origen": origen,
+                    "generado": datetime.now().isoformat(timespec="seconds"),
+                    "en_vivo": True,
+                    "periodo": {"desde": r["periodo"][0], "hasta": r["periodo"][1]} if r["periodo"] else None,
+                    "agentes": {"lectores": sum(store.users[i].role == Role.READER for i in reales),
+                                "vendedores": sum(store.users[i].role == Role.SELLER for i in reales)},
+                    "kpis": {"resolucion_pct": r["kpi_tasa_resolucion"], "respuesta_pct": r["kpi_tasa_respuesta"],
+                             "horas_primera_oferta": r["kpi_horas_primera_oferta"]},
+                    "totales": {"eventos": r["eventos_reales"], "usuarios_activos": r["usuarios_activos"],
+                                "solicitudes": r["solicitudes_publicadas"], "ofertas": tipos.get("oferta_publicada", 0),
+                                "aceptadas_para_coordinar": tipos.get("oferta_por_concretar", 0),
+                                "compras_confirmadas": tipos.get("trato_concretado", 0), "descargas_apk": descargas[0]},
+                    "uso_diario": [{"dia": d, "eventos": r["uso_diario"].get(d, 0)} for d in dias_seguidos(r["uso_diario"])],
+                    "solicitudes_por_estado": dict(sorted(Counter(RequestStatus.LABELS[q.status] for q in solicitudes).items())),
+                    "desglose": desglose,
+                    "verificacion": None,  # solo existe en la simulación
+                    "actividad": list(reversed(actividad)),
+                }
+                cache_metricas.update(datos=resultado, vence=time.monotonic() + 3, revision=revision[0])
+                return resultado
 
     @app.get("/api/metricas")
     def metricas():
@@ -304,6 +410,7 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
         if request.method == "GET" and request.headers.get("range", "bytes=0-").startswith("bytes=0-"):
             with candado:  # una por descarga: no cuentan HEAD ni la continuación de una descarga cortada
                 descargas[0] += 1
+                revision[0] += 1
         return FileResponse(apk, media_type="application/vnd.android.package-archive", filename="BookWho.apk")
 
     @app.get("/config.json", include_in_schema=False)

@@ -146,6 +146,8 @@ python -m unittest discover -s tests -v
 
 ### Modo servidor: datos compartidos entre teléfonos
 
+Auditoría, mitigaciones de la E4 y tareas pendientes: [Seguridad del servidor](docs/04-architecture/SEGURIDAD.md).
+
 La app usa el servidor indicado en `data/servidor.json` si responde; si no, trabaja en modo local como siempre y lo avisa. Las pantallas son las mismas: solo cambia dónde vive el modelo ([SPEC-005](docs/05-specs/SPEC-005-backend-compartido.md), [ADR-004](docs/04-architecture/ADR-004-backend-compartido.md)). Para forzar el modo local: `BOOKWHO_SERVIDOR=local python main.py`.
 
 ```bash
