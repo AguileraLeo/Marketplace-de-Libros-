@@ -15,7 +15,7 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Optional
 
-from store import ActivityEntry, Book, BookRequest, Offer, SellerContact, Store, User
+from models.store import ActivityEntry, Book, BookRequest, Offer, OfferContact, SellerContact, Store, User
 
 # tabla del Store -> clase de sus objetos
 TABLES = {
@@ -24,15 +24,9 @@ TABLES = {
     "requests": BookRequest,
     "offers": Offer,
     "contacts": SellerContact,
+    "offer_contacts": OfferContact,
 }
 DATE_FIELDS = ("created_at", "updated_at", "at")
-
-
-def _to_json(obj):
-    """json.dump no sabe guardar datetime: lo pasamos a texto ISO."""
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    raise TypeError(f"No serializable: {type(obj)}")
 
 
 def _parse_dates(data: dict) -> dict:
@@ -48,31 +42,38 @@ def save_store(store: Store, path: str) -> None:
     # Se escribe a un .tmp y luego se reemplaza: si la app se cierra a mitad, el JSON anterior queda intacto.
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2, default=_to_json)
+        json.dump(data, f, ensure_ascii=False, indent=2, default=datetime.isoformat)  # otro tipo → TypeError
+        f.flush()
+        os.fsync(f.fileno())  # que un corte de luz no deje el reemplazo apuntando a un archivo vacío
     os.replace(tmp, path)
 
 
-def load_store(path: str) -> Optional[Store]:
+def load_store(path: str, respaldar: bool = True) -> Optional[Store]:
+    """None si no hay archivo o está roto. Roto: se aparta como .corrupto, salvo respaldar=False."""
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except FileNotFoundError:
         return None  # primera vez que se abre la app
     except (json.JSONDecodeError, UnicodeDecodeError):
-        os.replace(path, path + ".corrupto")  # se respalda, no se pisa
+        data = None
+    if not isinstance(data, dict):  # roto, o JSON válido que no es un objeto (lista, número, null…)
+        if respaldar:
+            os.replace(path, path + ".corrupto")  # se respalda, no se pisa
         return None
 
     store = Store()
     try:
         for name, cls in TABLES.items():
-            key = "seller_id" if name == "contacts" else "id"
+            key = {"contacts": "seller_id", "offer_contacts": "offer_id"}.get(name, "id")
             table = getattr(store, name)
             for item in data.get(name, []):
                 obj = cls(**_parse_dates(item))
                 table[getattr(obj, key)] = obj
         store.activity = [ActivityEntry(**_parse_dates(a)) for a in data.get("activity", [])]
-    except (TypeError, ValueError):
-        os.replace(path, path + ".corrupto")
+    except (TypeError, ValueError, AttributeError):  # AttributeError: un registro que no es objeto
+        if respaldar:
+            os.replace(path, path + ".corrupto")
         return None
 
     # Los contadores de id siguen desde el mayor guardado, para no repetir ids.

@@ -6,14 +6,14 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from books_api import (
+from services.books_api import (
     CACHE_DIR,
     get_cover_cache_path,
     is_cover_cached,
     prefetch_covers,
     search_books,
 )
-from locations import (
+from services.locations import (
     CHILE_LOCATIONS,
     normalize_location_name,
     proximity_label,
@@ -67,6 +67,21 @@ class CoverCacheTest(unittest.TestCase):
     def test_empty_url_returns_none(self):
         self.assertIsNone(get_cover_cache_path(""))
         self.assertFalse(is_cover_cached(""))
+
+    def test_dos_isbn_de_una_misma_obra_quedan_como_libros_distintos(self):
+        """Auditoría H10: Open Library agrupa ediciones en una obra; buscar por ISBN guarda esa edición."""
+        from unittest import mock
+        from models.store import Store
+        from services import books_api
+        obra = {"docs": [{"key": "/works/OL1W", "title": "Rayuela", "isbn": ["9788437604572", "9788420471891"]}]}
+        store = Store()
+        with mock.patch.object(books_api, "_get_json", return_value=obra):
+            a = store.upsert_book(books_api._search_open_library("978-8437604572", "isbn")[0])
+            b = store.upsert_book(books_api._search_open_library("9788420471891", "isbn")[0])
+            otra_vez = store.upsert_book(books_api._search_open_library("9788437604572", "isbn")[0])
+        self.assertEqual((a.isbn, b.isbn), ("9788437604572", "9788420471891"))
+        self.assertNotEqual(a.id, b.id)
+        self.assertEqual(otra_vez.id, a.id)  # la misma edición se reutiliza
 
     def test_search_books_local_fallback_and_prefetch(self):
         results, origin = search_books("quijote", mode="titulo")

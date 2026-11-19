@@ -4,15 +4,16 @@ Ejecutar desde la raíz:  python -m unittest discover -s tests -v
 """
 
 import dataclasses
+import hashlib
 import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from books_api import catalog_lookup  # noqa: E402
-from store import (  # noqa: E402
+from models.store import (  # noqa: E402
     Condition,
     Delivery,
     InvalidTransition,
@@ -24,6 +25,17 @@ from store import (  # noqa: E402
     ValidationError,
     build_demo_store,
 )
+from services.books_api import catalog_lookup  # noqa: E402
+
+import models.store as modelo
+
+ITERACIONES_APP = modelo.PBKDF2_ITERATIONS
+
+
+def setUpModule():
+    # SPEC-012: acelerar las cuentas ficticias y restaurar el coste de la app al terminar.
+    unittest.addModuleCleanup(setattr, modelo, "PBKDF2_ITERATIONS", modelo.PBKDF2_ITERATIONS)
+    modelo.PBKDF2_ITERATIONS = 1_000
 
 
 class StoreTestCase(unittest.TestCase):
@@ -43,6 +55,116 @@ class StoreTestCase(unittest.TestCase):
         )
         data.update(kw)
         return self.store.create_request(self.reader, **data)
+
+
+class PasswordTest(StoreTestCase):
+    def test_coste_de_la_app_y_sales_independientes(self):
+        self.assertGreaterEqual(ITERACIONES_APP, 600_000)
+        with patch.object(modelo, "PBKDF2_ITERATIONS", ITERACIONES_APP):
+            uno = self.store.register("Persona A", "a@example.test", "misma-clave", Role.READER)
+            dos = self.store.register("Persona B", "b@example.test", "misma-clave", Role.READER)
+        self.assertRegex(uno.password, r"^pbkdf2_sha256\$600000\$[0-9a-f]{32}\$[0-9a-f]{64}$")
+        self.assertNotEqual(uno.password.split("$")[2], dos.password.split("$")[2])
+
+    def test_registro_guarda_pbkdf2(self):
+        usuario = self.store.register("Persona", "cuenta@example.test", "prueba", Role.READER)
+        self.assertTrue(usuario.password.startswith("pbkdf2_sha256$"))
+
+    def test_login_migra_hash_antiguo(self):
+        self.reader.password = hashlib.sha256(f"{self.reader.email}:1234".encode()).hexdigest()
+        self.store.authenticate(self.reader.email, "1234")
+        migrado = self.reader.password
+        self.assertTrue(migrado.startswith("pbkdf2_sha256$"))
+        self.store.authenticate(self.reader.email, "1234")
+        self.assertEqual(self.reader.password, migrado)
+
+    def test_clave_incorrecta_con_ambos_formatos(self):
+        antiguo = hashlib.sha256(f"{self.reader.email}:1234".encode()).hexdigest()
+        for guardado in (self.reader.password, antiguo):
+            self.reader.password = guardado
+            with self.assertRaises(ValidationError):
+                self.store.authenticate(self.reader.email, "incorrecta")
+            self.assertEqual(self.reader.password, guardado)
+
+    def test_correo_inexistente_calcula_un_hash(self):
+        with patch("models.store.hashlib.pbkdf2_hmac", wraps=hashlib.pbkdf2_hmac) as derivar:
+            with self.assertRaises(ValidationError):
+                self.store.authenticate("ausente@example.test", "prueba")
+            derivar.assert_called_once()
+
+    def test_login_actualiza_coste_anterior(self):
+        with patch.object(modelo, "PBKDF2_ITERATIONS", 900):
+            self.reader.password = modelo.hash_password("1234")
+        self.store.authenticate(self.reader.email, "1234")
+        self.assertTrue(self.reader.password.startswith("pbkdf2_sha256$1000$"))
+
+
+class OfferContactTest(StoreTestCase):
+    """SPEC-011: el lector ve el contacto de la oferta que aceptó, no el último del vendedor."""
+
+    def test_una_oferta_posterior_no_cambia_el_contacto_de_otra(self):
+        req1 = self.new_request()
+        req2 = self.store.create_request(self.reader2, self.book.id, "", Condition.ANY, "Temuco", Delivery.ANY, "")
+        o1 = self.store.create_offer(self.seller, req1.id, "9000", Condition.USED, phone="+56 9 1111 1111")
+        self.store.accept_offer(self.reader, o1.id)
+        o2 = self.store.create_offer(self.seller, req2.id, "8000", Condition.USED, address="Feria Pinto, Temuco")
+        self.store.accept_offer(self.reader2, o2.id)
+        c1, c2 = self.store.offer_contact(self.reader, o1.id), self.store.offer_contact(self.reader2, o2.id)
+        self.assertEqual((c1.phone, c1.address_or_meeting_point), ("+56 9 1111 1111", ""))
+        self.assertEqual((c2.phone, c2.address_or_meeting_point), ("", "Feria Pinto, Temuco"))
+        self.assertEqual(self.store.seller_contact(self.seller).address_or_meeting_point, "Feria Pinto, Temuco")
+
+    def test_oferta_anterior_sin_copia_muestra_el_contacto_del_perfil(self):
+        offer = next(o for o in self.store.offers.values() if o.seller_id == self.seller.id)
+        del self.store.offer_contacts[offer.id]  # como una oferta creada antes de SPEC-011
+        self.store.accept_offer(self.reader, offer.id)
+        self.assertEqual(self.store.offer_contact(self.reader, offer.id).phone,
+                         self.store.contacts[self.seller.id].phone)
+
+
+class SuspensionTest(StoreTestCase):
+    """SPEC-010: suspender saca del mercado."""
+
+    def test_suspender_vendedor_cancela_sus_ofertas_y_deja_estados_validos(self):
+        req1 = self.new_request()                       # su oferta queda por concretar
+        req2 = self.new_request()                       # su oferta, sola, queda publicada
+        req3 = self.new_request()                       # su oferta en espera, otra en coordinación
+        trato = self.store.create_offer(self.seller, req1.id, "9000", Condition.USED, phone="1")
+        en_espera = self.store.create_offer(self.seller2, req1.id, "9500", Condition.USED, phone="2")
+        sola = self.store.create_offer(self.seller, req2.id, "9000", Condition.USED, phone="1")
+        mia3 = self.store.create_offer(self.seller, req3.id, "9000", Condition.USED, phone="1")
+        otra3 = self.store.create_offer(self.seller2, req3.id, "8000", Condition.USED, phone="2")
+        self.store.accept_offer(self.reader, trato.id)
+        self.store.accept_offer(self.reader, otra3.id)
+
+        self.store.set_user_status(self.admin, self.seller.id, UserStatus.SUSPENDED)
+
+        self.assertEqual({o.status for o in self.store.offers.values() if o.seller_id == self.seller.id},
+                         {OfferStatus.CANCELLED})
+        self.assertEqual(en_espera.status, OfferStatus.PUBLISHED)      # vuelve a estar disponible
+        self.assertEqual(req1.status, RequestStatus.WITH_OFFERS)
+        self.assertEqual(req2.status, RequestStatus.PUBLISHED)
+        self.assertEqual((req3.status, otra3.status), (RequestStatus.IN_DEAL, OfferStatus.IN_DEAL))
+        self.assertEqual(mia3.status, OfferStatus.CANCELLED)
+        self.store.accept_offer(self.reader, en_espera.id)            # el lector puede seguir con otra
+
+    def test_suspender_lector_cancela_sus_solicitudes_y_salen_del_feed(self):
+        req = self.new_request()
+        oferta = self.store.create_offer(self.seller, req.id, "9000", Condition.USED, phone="1")
+        self.store.accept_offer(self.reader, oferta.id)
+        abierta = self.new_request()
+        self.store.set_user_status(self.admin, self.reader.id, UserStatus.SUSPENDED)
+        self.assertEqual((req.status, abierta.status), (RequestStatus.CANCELLED, RequestStatus.CANCELLED))
+        self.assertEqual(req.cancellation_reason, "Cuenta suspendida")
+        self.assertEqual(oferta.status, OfferStatus.CANCELLED)
+        self.assertFalse([r for r in self.store.open_requests(self.seller2) if r.reader_id == self.reader.id])
+
+    def test_reactivar_devuelve_el_acceso_pero_no_reabre_lo_cancelado(self):
+        req = self.new_request()
+        self.store.set_user_status(self.admin, self.reader.id, UserStatus.SUSPENDED)
+        self.store.set_user_status(self.admin, self.reader.id, UserStatus.ACTIVE)
+        self.assertEqual(req.status, RequestStatus.CANCELLED)
+        self.store.authenticate("lector@demo.cl", "1234")
 
 
 class HappyPathTest(StoreTestCase):
@@ -111,6 +233,8 @@ class ValidationTest(StoreTestCase):
             self.new_request(max_price="abc")
         with self.assertRaisesRegex(ValidationError, "mayor que 0"):
             self.new_request(max_price=0)
+        with self.assertRaisesRegex(ValidationError, "número entero"):
+            self.new_request(max_price="²")
 
     def test_offer_needs_contact_and_price_and_allows_any_condition(self):
         req = self.new_request(accepted_condition=Condition.NEW)
@@ -257,6 +381,79 @@ class AdminAuditTest(StoreTestCase):
     def test_only_admin_can_export_activity(self):
         with self.assertRaises(PermissionDenied):
             self.store.export_activity_log(self.reader, "registro.log")
+
+
+class OfferCancellationTest(StoreTestCase):
+    """Auditoría H06 (estado tras cancelar ofertas) y H07 (desistir siendo vendedor)."""
+
+    def offer(self, seller, req, price="1000"):
+        return self.store.create_offer(seller, req.id, price, Condition.NEW, "", "", "1", "", "")
+
+    def test_cancelar_la_ultima_oferta_devuelve_la_solicitud_a_publicada(self):
+        req = self.new_request()
+        offer = self.offer(self.seller, req)
+        self.store.cancel_offer(self.seller, offer.id)
+        self.assertEqual(offer.status, OfferStatus.CANCELLED)
+        self.assertEqual(req.status, RequestStatus.PUBLISHED)  # antes quedaba "Con ofertas" sin ofertas
+        self.assertEqual(self.store.active_offer_count(req.id), 0)
+        self.assertIn(req, self.store.open_requests(self.seller2))  # sigue recibiendo ofertas
+
+    def test_cancelar_una_oferta_entre_varias_mantiene_con_ofertas(self):
+        req = self.new_request()
+        offer1 = self.offer(self.seller, req)
+        self.offer(self.seller2, req, "2000")
+        self.store.cancel_offer(self.seller, offer1.id)
+        self.assertEqual(req.status, RequestStatus.WITH_OFFERS)
+        self.assertEqual(self.store.active_offer_count(req.id), 1)
+
+    def test_cancelar_una_oferta_ya_cancelada_falla_sin_cambiar_nada(self):
+        req = self.new_request()
+        offer = self.offer(self.seller, req)
+        self.store.cancel_offer(self.seller, offer.id)
+        with self.assertRaises(InvalidTransition):
+            self.store.cancel_offer(self.seller, offer.id)
+        self.assertEqual(req.status, RequestStatus.PUBLISHED)
+
+    def test_cancelar_oferta_en_espera_no_rompe_la_coordinacion(self):
+        req = self.new_request()
+        offer1 = self.offer(self.seller, req)
+        offer2 = self.offer(self.seller2, req, "2000")
+        self.store.accept_offer(self.reader, offer1.id)
+        self.store.cancel_offer(self.seller2, offer2.id)  # estaba EN_ESPERA
+        self.assertEqual(req.status, RequestStatus.IN_DEAL)
+        self.assertEqual(offer1.status, OfferStatus.IN_DEAL)
+
+    def test_oferta_en_coordinacion_no_se_cancela_como_oferta_comun(self):
+        req = self.new_request()
+        offer = self.offer(self.seller, req)
+        self.store.accept_offer(self.reader, offer.id)
+        with self.assertRaises(InvalidTransition):  # antes dejaba la solicitud huérfana en coordinación
+            self.store.cancel_offer(self.seller, offer.id)
+        self.assertEqual(offer.status, OfferStatus.IN_DEAL)
+        self.assertEqual(req.status, RequestStatus.IN_DEAL)
+
+    def test_vendedor_desiste_del_trato_y_se_reactivan_las_demas(self):
+        req = self.new_request()
+        offer1 = self.offer(self.seller, req)
+        offer2 = self.offer(self.seller2, req, "2000")
+        self.store.accept_offer(self.reader, offer1.id)
+        self.store.cancel_deal(self.seller, offer1.id)
+        self.assertEqual(offer1.status, OfferStatus.CANCELLED)
+        self.assertEqual(offer2.status, OfferStatus.PUBLISHED)
+        self.assertEqual(req.status, RequestStatus.WITH_OFFERS)
+        self.assertEqual(self.store.activity[-1].action, "trato_desistido")
+        self.store.accept_offer(self.reader, offer2.id)  # el lector puede elegir otra
+        self.assertEqual(req.status, RequestStatus.IN_DEAL)
+
+    def test_vendedor_desiste_de_la_unica_oferta(self):
+        req = self.new_request()
+        offer = self.offer(self.seller, req)
+        self.store.accept_offer(self.reader, offer.id)
+        self.store.cancel_deal(self.seller, offer.id)
+        self.assertEqual(req.status, RequestStatus.PUBLISHED)
+        self.assertIn(req, self.store.open_requests(self.seller2))
+        with self.assertRaises(PermissionDenied):  # otro vendedor no puede desistir por él
+            self.store.cancel_deal(self.seller2, offer.id)
 
 
 if __name__ == "__main__":

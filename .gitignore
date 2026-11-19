@@ -1,19 +1,32 @@
+# Entorno y cachés
 .venv/
 __pycache__/
 *.pyc
+.cache/
 .env
+
+# Editores y herramientas locales
 .vscode/
 .idea/
+*.code-workspace
 .claude/settings.local.json
-.cache/
-registro_actividad*.log
 .agents/
-
-# Maquetas de diseño (no son parte de la entrega)
-BookWho — Rediseño editorial – Inicio · lector.html
-Solicitud publicada.pdf
+/Imagen pegada*.png
 
 # Build Android
 .buildozer/
 bin/
-data.json
+
+# Datos locales de la app y exportaciones de teléfonos (pueden traer correos de participantes)
+/data.json
+data/user/
+data/simulacion/
+panel/metricas.json
+data_*.json
+*.json.corrupto
+*.json.tmp
+registro_actividad*.log
+
+# Maquetas de diseño (no son parte de la entrega)
+BookWho — Rediseño editorial – Inicio · lector.html
+Solicitud publicada.pdf
