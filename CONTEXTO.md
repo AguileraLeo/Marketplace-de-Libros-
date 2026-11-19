@@ -33,7 +33,7 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Admin: búsqueda y exportación de logs de actividad a `.log` | Hecho |
 | Máquinas de estado de solicitud y oferta (estados intermedios) | Hecho, en `models/store.py` |
 | Permisos por rol en la capa de dominio (no solo en la UI) | Hecho |
-| Pruebas automatizadas (121 tests) | Pasan; incluyen 21 pruebas de seguridad del backend |
+| Pruebas automatizadas (135 tests) | Pasan; incluyen 21 pruebas de seguridad del backend |
 | Fundamentación UX/UI con encuesta real (18 respuestas) | Hecho, en `docs/01-requirements/FUNDAMENTACION-UX-UI.md` |
 | Persistencia JSON | Hecha en `services/persistence.py`: escritorio usa `data/user/data.json` y Android su directorio privado; sin base de datos ni servidor |
 | Notificaciones locales (plyer) y configuración remota | Hecho, en `services/` |
@@ -109,12 +109,13 @@ Se tomaron para que el demo funcionara y se actualizaron con las Fases 1 a 4 del
 5. Cancelar una solicitud cancela sus ofertas activas y registra el rol (`ADMIN` / `READER`) y el motivo de moderación/cancelación.
 6. El vendedor puede ofertar cualquier condición (nuevo o usado) y método de entrega; el lector evalúa la oferta al revisarla.
 7. Un vendedor tiene como máximo una oferta activa por solicitud.
-8. Cada cuenta tiene un solo rol. Un usuario suspendido no puede iniciar sesión ni operar.
+8. Cada cuenta tiene un solo rol. Un usuario suspendido no puede iniciar sesión ni operar, y lo que tenía activo sale del mercado; reactivarlo no lo reabre ([SPEC-010](docs/05-specs/SPEC-010-suspension-saca-del-mercado.md), 19-11-2026).
 9. No hay base de datos: la app persiste en JSON local (`data/user/data.json` en escritorio, directorio privado en Android). Las cuentas demo se crean solo la primera vez (si todavía no existe el archivo); el login ya no muestra el panel de cuentas demo.
 10. Stack del demo: Python 3.10/3.11 + Kivy 2.3.1 + KivyMD 2.0.1.dev0.
 11. El feed del vendedor excluye las solicitudes donde ya tiene una oferta activa; esas se gestionan desde "Mis ofertas".
 12. El admin consulta la actividad en una subpantalla dedicada (con búsqueda) y puede exportarla a un archivo `.log`.
 13. Si el vendedor cancela la última oferta activa, la solicitud vuelve a `PUBLICADA`. Una oferta `POR_CONCRETAR` no se cancela como oferta común: se desiste del trato (`cancel_deal`).
+14. El contacto se guarda con cada oferta; el perfil del vendedor solo precarga el formulario ([SPEC-011](docs/05-specs/SPEC-011-contacto-por-oferta.md), 19-11-2026).
 
 ## 5. Próximos pasos sugeridos
 

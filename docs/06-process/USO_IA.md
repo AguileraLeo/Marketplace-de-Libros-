@@ -9,7 +9,7 @@
 - **E2:** Claude Sonnet 5; en la sesión de revisión final, Claude Sonnet 5 y Claude Opus 5.5.
 - **E3:** Claude Opus 5.5 (`claude-opus-5-5`).
 
-- **E4:** Claude Opus 5.5 (Claude Code) y GPT-6.1 Sol (Codex en VS Code).
+- **E4:** Claude Opus 5.5 (Claude Code) y GPT-6.1 Sol (Codex en VS Code). En la auditoría posterior (18 y 19-11-2026), Claude Opus 5.5 (Claude Code) y Astra 6.2 con razonamiento máximo como segunda auditoría independiente.
 
 ## 3. Prompts realizados
 
@@ -103,6 +103,20 @@ Alcance de los trabajos originales:
 - **GPT-6.1 Sol (Codex):** redacción del borrador del Informe Final, del guion de presentación y de este borrador de declaración.
 - **Decisiones y ejecución del equipo:** comandos de git y del servidor; uso de datos simulados autorizado por el docente; aprobación de sacar `.agents/` y de postergar el backend hasta después de la presentación.
 
+### E4: auditoría posterior (18 y 19-11-2026, borrador para adaptar)
+
+Prompts a Claude Code (textuales, abreviados con […]):
+
+1. "Actúa como un desarrollador senior que audita Bookwho […] contrastándolo con la rúbrica de evaluación […] Primero audita y presenta un plan; todavía no modifiques archivos […] No publiques, despliegues, cambies configuraciones externas ni hagas pruebas que alteren producción."
+2. "crees que podemos hacer una auditoria con ponytail en version extrrema y ver si esos recordes de codigo son optimos o no? no quiero modificar nada, quiero simular como quedaria el codigo […]"
+3. "antes de tomar acciones mira el reporte de astra 6.2 max pensamiento" (con el informe de Astra pegado).
+4. "usuario suspendido deberia borrarse y en cuanto a lo del contacto que me sugieres?"
+5. "si me parece, tambiem apliquemos los cambios optimos que nos dejo la auditoria de ponytail y tambien con la fusion de las mejoras de la auditoria de astra y la tuya, se puede?"
+6. "podemos implementar los cambios en mi version local y despues yo lo subo al repo, eliminemos esos 11 comit, se puede?"
+7. "si hace la declaracion de ia tambien, despues la adapto"
+
+A Astra 6.2 se le dio el mismo prompt de auditoría (1). [COMPLETAR: confirmar el prompt usado con Astra].
+
 ## 4. Outputs
 
 ### E2
@@ -147,6 +161,18 @@ Antecedentes proporcionados por el equipo para esta declaración; no constituyen
 - **Codex — proyección del lanzamiento:** añadió un escenario M1–M4 en `DOCUMENTATION.md` §4.2 y lo resumió en el informe, el guion y el contexto. Estimó resolución de 30 % a 55 %, respuesta de 60 % a 85 % y mediana de espera de 24 h a 8 h. Son supuestos de planificación solicitados por el equipo; no hay observaciones de lanzamiento ni evidencia de que se cumplirán.
 - **Responsabilidad del equipo:** ejecutó todos los comandos de git y del servidor; decidió usar datos simulados con autorización del docente, aprobó sacar `.agents/` y postergó el backend hasta después de la presentación.
 
+### E4: auditoría posterior (18 y 19-11-2026, borrador para adaptar)
+
+- **Claude Code — auditoría:** contrastó el proyecto con la rúbrica E4. Entre otros hallazgos, detectó que `main` publicaba nombre, edad y género de las 18 personas encuestadas y que todavía no tenía la entrega E4. También vio que una oferta nueva cambiaba el contacto de otra ya aceptada y que la administración hacía una llamada al servidor por fila. Reprodujo los hallazgos en un servidor temporal, sin tocar producción.
+- **Claude Code — simulación ponytail:** aplicó los recortes en una copia aparte. Comprobó que el simulador y las métricas daban exactamente los mismos resultados y separó los recortes convenientes de los que quitaban funcionalidades (el inglés) o seguridad.
+- **Astra 6.2 — auditoría independiente:** 13 hallazgos, entre ellos exportaciones de teléfonos que podían entrar al APK, ubicaciones escritas a mano en el panel público, un guardado fallido que duplicaba solicitudes y un guion que usaba cuentas que el servidor borra. Claude Code los volvió a reproducir y todos los que comprobó resultaron reales. A su vez, Astra no había revisado `main`.
+- **Claude Code — implementación:** escribió SPEC-010 y SPEC-011 y aplicó las correcciones de ambas auditorías y los recortes elegidos. Verificación:
+  - Pruebas: 135, antes 121.
+  - Recorrido de la app real sin ventana: 20/20.
+  - Llamadas al servidor en Administración › Solicitudes: de 92 a 4.
+  - Cifras de la simulación del informe: sin cambios.
+- **Responsabilidad del equipo:** decidió que suspender no borra la cuenta y que el contacto se guarda por oferta. También creó la rama, revisó los cambios e hizo los commits y la subida. [COMPLETAR: despliegue en el Z40 y retiro de los datos de la encuesta de `main`].
+
 ## 5. Ajustes
 
 ### E2
@@ -182,6 +208,13 @@ Antecedentes proporcionados por el equipo para esta declaración; no constituyen
 - Dejé para después de la E4 la validación de correo, el paso a SQLite y un hash de contraseñas más fuerte (PBKDF2). Quedó declarado en `ADR-004` y `SEGURIDAD.md`.
 - Hice yo los commits, el despliegue en el Z40 y la subida del APK. La mañana de la presentación el servidor se reinició y perdió la conexión unos minutos. Al volver reprogramé los agentes, porque el reinicio había borrado su temporizador.
 
+### E4: auditoría posterior (borrador para adaptar)
+
+- Pedí primero una auditoría sin modificar archivos y contrastada con la rúbrica, y después una segunda opinión con otra IA (Astra). Comparé los dos informes antes de decidir qué aplicar.
+- Mi primera idea era borrar a los usuarios suspendidos. La IA mostró que eso dejaba solicitudes de otras personas trabadas, así que decidí que suspender saca la cuenta del mercado sin borrar datos (SPEC-010). También decidí que el contacto se guarde por oferta (SPEC-011).
+- Antes de aceptar los recortes de código pedí simularlos en una copia. Descartamos los que quitaban funciones o seguridad.
+- Pedí recibir los cambios como archivos sin commits, para revisarlos y hacer yo los commits.
+
 ## 6. Reflexión en el uso de IA
 
 ### E2
@@ -212,4 +245,4 @@ Lo más delicado fue la honestidad con los datos. La IA puede generar usuarios y
 
 Me preocupa la cantidad de código generado en pocos días. Para poder defenderlo habia que revisar cada cambio antes de subirlo, desplegamos solo con las pruebas automáticas en verde (121 al final). Mi aprendizaje es que la IA acelera mucho el trabajo, pero las decisiones siguen siendo nuestras: qué medir, qué mostrar y qué no prometer.
 
-
+[COMPLETAR: reflexión sobre la auditoría posterior: qué aprendí al comparar dos auditorías de IA y decidir qué aplicar.]

@@ -39,7 +39,7 @@ Métodos permitidos en `/api/rpc` (cualquier otro → 404):
   `seller_offers`, `seller_contact`, `seller_active_offer`, `open_requests`, `offer_contact`,
   `get_offer`, `create_request`, `create_offer`, `accept_offer`, `confirm_deal`, `cancel_offer`,
   `admin_users`, `admin_stats`, `admin_requests`, `admin_offers`, `admin_activity`.
-- **Sin actor:** `book`, `user`, `active_offer_count`, `upsert_book`, `recover_password`.
+- **Sin actor:** `book`, `user`, `active_offer_count`, `upsert_book`.
 - **Especial:** `export_activity_log` devuelve el texto del registro (solo admin) y la app lo
   guarda en el teléfono.
 

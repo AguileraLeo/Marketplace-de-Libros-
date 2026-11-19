@@ -98,6 +98,26 @@ class AgentesTest(unittest.TestCase):
         conexion.close()
 
 
+class SesionRemotaTest(unittest.TestCase):
+    """Auditoría H07: «Salir» revoca el token en el servidor, no solo lo olvida en el teléfono."""
+
+    def test_cerrar_sesion_revoca_el_token_en_el_servidor(self):
+        from services.remoto import RemoteStore, SesionVencida
+        with tempfile.TemporaryDirectory() as carpeta:
+            url, servidor = levantar(crear_app(os.path.join(carpeta, "datos.json")))
+            self.addCleanup(setattr, servidor, "should_exit", True)
+            app = RemoteStore(url)
+            app.register("Persona Prueba", "salir@prueba.cl", "clave1234", "lector")
+            token = app.token
+            app.cerrar_sesion()
+            self.assertIsNone(app.token)
+            copia = RemoteStore(url)
+            copia.token = token  # alguien que guardó el token antes de salir
+            with self.assertRaises(SesionVencida):
+                copia.reader_requests(None)
+            RemoteStore("http://127.0.0.1:9").cerrar_sesion()  # sin servidor: no falla
+
+
 class CatalogoTest(unittest.TestCase):
     def test_reconoce_por_titulo_los_libros_buscados_en_la_app(self):
         from types import SimpleNamespace as Libro

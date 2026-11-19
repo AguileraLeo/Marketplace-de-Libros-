@@ -13,12 +13,10 @@ import dataclasses
 import logging
 import os
 import secrets
-import tempfile
 import threading
 import time
-from collections import Counter, defaultdict, deque
+from collections import Counter, deque
 from datetime import date, datetime, timedelta
-from statistics import median
 from typing import Optional
 
 from fastapi import Body, FastAPI, Header, Request
@@ -28,27 +26,23 @@ from fastapi.staticfiles import StaticFiles
 
 import analitica
 from models.store import (
-    Delivery, DomainError, InvalidTransition, NotFound, PermissionDenied, RequestStatus, Role, Store, User,
+    DomainError, InvalidTransition, NotFound, PermissionDenied, RequestStatus, Role, Store, User, UserStatus,
     ValidationError,
 )
-from services import persistence
+from services import persistence, remoto
+from services.locations import known_location
 
 RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DURACION_SESION = 12 * 3600
 LIMITE_CUERPO = 16 * 1024
 
-# Métodos del Store que acepta /api/rpc (SPEC-005). Cualquier otro → 404.
-CON_ACTOR = {
-    "reader_requests", "offers_for_request", "get_request", "cancel_request", "cancel_deal", "set_user_status",
-    "seller_offers", "seller_contact", "seller_active_offer", "open_requests", "offer_contact", "get_offer",
-    "create_request", "create_offer", "accept_offer", "confirm_deal", "cancel_offer",
-    "admin_users", "admin_stats", "admin_requests", "admin_offers", "admin_activity",
-}
-SIN_ACTOR = {"book", "user", "active_offer_count", "upsert_book", "recover_password"}
+# Métodos del Store que acepta /api/rpc (SPEC-005): los mismos que expone la app. Cualquier otro → 404.
+CON_ACTOR = set(remoto.CON_ACTOR) | {"export_activity_log"}
+SIN_ACTOR = set(remoto.SIN_ACTOR) | {"book"}
 SOLO_LECTURA = {
     "reader_requests", "offers_for_request", "get_request", "seller_offers", "seller_contact", "seller_active_offer",
     "open_requests", "offer_contact", "get_offer", "admin_users", "admin_stats", "admin_requests", "admin_offers",
-    "admin_activity", "book", "user", "active_offer_count", "recover_password", "export_activity_log",
+    "admin_activity", "book", "user", "active_offer_count", "export_activity_log",
 }
 CODIGOS = {ValidationError: 400, PermissionDenied: 403, NotFound: 404, InvalidTransition: 409}
 ETIQUETAS = {  # actividad de mercado que puede mostrar el panel; excluye login y registro
@@ -67,7 +61,7 @@ def a_json(valor, actor: Optional[User]):
         if isinstance(valor, User):
             datos.pop("password", None)
             if not actor or (actor.id != valor.id and actor.role != Role.ADMIN):
-                datos["email"] = ""
+                datos.update(email="", location="", status="")  # de otra persona la app solo muestra el nombre
         return datos
     if isinstance(valor, datetime):
         return valor.isoformat()
@@ -81,6 +75,14 @@ def a_json(valor, actor: Optional[User]):
 def error(exc: Exception, codigo: Optional[int] = None) -> JSONResponse:
     codigo = codigo or next((c for tipo, c in CODIGOS.items() if isinstance(exc, tipo)), 400)
     return JSONResponse({"error": str(exc), "tipo": type(exc).__name__}, status_code=codigo)
+
+
+def textos(datos: dict, *claves: str) -> list:
+    """Los campos de registro y sesión deben ser texto: str(None) sería la clave "None"."""
+    valores = [datos.get(clave, "") for clave in claves]
+    if not all(isinstance(v, str) for v in valores):
+        raise ValidationError("Los datos enviados no son válidos.")
+    return valores
 
 
 def no_autorizado() -> JSONResponse:
@@ -101,7 +103,8 @@ def quitar_cuentas_demo(store: Store) -> int:
     demo = {u.id for u in store.users.values() if u.email in analitica.CORREOS_DEMO}
     solicitudes = {q.id for q in store.requests.values() if q.reader_id in demo}
     ofertas = {o.id for o in store.offers.values() if o.seller_id in demo or o.request_id in solicitudes}
-    for tabla, fuera in ((store.users, demo), (store.requests, solicitudes), (store.offers, ofertas), (store.contacts, demo)):
+    for tabla, fuera in ((store.users, demo), (store.requests, solicitudes), (store.offers, ofertas), (store.contacts, demo),
+                         (store.offer_contacts, ofertas)):
         for clave in [c for c in tabla if c in fuera]:
             del tabla[clave]
     store.activity = [e for e in store.activity if e.actor_id not in demo
@@ -111,7 +114,11 @@ def quitar_cuentas_demo(store: Store) -> int:
 
 
 def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, excluir=()) -> FastAPI:
-    store = persistence.load_store(ruta_datos) or Store()
+    store = persistence.load_store(ruta_datos, respaldar=False)
+    if store is None and os.path.exists(ruta_datos):
+        # Arrancar vacío y guardar encima perdería los datos: mejor no arrancar y que alguien lo revise.
+        raise RuntimeError(f"No se pudo leer {ruta_datos}. Restaura un respaldo antes de iniciar el servidor.")
+    store = store or Store()
     quitar_cuentas_demo(store)
     if admin and not store.find_user_by_email(admin[0]):
         store.add_user("Administrador", admin[0], admin[1], Role.ADMIN)
@@ -145,8 +152,15 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
         return error(PermissionDenied("Demasiados intentos. Espera unos minutos."), 429)
 
     def guardar():
+        nonlocal store
         os.makedirs(os.path.dirname(os.path.abspath(ruta_datos)), exist_ok=True)
-        persistence.save_store(store, ruta_datos)
+        try:
+            persistence.save_store(store, ruta_datos)
+        except OSError:
+            # Lo que se responde debe ser lo que quedó en disco: se vuelve al último guardado,
+            # así un reintento del teléfono no duplica la acción (la respuesta es un 500).
+            store = persistence.load_store(ruta_datos, respaldar=False) or Store()
+            raise
         # Invalidar por versión no adquiere el candado de métricas dentro del Store.
         revision[0] += 1
 
@@ -219,6 +233,10 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
 
     @app.post("/api/sesion")
     def iniciar_sesion(request: Request, datos: dict = Body(...)):
+        try:
+            correo_dado, clave = textos(datos, "correo", "clave")
+        except ValidationError as exc:
+            return error(exc)
         externo, ip, correo = origen_externo(request, datos)
         if cuenta_reservada(externo, correo):
             return error(PermissionDenied("Esta cuenta está reservada para la demostración."))
@@ -231,7 +249,7 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
                     if len(fallos_correo.get(correo, ())) >= 8 or len(fallos_ip.get(ip, ())) >= 30:
                         return demasiados_intentos()
             try:
-                usuario = store.authenticate(str(datos.get("correo", "")), str(datos.get("clave", "")))
+                usuario = store.authenticate(correo_dado, clave)
             except DomainError as exc:
                 if externo:
                     with candado_limites:
@@ -248,6 +266,10 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
 
     @app.post("/api/registro")
     def registrar(request: Request, datos: dict = Body(...)):
+        try:
+            campos = textos(datos, "nombre", "correo", "clave", "rol", "comuna")
+        except ValidationError as exc:
+            return error(exc)
         externo, ip, correo = origen_externo(request, datos)
         # Comprobar también el correo efectivo que persistirá Store.register:
         # el modelo trunca a 120 caracteres antes de convertir a minúsculas.
@@ -261,7 +283,7 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
                     if len(registros_ip.get(ip, ())) >= 40:
                         return demasiados_intentos()
             try:
-                usuario = store.register(*(str(datos.get(k, "")) for k in ("nombre", "correo", "clave", "rol", "comuna")))
+                usuario = store.register(*campos)
             except DomainError as exc:
                 return error(exc)
             if externo:
@@ -284,23 +306,22 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
             actor = usuario_de(authorization)
             if actor is None:
                 return no_autorizado()
+            if actor.status != UserStatus.ACTIVE:  # también para los métodos sin actor (SPEC-010)
+                return error(PermissionDenied("Tu cuenta está suspendida."))
             metodo, args = datos.get("metodo"), datos.get("args", [])
             if not isinstance(args, list):
                 return error(ValidationError("Los argumentos deben ser una lista."))
-            if not isinstance(metodo, str) or metodo not in CON_ACTOR | SIN_ACTOR | {"export_activity_log"}:
+            if not isinstance(metodo, str) or metodo not in CON_ACTOR | SIN_ACTOR:
                 return error(NotFound("Método no permitido."))
             try:
-                if metodo == "export_activity_log":  # el archivo se arma en el teléfono, no en el servidor
-                    with tempfile.TemporaryDirectory() as carpeta:
-                        ruta = store.export_activity_log(actor, os.path.join(carpeta, "registro.log"))
-                        with open(ruta, encoding="utf-8") as f:
-                            resultado = f.read()
-                else:
-                    funcion = getattr(store, metodo)
-                    resultado = funcion(actor, *args) if metodo in CON_ACTOR else funcion(*args)
+                # el archivo del log se arma en el teléfono: el servidor solo devuelve el texto
+                funcion = store.activity_log_text if metodo == "export_activity_log" else getattr(store, metodo)
+                resultado = funcion(actor, *args) if metodo in CON_ACTOR else funcion(*args)
             except DomainError as exc:
                 return error(exc)
             except (TypeError, ValueError, AttributeError, KeyError):  # argumentos que no calzan con el método
+                # se registra: si es un error del modelo y no del cliente, así no queda oculto
+                logging.getLogger(__name__).warning("RPC %s con datos no válidos", metodo, exc_info=True)
                 return error(ValidationError("Los datos enviados no son válidos."))
             if metodo not in SOLO_LECTURA:
                 guardar()
@@ -323,29 +344,16 @@ def crear_app(ruta_datos: str, admin=None, publico: Optional[str] = None, exclui
                 activos = {e.actor_id for e in store.activity}
                 origen = {"agentes_simulados": len(agentes & reales & activos), "personas": len((reales - agentes) & activos)}
                 solicitudes = [q for q in store.requests.values() if q.reader_id in reales]
-                primera = {}
-                for o in store.offers.values():
-                    primera[o.request_id] = min(primera.get(o.request_id, o.created_at), o.created_at)
-                # ponytail: repite el desglose de simulador.Simulacion.resumen; si crece, pasarlo a un módulo común
-                desglose = {}
-                for nombre, clave in (("region", lambda q: q.location[q.location.find("(") + 1:-1] if q.location.endswith(")") else q.location),
-                                      ("entrega", lambda q: Delivery.LABELS[q.delivery_preference]),
-                                      ("precio_maximo", lambda q: "con precio máximo" if q.max_price else "sin precio máximo")):
-                    grupos = defaultdict(list)
-                    for q in solicitudes:
-                        grupos[clave(q)].append(q)
-                    desglose[nombre] = []
-                    for grupo, qs in sorted(grupos.items()):
-                        horas = [(primera[q.id] - q.created_at).total_seconds() / 3600 for q in qs if q.id in primera]
-                        desglose[nombre].append({"grupo": grupo, "solicitudes": len(qs),
-                                                 "con_oferta_pct": round(100 * len(horas) / len(qs), 1),
-                                                 "horas_primera_oferta_mediana": round(median(horas), 1) if horas else None})
+                desglose = {k: [{"grupo": g, **v} for g, v in grupos.items()]
+                            for k, grupos in analitica.desglose(  # misma población que los KPIs
+                                solicitudes, [o for o in store.offers.values() if o.seller_id not in excluidos]).items()}
                 actividad = deque(maxlen=12)
                 for e in store.activity:
                     if e.action in ETIQUETAS and e.actor_id in reales:
                         numero = analitica.numero(analitica.SOLICITUD, {"detail": e.detail})
                         q = store.requests.get(numero)
-                        detalle = f"{store.book(q.book_id).title} · {q.location}" if q else ""
+                        # solo una comuna del catálogo: el panel es público y la ubicación es texto libre
+                        detalle = " · ".join(filter(None, [store.book(q.book_id).title, known_location(q.location)])) if q else ""
                         actividad.append({"hora": e.at.isoformat(timespec="minutes"), "tipo": ETIQUETAS[e.action], "detalle": detalle})
                 tipos = r["eventos_por_tipo"]
                 resultado = {

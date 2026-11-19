@@ -256,6 +256,19 @@ class BackendTest(unittest.TestCase):
         for response, visibles, contacto_permitido in self.respuestas:
             self.assert_privacidad(response, visibles, contacto_permitido)
 
+    def test_cada_lector_ve_el_contacto_de_su_oferta_spec_011(self):
+        lector, vendedor, _solicitud, oferta = self.nueva_oferta()  # teléfono + punto ficticio
+        otra = self.registrar("lectora@prueba.cl")
+        oferta2 = self.rpc(vendedor, "create_offer", [self.nueva_solicitud(otra)["id"], "9000", Condition.USED,
+                                                      "", "", "", "", "Feria Pinto"])
+        self.rpc(lector, "accept_offer", [oferta["id"]])
+        self.rpc(otra, "accept_offer", [oferta2["id"]])
+        propio = self.rpc(lector, "offer_contact", [oferta["id"]], contacto=True)
+        self.assertEqual((propio["phone"], propio["address_or_meeting_point"]), (self.TELEFONO, "Punto ficticio de prueba"))
+        segundo = self.rpc(otra, "offer_contact", [oferta2["id"]])  # sin el teléfono de la primera oferta
+        self.assertEqual((segundo["phone"], segundo["address_or_meeting_point"]), ("", "Feria Pinto"))
+        self.assertEqual(len(load_store(self.ruta_datos).offer_contacts), 2)
+
     def test_actor_sale_del_token_y_no_permite_aceptar_a_un_vendedor(self):
         lector, vendedor, solicitud, oferta = self.nueva_oferta()
         self.rpc(vendedor, "accept_offer", [oferta["id"]],
@@ -333,6 +346,36 @@ class BackendTest(unittest.TestCase):
         self.rpc(lector, "confirm_deal", [oferta["id"]])
         self.assertEqual(metricas()["resolucion_pct"], 100)
 
+    def test_el_panel_publico_no_muestra_ubicaciones_escritas_a_mano(self):
+        lector = self.registrar()
+        libro = self.rpc(lector, "upsert_book", [catalog_lookup("demo-rayuela")])
+        for ubicacion in ("MARCADOR calle 123", "Temuco"):
+            self.rpc(lector, "create_request", [libro["id"], "", Condition.ANY, ubicacion, Delivery.ANY, ""])
+        datos = self.peticion("GET", "/api/metricas").json()
+        self.assertNotIn("MARCADOR", json.dumps(datos, ensure_ascii=False))
+        self.assertEqual({g["grupo"] for g in datos["desglose"]["region"]}, {"La Araucanía", "Sin clasificar"})
+        self.assertIn("Rayuela · Temuco (La Araucanía)", [a["detalle"] for a in datos["actividad"]])
+
+    def test_kpi_y_desglose_cuentan_la_misma_poblacion(self):
+        app = crear_app(self.ruta_datos + ".excluir.json", excluir=["equipo@prueba.cl"])
+        cliente = self.enterContext(TestClient(app))
+
+        def registrar(correo, rol):
+            return cliente.post("/api/registro", json={"nombre": "Persona Prueba", "correo": correo, "clave": "clave1234",
+                                                         "rol": rol, "comuna": "Temuco"}).json()["token"]
+
+        def rpc(token, metodo, *args):
+            return cliente.post("/api/rpc", json={"metodo": metodo, "args": list(args)},
+                                headers={"Authorization": f"Bearer {token}"}).json()["resultado"]
+
+        lector, equipo = registrar("l@prueba.cl", Role.READER), registrar("equipo@prueba.cl", Role.SELLER)
+        libro = rpc(lector, "upsert_book", catalog_lookup("demo-rayuela"))
+        solicitud = rpc(lector, "create_request", libro["id"], "", Condition.ANY, "Temuco", Delivery.ANY, "")
+        rpc(equipo, "create_offer", solicitud["id"], "5000", Condition.USED, "", "", "+56 9 1", "", "")
+        datos = cliente.get("/api/metricas").json()
+        self.assertEqual(datos["kpis"]["respuesta_pct"], 0)  # la oferta del equipo no cuenta
+        self.assertEqual([g["con_oferta_pct"] for g in datos["desglose"]["region"]], [0])
+
     def test_precio_cero_devuelve_400_validation_error_y_no_crea_oferta(self):
         lector = self.registrar()
         solicitud = self.nueva_solicitud(lector)
@@ -358,6 +401,25 @@ class BackendTest(unittest.TestCase):
         # Aún no se publicó ninguna solicitud.
         self.rpc(lector, "get_request", [1], codigo=404, tipo="NotFound")
 
+    def test_si_falla_el_guardado_la_accion_no_queda_aplicada_y_el_reintento_no_duplica(self):
+        lector = self.registrar()
+        libro = self.rpc(lector, "upsert_book", [catalog_lookup("demo-rayuela")])
+        args = [libro["id"], "", Condition.ANY, "Temuco", Delivery.ANY, ""]
+        with patch("services.persistence.save_store", side_effect=OSError("disco lleno")):
+            self.rpc(lector, "create_request", args, codigo=500)
+        self.rpc(lector, "create_request", args)
+        self.assertEqual(len(self.rpc(lector, "reader_requests")), 1)
+        self.assertEqual(len(load_store(self.ruta_datos).requests), 1)
+
+    def test_no_arranca_vacio_si_no_puede_leer_los_datos(self):
+        with open(self.ruta_datos, "w", encoding="utf-8") as f:
+            f.write("{roto")
+        with self.assertRaises(RuntimeError):
+            crear_app(self.ruta_datos)
+        with open(self.ruta_datos, encoding="utf-8") as f:
+            self.assertEqual(f.read(), "{roto")  # el archivo queda donde estaba, sin pisar
+        self.assertFalse(os.path.exists(self.ruta_datos + ".corrupto"))
+
     def test_salud_publica(self):
         response = self.peticion("GET", "/api/salud")
         self.assertEqual(response.status_code, 200, response.text)
@@ -377,6 +439,45 @@ class BackendTest(unittest.TestCase):
                     "clave": "clave-intruso", "rol": Role.ADMIN, "comuna": ""},
         )
         self.assert_error(response, 403, "PermissionDenied")
+
+    def admin_sesion(self):
+        response = self.peticion("POST", "/api/sesion", correo_propio=self.ADMIN[0],
+                                 cuerpo={"correo": self.ADMIN[0], "clave": self.ADMIN[1]})
+        self.assertEqual(response.status_code, 200, response.text)
+        admin = response.json()
+        self.sesiones[admin["token"]] = self.ADMIN[0]
+        return admin
+
+    def test_registro_y_sesion_rechazan_campos_que_no_son_texto(self):
+        for clave in (None, 1234, ["clave"]):
+            with self.subTest(clave=clave):
+                response = self.peticion("POST", "/api/registro", cuerpo={
+                    "nombre": "Persona Nula", "correo": "nula@prueba.cl", "clave": clave,
+                    "rol": Role.READER, "comuna": ""})
+                self.assert_error(response, 400, "ValidationError")
+        self.assert_error(self.peticion("POST", "/api/sesion", cuerpo={"correo": "nula@prueba.cl", "clave": "None"}),
+                          tipo="ValidationError")  # la cuenta no se creó
+        self.assert_error(self.peticion("POST", "/api/sesion", cuerpo={"correo": None, "clave": None}),
+                          400, "ValidationError")
+
+    def test_una_sesion_abierta_de_una_cuenta_suspendida_no_sirve_para_ningun_metodo(self):
+        lector = self.registrar()
+        admin = self.admin_sesion()
+        self.rpc(admin, "set_user_status", [lector["usuario"]["id"], "SUSPENDIDO"], admin=True)
+        for metodo, args in (("user", [lector["usuario"]["id"]]), ("upsert_book", [catalog_lookup("demo-rayuela")]),
+                             ("book", [1]), ("reader_requests", [])):
+            with self.subTest(metodo=metodo):
+                self.rpc(lector, metodo, args, codigo=403, tipo="PermissionDenied")
+
+    def test_de_otra_persona_user_solo_entrega_el_nombre(self):
+        lector, vendedor, _solicitud, _oferta = self.nueva_oferta()
+        ajeno = self.rpc(lector, "user", [vendedor["usuario"]["id"]])
+        self.assertEqual(ajeno["name"], "Vendedor de prueba")
+        self.assertEqual((ajeno["email"], ajeno["location"], ajeno["status"]), ("", "", ""))
+        propio = self.rpc(vendedor, "user", [vendedor["usuario"]["id"]])
+        self.assertEqual(propio["location"], "Temuco")
+        completo = self.rpc(self.admin_sesion(), "user", [vendedor["usuario"]["id"]], admin=True)
+        self.assertEqual(completo["location"], "Temuco")
 
     def test_admin_configurado_puede_listar_usuarios_sin_password(self):
         lector = self.registrar()

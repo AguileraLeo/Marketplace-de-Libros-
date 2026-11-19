@@ -63,49 +63,20 @@ Regla de exposición: distinguir **encuesta real**, **resultados simulados** y *
 
 **02:00–04:45 · 2 minutos y 45 segundos**
 
-- Un mismo teléfono en **modo local**, con las cuentas de prueba de la tabla siguiente. Este recorrido demuestra persistencia local; el backend compartido se explica por separado.
+- Cuentas de prueba registradas antes en el servidor del equipo: lector y vendedor pueden estar en teléfonos distintos, porque los datos se comparten (SPEC-005).
 - El lector busca y publica; el vendedor responde a esa solicitud.
 - El lector acepta para coordinar y entonces accede al contacto autorizado.
 - Cerrar y reabrir permite mostrar persistencia, sin desinstalar ni borrar datos.
 
-**Preparación del equipo:** APK instalado, teléfono cargado y proyección lista. Para este ensayo con cuentas demo, cerrar la app, desactivar la conexión antes de abrirla y comprobar que inicia en modo local. El servidor compartido no tiene estas cuentas: las elimina al arrancar. En escritorio se puede forzar el modo local con los comandos del Plan B. Verificar los accesos antes de presentar; si un archivo local anterior no contiene estas cuentas, usar un entorno de ensayo preparado sin borrar datos personales. Revisar que el vendedor no tenga una oferta activa para la nueva solicitud. No mostrar registros con datos personales. Esta preparación y la demo son instrucciones para el equipo: no se ejecutaron al redactar el guion.
-
-**Correos y alias de las cuentas de prueba locales** (existentes en `DEMO_USERS`; no requieren buzones de correo):
-
-| Uso en el ensayo | Alias / nombre visible | Correo de acceso | Clave |
-|---|---|---|---|
-| Lector principal | Juan Pérez | `lector@demo.cl` | `1234` |
-| Vendedor principal | Librería Los Andes | `vendedor@demo.cl` | `1234` |
-| Lector de respaldo | María González | `maria@demo.cl` | `1234` |
-| Vendedor de respaldo | Pedro Soto | `pedro@demo.cl` | `1234` |
-| Administración local, si se muestra | Admin | `admin@demo.cl` | `admin` |
-
-Son identidades ficticias de la demo. `analitica.py` excluye sus correos exactos automáticamente;
-no registrar otras cuentas de ensayo ni confundirlas con participantes reales. Las cuentas
-`@bookwho.test` pertenecen a los agentes simulados y no se usan para este login público.
-
-**Datos preparados para el recorrido** (propuestos para el ensayo, no resultados medidos):
-
-| Campo | Valor |
-|---|---|
-| Solicitud | El Hobbit; máximo $10.000 CLP; condición cualquiera; Concepción; entrega presencial |
-| Nota del lector | «Ensayo E4: busco un ejemplar para lectura personal». |
-| Oferta | $8.000 CLP; usado; «Buen estado, sin páginas faltantes». |
-| Nota del vendedor | «Ensayo E4: coordinación externa con contacto ficticio». |
-| Correo de contacto | `vendedor@example.test` (ficticio; no enviar correos) |
-| Teléfono y dirección | Vacíos; basta con el correo ficticio como contacto |
-
-El correo de contacto se ingresa en el formulario de oferta; es distinto del correo de acceso
-`vendedor@demo.cl`. Crear una solicitud nueva en cada ensayo y conservar su identificador para
-evitar abrir una oferta anterior.
+**Preparación del equipo:** APK instalado, teléfono cargado y proyección lista. Usar únicamente contactos ficticios. Revisar previamente que el vendedor no tenga una oferta activa para la solicitud del ensayo. No mostrar registros con datos personales. Registrar antes una cuenta de lector y otra de vendedor con correos alias y contactos ficticios, y agregar esos correos a `BOOKWHO_EXCLUIR` en el servidor para que no cuenten en los KPIs: las cuentas `@demo.cl` **no existen en el servidor**. Si el teléfono no tiene internet, la app avisa «Modo sin conexión» y entonces sí funcionan `lector@demo.cl` y `vendedor@demo.cl` (clave `1234`), en un solo teléfono. Ensayar con el modo que se usará. Esta preparación y la demo son instrucciones para el equipo: no se ejecutaron al redactar el guion.
 
 | Tiempo dentro de la demo | Acción en el teléfono | Frase breve / evidencia visible |
 |---|---|---|
-| 00:00–00:15 | Iniciar sesión con `lector@demo.cl`, clave `1234`. | «Esta es una cuenta de prueba, excluida de los KPIs de uso real». |
+| 00:00–00:15 | Iniciar sesión con la cuenta de lector de prueba. [COMPLETAR: correo alias del lector] | «Esta es una cuenta de prueba del equipo, excluida de los KPIs de uso real». |
 | 00:15–00:40 | Buscar «El Hobbit» y seleccionar el resultado correcto. | «Los metadatos vienen del proveedor externo; existe respaldo local si falla la red». |
-| 00:40–01:05 | Completar los datos de solicitud de la tabla y publicar. | Mostrar la confirmación y conservar su identificador. El máximo de $10.000 es opcional en la app. |
-| 01:05–01:20 | Salir e iniciar sesión como `vendedor@demo.cl`, clave `1234`. | «Cambiamos de rol en el mismo dispositivo para este ensayo local». |
-| 01:20–01:45 | Localizar la nueva solicitud, pulsar «Puedo ofrecerlo» y publicar la oferta preparada. | Mostrar $8.000, usado y contacto `vendedor@example.test`; teléfono y dirección vacíos. |
+| 00:40–01:05 | Completar ubicación, condición y entrega; publicar solicitud. | Mostrar la confirmación y conservar su identificador. Precio máximo opcional. |
+| 01:05–01:20 | Iniciar sesión como el vendedor de prueba, en otro teléfono o en el mismo tras salir. [COMPLETAR: correo alias del vendedor] | «Los datos están en el servidor del equipo: el vendedor ve la solicitud recién publicada». |
+| 01:20–01:45 | Localizar la solicitud, pulsar «Puedo ofrecerlo» y publicar una oferta con contacto ficticio. | Mostrar precio y condición. [COMPLETAR: valores y contacto ficticios del ensayo]. |
 | 01:45–02:15 | Volver a la cuenta del lector, abrir la oferta y aceptar para coordinar. | Mostrar el contacto. «Aceptar inicia la coordinación; no acredita una venta ni una entrega». |
 | 02:15–02:45 | Cerrar la aplicación y reabrirla; si pide login, entrar como lector y abrir la misma solicitud. | Mostrar que solicitud, oferta y estado permanecen. No prometer persistencia de la sesión. |
 
@@ -118,9 +89,9 @@ evitar abrir una oferta anterior.
 - Persistencia JSON con escritura temporal y reemplazo atómico.
 - Autenticación sin recuperación de contraseña: el login indica que todavía no está disponible.
 - Notificaciones locales y configuración remota con respaldo sin conexión.
-- APK Android; sin pagos, chat ni logística. El backend permite compartir datos; esta demo con cuentas predefinidas usa el modo local.
+- APK Android; sin pagos, chat ni logística. Con internet los teléfonos comparten datos por el servidor del equipo (SPEC-005); sin internet, la app trabaja en modo local.
 
-**Qué decir:** «En este ensayo los datos persisten en el dispositivo. Para compartirlos entre teléfonos se usa el backend de SPEC-005». No presentar una notificación del mismo teléfono como entrega remota al lector.
+**Qué decir:** «Con internet los datos viven en el servidor del equipo; sin conexión, en el teléfono. Las notificaciones son locales: no avisan a otro teléfono». No presentar una notificación del mismo teléfono como entrega remota al lector.
 
 **Fuente:** [README.md, servicios y reglas del demo](../../README.md).
 
@@ -283,6 +254,5 @@ Solo considera solicitudes con oferta y mide la primera respuesta, no una entreg
 
 ### 8. ¿El panel en vivo muestra lo que acaba de ocurrir en el teléfono?
 
-Depende de la fuente: `/simulacion/` publica el archivo del escenario simulado y no refleja esta demo local. `/en-vivo/` muestra la actividad del backend compartido, separando personas y agentes; refleja acciones de teléfonos conectados a ese servidor al actualizarse. Las cuentas demo de este guion operan en modo local.
-
-**Fuentes:** [README.md, Panel público y Modo servidor](../../README.md); [SPEC-004](../05-specs/SPEC-004-panel-de-metricas.md); [SPEC-005](../05-specs/SPEC-005-backend-compartido.md).
+Depende del panel. `/en-vivo/` muestra agregados del servidor del equipo (agentes simulados y personas, por separado) y se actualiza cada 5 segundos: una acción hecha en un teléfono con internet aparece ahí, sin datos personales. `/simulacion/` muestra solo la simulación del informe.  
+**Fuentes:** [README.md, Modo servidor](../../README.md); [SPEC-004](../05-specs/SPEC-004-panel-de-metricas.md); [SPEC-006](../05-specs/SPEC-006-agentes-en-vivo.md).

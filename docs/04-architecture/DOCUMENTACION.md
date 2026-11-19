@@ -529,12 +529,11 @@ esquema. Los colores de estado (`STATUS_COLORS`) no cambiaron.
 
 ### 7.2 Tipografía
 
-Siguiendo la misma maqueta, los estilos "Display", "Headline" y "Title" de KivyMD usan
-**Source Serif 4** (seminegrita) y los estilos "Body" y "Label" (texto, botones y campos)
-usan **IBM Plex Sans**. Ambas fuentes tienen licencia OFL; los `.ttf` estáticos y sus
-licencias están en `assets/fonts/`. Kivy no lee `woff2`, el formato que traía la maqueta, por eso se
-usan los `.ttf` oficiales de Adobe e IBM. Se aplica modificando `theme_cls.font_styles` una
-sola vez en `controllers/app_controller.py`, sin tocar cada pantalla.
+Desde el rediseño azul (SPEC-007) todos los estilos de KivyMD usan **Manrope**, con licencia
+OFL; los `.ttf` y su licencia están en `assets/fonts/`. Source Serif 4 e IBM Plex Sans, de la
+maqueta editorial anterior, se retiraron del repositorio y del APK porque ya no se usaban.
+Se aplica modificando `theme_cls.font_styles` una sola vez en `controllers/app_controller.py`,
+sin tocar cada pantalla.
 
 ### 7.3 Estilo editorial en todas las pantallas
 
@@ -568,7 +567,7 @@ restilizaron los componentes compartidos:
 
 Ajustes tipográficos: los títulos en serif usan interlineado 1,15, como la maqueta (los valores
 de KivyMD están pensados para Roboto), y todas las etiquetas usan `font_hinting: None`, porque el
-*hinting* por defecto de Kivy abría huecos dentro de las palabras en Source Serif ("ofer tas").
+*hinting* por defecto de Kivy abría huecos dentro de las palabras ("ofer tas").
 Queda un caso menor y poco frecuente: una palabra que cae al inicio de una línea partida puede
 verse con un pequeño hueco, por cómo Kivy compone el texto.
 
