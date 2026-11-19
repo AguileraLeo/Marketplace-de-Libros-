@@ -14,11 +14,12 @@ import json
 import os
 import re
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from datetime import datetime
 from statistics import median
 
-from models.store import DEMO_USERS
+from models.store import DEMO_USERS, Delivery
+from services.locations import known_location
 
 DATA_ESCRITORIO = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "user", "data.json")
 
@@ -112,6 +113,32 @@ def calcular(eventos, excluidos=frozenset()):
         # KPI 3: ¿cuánto espera el lector? (solo solicitudes que recibieron oferta)
         "kpi_horas_primera_oferta": round(median(horas), 1) if horas else None,
     }
+
+
+def region(ubicacion):
+    """Región de una comuna del catálogo. Un texto libre (podría ser una dirección) nunca sale tal cual."""
+    conocida = known_location(ubicacion)
+    return conocida[conocida.find("(") + 1:-1] if conocida else "Sin clasificar"
+
+
+def desglose(solicitudes, ofertas):
+    """Solicitudes, % con oferta y mediana de horas hasta la 1.ª oferta, por región, entrega y precio máximo."""
+    primera = {}
+    for o in ofertas:
+        primera[o.request_id] = min(primera.get(o.request_id, o.created_at), o.created_at)
+    claves = {"region": lambda q: region(q.location), "entrega": lambda q: Delivery.LABELS[q.delivery_preference],
+              "precio_maximo": lambda q: "con precio máximo" if q.max_price else "sin precio máximo"}
+    salida = {}
+    for nombre, clave in claves.items():
+        grupos = defaultdict(list)
+        for q in solicitudes:
+            grupos[clave(q)].append(q)
+        salida[nombre] = {}
+        for grupo, qs in sorted(grupos.items()):
+            horas = [(primera[q.id] - q.created_at).total_seconds() / 3600 for q in qs if q.id in primera]
+            salida[nombre][grupo] = {"solicitudes": len(qs), "con_oferta_pct": round(100 * len(horas) / len(qs), 1),
+                                     "horas_primera_oferta_mediana": round(median(horas), 1) if horas else None}
+    return salida
 
 
 def poblacion(usuarios, eventos, excluidos=frozenset()):

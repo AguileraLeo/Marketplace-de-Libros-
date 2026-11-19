@@ -142,8 +142,9 @@ python analitica.py data/simulacion/simulacion.json    # KPIs rotulados como DAT
    a recibir respuesta, lo que hace bajar los KPI 1 y 2.
 3. **El KPI 3 no incluye las solicitudes sin ofertas:** hay que leerlo junto al KPI 2.
 4. **"Trato concretado" lo declara el lector:** la app no verifica que la entrega ocurrió.
-5. **Un archivo por dispositivo:** cada teléfono numera sus solicitudes desde 1. Se analiza cada
-   `data.json` por separado; no se juntan ni se suman.
+5. **Un archivo por dispositivo (modo local):** cada teléfono numera sus solicitudes desde 1. Se analiza cada
+   `data.json` por separado; no se juntan ni se suman. En modo servidor (SPEC-005) todos los teléfonos
+   escriben en un mismo archivo y esta limitación no aplica a esos datos.
 6. **Hora local del dispositivo, sin zona horaria:** las diferencias de tiempo son válidas dentro
    de un mismo teléfono.
 7. **Datos demo vs. reales:** la semilla de demo no genera eventos (`build_demo_store` vacía el
@@ -214,7 +215,7 @@ Ordenadas por impacto esperado y esfuerzo:
 
 | # | Mejora | Se apoya en | Impacto | Esfuerzo |
 |---|---|---|---|---|
-| 1 | **Backend compartido** en el servidor del equipo: hoy cada teléfono guarda sus datos y lectores y vendedores en teléfonos distintos no se ven | Limitación 5. La simulación pone a todos en un mismo archivo, que es lo que haría el backend | Alto | Alto |
+| 1 | **Backend compartido** en el servidor del equipo — **implementado en prueba** el 17-11-2026 (SPEC-005): antes cada teléfono guardaba sus datos y lectores y vendedores en teléfonos distintos no se veían | Limitación 5. La simulación pone a todos en un mismo archivo, que es lo que haría el backend | Alto | Alto |
 | 2 | Al elegir entrega "Presencial", avisar que aceptar envío aumenta las ofertas | 43,8 % frente a 69,2 % (simulado) | Medio | Bajo |
 | 3 | Avisar al lector cuando no hay vendedores en su región y sugerir envío | Los Lagos: 20 % (simulado) | Medio | Bajo |
 | 4 | Notificar a los vendedores cuando aparece una solicitud de un libro que suelen ofrecer | El KPI 3 depende de cada cuánto revisan su feed | Medio | Medio |

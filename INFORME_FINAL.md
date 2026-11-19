@@ -8,7 +8,7 @@
 
 ## Resumen ejecutivo
 
-BookWho? aborda la búsqueda de libros mediante solicitudes de lectores y ofertas de vendedores. El diagnóstico utiliza una encuesta real; la evaluación técnica emplea datos simulados autorizados por el docente. El MVP incorpora búsqueda externa, roles, persistencia local, contacto externo y administración mediante MVC. La medición sigue MJV App: resolución, respuesta y espera hasta la primera oferta. Los resultados simulados no demuestran adopción ni impacto social. Se propone un backend compartido y validación real. Fuentes: [README.md](README.md) y [DOCUMENTATION.md](DOCUMENTATION.md).
+BookWho? aborda la búsqueda de libros mediante solicitudes de lectores y ofertas de vendedores. El diagnóstico utiliza una encuesta real; la evaluación técnica emplea datos simulados autorizados por el docente. El MVP incorpora búsqueda externa, roles, persistencia local, contacto externo y administración mediante MVC. La medición sigue MJV App: resolución, respuesta y espera hasta la primera oferta. Los resultados simulados no demuestran adopción ni impacto social. El backend compartido se implementó en prueba (SPEC-005); falta la validación con usuarios reales. Fuentes: [README.md](README.md) y [DOCUMENTATION.md](DOCUMENTATION.md).
 
 ## 1. Problema resuelto (RA1)
 
@@ -65,7 +65,7 @@ La persistencia serializa entidades y fechas en JSON. Guarda tras acciones exito
 
 La autenticación valida registro e inicio de sesión, bloquea cuentas suspendidas y almacena contraseñas mediante SHA-256. La recuperación de contraseña no está disponible en esta versión, y el login lo indica. Aceptar para coordinar deja la oferta `POR_CONCRETAR` y la solicitud `EN_COORDINACION`; confirmar el trato produce `ACEPTADA` y `RESUELTA`. Son estados declarados por usuarios, no comprobantes de transacciones verificadas. Fuente: [README.md](README.md).
 
-Las notificaciones de plyer son locales: se generan al publicar una oferta y al entrar un lector con ofertas pendientes. La configuración remota obtiene el banner desde GitHub de forma asíncrona, valida la respuesta y usa valores predeterminados si falla. La búsqueda combina Google Books, Open Library y respaldo local, con caché de portadas. El APK se distribuye mediante Releases y se compila con Buildozer/Docker; requiere **Android 7.0 o superior, de 64 bits** según [README.md](README.md). Estas integraciones no equivalen a un backend compartido.
+Las notificaciones de plyer son locales: se generan al publicar una oferta y al entrar un lector con ofertas pendientes. La configuración remota obtiene el banner del servidor del equipo (o de GitHub si no hay servidor) de forma asíncrona, valida la respuesta y usa valores predeterminados si falla. La búsqueda combina Google Books, Open Library y respaldo local, con caché de portadas. El APK se distribuye mediante Releases y se compila con Buildozer/Docker; requiere **Android 7.0 o superior, de 64 bits** según [README.md](README.md). El backend compartido (SPEC-005, ADR-004) está en prueba en el servidor del equipo: con internet, los teléfonos comparten datos; sin internet, la app vuelve al modo local.
 
 ## 3. Metodología de medición (RA3)
 
@@ -150,7 +150,7 @@ Tabla reproducida de [DOCUMENTATION.md, apartado 7.3](DOCUMENTATION.md). Toda co
 
 | # | Mejora | Se apoya en | Impacto | Esfuerzo |
 |---|---|---|---|---|
-| 1 | **Backend compartido** en el servidor del equipo: hoy cada teléfono guarda sus datos y lectores y vendedores en teléfonos distintos no se ven | Limitación 5. La simulación pone a todos en un mismo archivo, que es lo que haría el backend | Alto | Alto |
+| 1 | **Backend compartido** en el servidor del equipo — **implementado en prueba** el 17-11-2026 (SPEC-005): antes cada teléfono guardaba sus datos y lectores y vendedores en teléfonos distintos no se veían | Limitación 5. La simulación pone a todos en un mismo archivo, que es lo que haría el backend | Alto | Alto |
 | 2 | Al elegir entrega "Presencial", avisar que aceptar envío aumenta las ofertas | 43,8 % frente a 69,2 % (simulado) | Medio | Bajo |
 | 3 | Avisar al lector cuando no hay vendedores en su región y sugerir envío | Los Lagos: 20 % (simulado) | Medio | Bajo |
 | 4 | Notificar a los vendedores cuando aparece una solicitud de un libro que suelen ofrecer | El KPI 3 depende de cada cuánto revisan su feed | Medio | Medio |
@@ -161,6 +161,8 @@ El backend aborda una restricción funcional comprobada. Las demás hipótesis r
 ## 5. Conclusión social y ética
 
 La contribución demostrada es un MVP instrumentado y un diagnóstico documentado. La mejora efectiva del acceso a libros requiere evaluación real.
+
+Salvaguardas visibles en el código, agregadas tras la auditoría del 19-11-2026: el contacto que ve el lector es el que el vendedor escribió en esa oferta ([SPEC-011](docs/05-specs/SPEC-011-contacto-por-oferta.md)); el panel público no muestra ubicaciones escritas a mano; de otra persona la API entrega solo el nombre; suspender una cuenta la saca del mercado sin borrar los datos de los demás ([SPEC-010](docs/05-specs/SPEC-010-suspension-saca-del-mercado.md)); y el APK excluye las exportaciones de teléfonos.
 
 La app conserva nombre, correo, hash de contraseña, rol, estado y ubicación de cuentas; solicitudes con presupuesto, entrega y notas; ofertas; contactos del vendedor y actividad fechada. Los contactos pueden incluir teléfono, correo y dirección o punto de encuentro. Fuente: [DOCUMENTACION.md, apartado 3.1](docs/04-architecture/DOCUMENTACION.md). Los permisos se verifican en el modelo y el contacto se revela al lector autorizado al coordinar. La cercanía usa comuna/región, sin coordenadas exactas.
 

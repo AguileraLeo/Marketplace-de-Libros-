@@ -33,58 +33,31 @@ def _normalize_text(text: str) -> str:
     return "".join(c for c in norm if unicodedata.category(c) != "Mn").lower().strip()
 
 
-def format_location_display(item: dict[str, str]) -> str:
-    """Formatea la ubicación para mostrar: 'Comuna (Región)' o solo 'Comuna'."""
-    comuna, region = item["comuna"], item["region"]
-    return f"{comuna} ({region})"
+# (comuna normalizada, región normalizada, "Comuna (Región)"): se normaliza una vez, no en cada tecla.
+_INDEX = [
+    (_normalize_text(item["comuna"]), _normalize_text(item["region"]), f"{item['comuna']} ({item['region']})")
+    for item in CHILE_LOCATIONS
+]
+_DISPLAY_BY_NORM = {norm: display for c_norm, _, display in _INDEX for norm in (c_norm, _normalize_text(display))}
 
 
 def search_locations(query: str, limit: int = 15) -> list[str]:
-    """
-    Busca comunas y ciudades que coincidan con la consulta.
-    Retorna nombres normalizados con su región.
-    """
+    """Comunas que empiezan con la consulta y después las que la contienen (en la comuna o la región)."""
     q = _normalize_text(query)
-    if not q:
-        return [format_location_display(item) for item in CHILE_LOCATIONS[:limit]]
+    first = [d for c, _, d in _INDEX if c.startswith(q)]
+    rest = [d for c, r, d in _INDEX if not c.startswith(q) and (q in c or q in r)]
+    return (first + rest)[:limit]
 
-    matches: list[str] = []
-    # 1. Coincidencia exacta o inicio de comuna
-    for item in CHILE_LOCATIONS:
-        c_norm = _normalize_text(item["comuna"])
-        if c_norm.startswith(q):
-            matches.append(format_location_display(item))
-            if len(matches) >= limit:
-                return matches
 
-    # 2. Substring en comuna o región
-    for item in CHILE_LOCATIONS:
-        c_norm = _normalize_text(item["comuna"])
-        r_norm = _normalize_text(item["region"])
-        display = format_location_display(item)
-        if display not in matches and (q in c_norm or q in r_norm):
-            matches.append(display)
-            if len(matches) >= limit:
-                return matches
-
-    return matches
+def known_location(text: str) -> str:
+    """"Comuna (Región)" si el texto es una comuna del catálogo; si no, ""."""
+    return _DISPLAY_BY_NORM.get(_normalize_text(text), "")
 
 
 def normalize_location_name(text: str) -> str:
-    """
-    Normaliza el nombre de ubicación ingresado. Si coincide con una comuna conocida,
-    devuelve su nombre estándar; de lo contrario limpia el texto.
-    """
+    """Nombre estándar "Comuna (Región)" si coincide con una comuna conocida; si no, el texto limpio."""
     raw = (text or "").strip()
-    if not raw:
-        return ""
-    q = _normalize_text(raw)
-    for item in CHILE_LOCATIONS:
-        c_norm = _normalize_text(item["comuna"])
-        disp_norm = _normalize_text(format_location_display(item))
-        if q == c_norm or q == disp_norm:
-            return format_location_display(item)
-    return raw
+    return known_location(raw) or raw
 
 
 _REGION_BY_COMUNA: dict[str, str] = {

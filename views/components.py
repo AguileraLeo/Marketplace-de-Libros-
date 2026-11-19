@@ -18,7 +18,7 @@ from kivymd.uix.card import MDCard
 from kivymd.uix.relativelayout import MDRelativeLayout
 
 from models.store import OfferStatus, RequestStatus, UserStatus
-from services.books_api import download_and_cache_cover, get_cover_cache_path
+from services.books_api import download_and_cache_cover, get_cover_cache_path, is_cover_cached
 
 
 ACCENT = "#284DA6"
@@ -79,9 +79,8 @@ class BookCover(MDRelativeLayout):
             self.local_source = value
             self.loaded = True
             return
-        cache_path = get_cover_cache_path(value)
-        if cache_path and os.path.exists(cache_path) and os.path.getsize(cache_path) > 100:
-            self.local_source = cache_path
+        if is_cover_cached(value):
+            self.local_source = get_cover_cache_path(value)
             self.loaded = True
             return
         self.local_source = ""

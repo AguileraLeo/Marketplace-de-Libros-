@@ -26,7 +26,7 @@ CON_ACTOR = (
     "create_request", "create_offer", "accept_offer", "confirm_deal", "cancel_offer",
     "admin_users", "admin_stats", "admin_requests", "admin_offers", "admin_activity",
 )
-SIN_ACTOR = ("user", "active_offer_count", "upsert_book", "recover_password")
+SIN_ACTOR = ("user", "active_offer_count", "upsert_book")
 ERRORES = {"ValidationError": ValidationError, "PermissionDenied": PermissionDenied, "NotFound": NotFound,
            "InvalidTransition": InvalidTransition}
 TIPOS = {c.__name__: c for c in (User, Book, BookRequest, Offer, SellerContact, ActivityEntry)}
@@ -96,14 +96,14 @@ class RemoteStore:
         self.users = _Mapa(lambda uid: self.user(uid))
 
     # ------------------------------------------------------------ transporte
-    def _http(self, metodo, ruta, cuerpo=None):
+    def _http(self, metodo, ruta, cuerpo=None, timeout=None):
         cabeceras = {"Content-Type": "application/json", "User-Agent": "BookWho-App/1.0"}
         if self.token:
             cabeceras["Authorization"] = f"Bearer {self.token}"
         datos = None if cuerpo is None else json.dumps(cuerpo).encode("utf-8")
         pedido = urllib.request.Request(self.url + ruta, data=datos, method=metodo, headers=cabeceras)
         try:
-            with urllib.request.urlopen(pedido, timeout=self.timeout, context=self._ssl) as r:
+            with urllib.request.urlopen(pedido, timeout=timeout or self.timeout, context=self._ssl) as r:
                 texto = r.read()
                 return json.loads(texto) if texto else None
         except urllib.error.HTTPError as exc:
@@ -134,6 +134,15 @@ class RemoteStore:
 
     def authenticate(self, email, password):
         return self._entrar("/api/sesion", {"correo": email, "clave": password})
+
+    def cerrar_sesion(self):
+        """Revoca el token en el servidor si hay red, y lo olvida siempre."""
+        if self.token:
+            try:
+                self._http("DELETE", "/api/sesion", timeout=3)  # corto: salir no debe trabar la app
+            except DomainError:
+                pass  # sin red: el token vence solo (12 h)
+        self.token = None
 
     def register(self, name, email, password, role, location=""):
         return self._entrar("/api/registro", {"nombre": name, "correo": email, "clave": password,
