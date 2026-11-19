@@ -8,6 +8,8 @@ Aplicación móvil en Python con Kivy y KivyMD 2.0. Proyecto Integrado Final de 
 |---|---|---|---|
 | ![Login](assets/screenshots/login.png) | ![Inicio lector](assets/screenshots/reader_home.png) | ![Inicio vendedor](assets/screenshots/seller_home.png) | ![Administración](assets/screenshots/admin_home.png) |
 
+Capturas del diseño actual (azul tinta, [SPEC-007](docs/05-specs/SPEC-007-propuesta-c-azul-tinta.md)) tomadas de la app con los datos demo ficticios.
+
 ## Problema (RA1)
 
 Encontrar un libro específico (agotado, descatalogado, de segunda mano o difícil de ubicar) obliga a recorrer tiendas y grupos de compraventa sin garantía de encontrarlo. En la encuesta del diagnóstico (18 respuestas):
@@ -46,7 +48,7 @@ Admin:     métricas, moderación de solicitudes, suspensión de usuarios y regi
 ### Arquitectura MVC
 
 ```text
-views/         VISTA        libros.kv (las 19 pantallas) + components.py (widgets reutilizables)
+views/         VISTA        libros.kv (las 20 pantallas) + components.py (widgets reutilizables)
    │ eventos KV ▲ actualiza
 controllers/   CONTROLADOR  app_controller.py (ciclo de vida, navegación, safe())
    │                        screen_controllers.py (una clase por pantalla)
@@ -61,7 +63,7 @@ Toda regla de negocio y todo chequeo de permisos vive en `models/store.py`. Los 
 Programación orientada a objetos en el código:
 
 - **Clases de datos:** `User`, `Book`, `BookRequest`, `Offer`, `SellerContact` y `ActivityEntry` son `dataclass` (`models/store.py`).
-- **Herencia:** las 19 pantallas heredan de `BaseScreen(MDScreen)`, que les da `app`, `refresh()` y `fill()` (`controllers/screen_controllers.py`).
+- **Herencia:** las 20 pantallas heredan de `BaseScreen(MDScreen)`, que les da `app`, `refresh()` y `fill()` (`controllers/screen_controllers.py`).
 - **Sobreescritura:** `WideButton(MDButton)` redefine `adjust_pos()` de KivyMD para centrar ícono y texto (`views/components.py`).
 - **Jerarquía de excepciones:** `DomainError` y sus subclases `ValidationError`, `PermissionDenied`, `NotFound` e `InvalidTransition`; `app.safe()` las muestra como mensajes en vez de cerrar la app.
 - **Encapsulamiento:** solo `Store` modifica los datos, y revalida rol, propiedad y estado en cada caso de uso.
