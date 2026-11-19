@@ -171,7 +171,7 @@ Antecedentes proporcionados por el equipo para esta declaración; no constituyen
   - Recorrido de la app real sin ventana: 20/20.
   - Llamadas al servidor en Administración › Solicitudes: de 92 a 4.
   - Cifras de la simulación del informe: sin cambios.
-- **Responsabilidad del equipo:** decidió que suspender no borra la cuenta y que el contacto se guarda por oferta. También creó la rama, revisó los cambios e hizo los commits y la subida. [COMPLETAR: despliegue en el Z40 y retiro de los datos de la encuesta de `main`].
+- **Responsabilidad del equipo:** decidió que suspender no borra la cuenta y que el contacto se guarda por oferta. También creó la rama, revisó los cambios e hizo los commits y la subida. El 19-11-2026 el equipo desplegó en el Z40 la versión con SPEC-010 a SPEC-012 (commit `9deda2f`), después de respaldar los datos y correr las 143 pruebas en el propio servidor, y agregó las dos cuentas del equipo a `BOOKWHO_EXCLUIR`. Ese mismo día retiró de `main` las respuestas de la encuesta con datos personales (PR #22), sin reescribir el historial: siguen en commits anteriores.
 
 ## 5. Ajustes
 
