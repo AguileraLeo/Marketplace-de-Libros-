@@ -143,4 +143,4 @@ El trabajo está estructurado en **4 fases lógicas** para respetar el principio
   python -m unittest discover -s tests -v
   ```
 
-- Al completar cambios que modifiquen reglas de negocio o estados, actualizar [CONTEXTO.md](file:///c:/Proyectos/Marketplace-de-Libros-/CONTEXTO.md).
+- Al completar cambios que modifiquen reglas de negocio o estados, actualizar [CONTEXTO.md](../../CONTEXTO.md).

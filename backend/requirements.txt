@@ -1,4 +1,6 @@
 # Solo para el servidor (SPEC-005); la app Kivy no los necesita.
-fastapi
-uvicorn
-httpx  # pruebas (TestClient)
+# Versiones del Z40 (paquetes python3-fastapi y python3-uvicorn de Ubuntu, Python 3.14).
+# En desarrollo también se probó con fastapi 0.163 y uvicorn 0.54.
+fastapi==0.118.0
+uvicorn==0.38.0
+httpx==0.28.1  # pruebas (TestClient)

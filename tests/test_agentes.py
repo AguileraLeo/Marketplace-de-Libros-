@@ -27,6 +27,14 @@ import simulador  # noqa: E402
 from backend.agentes import Demo  # noqa: E402
 from services.persistence import load_store  # noqa: E402
 
+import models.store as modelo
+
+
+def setUpModule():
+    # SPEC-012: acelerar las cuentas ficticias y restaurar el coste de la app al terminar.
+    unittest.addModuleCleanup(setattr, modelo, "PBKDF2_ITERATIONS", modelo.PBKDF2_ITERATIONS)
+    modelo.PBKDF2_ITERATIONS = 1_000
+
 
 def levantar(app):
     """Servidor uvicorn real en un puerto libre; devuelve (url, servidor)."""

@@ -4,10 +4,12 @@ Ejecutar desde la raíz:  python -m unittest discover -s tests -v
 """
 
 import dataclasses
+import hashlib
 import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -24,6 +26,16 @@ from models.store import (  # noqa: E402
     build_demo_store,
 )
 from services.books_api import catalog_lookup  # noqa: E402
+
+import models.store as modelo
+
+ITERACIONES_APP = modelo.PBKDF2_ITERATIONS
+
+
+def setUpModule():
+    # SPEC-012: acelerar las cuentas ficticias y restaurar el coste de la app al terminar.
+    unittest.addModuleCleanup(setattr, modelo, "PBKDF2_ITERATIONS", modelo.PBKDF2_ITERATIONS)
+    modelo.PBKDF2_ITERATIONS = 1_000
 
 
 class StoreTestCase(unittest.TestCase):
@@ -43,6 +55,48 @@ class StoreTestCase(unittest.TestCase):
         )
         data.update(kw)
         return self.store.create_request(self.reader, **data)
+
+
+class PasswordTest(StoreTestCase):
+    def test_coste_de_la_app_y_sales_independientes(self):
+        self.assertGreaterEqual(ITERACIONES_APP, 600_000)
+        with patch.object(modelo, "PBKDF2_ITERATIONS", ITERACIONES_APP):
+            uno = self.store.register("Persona A", "a@example.test", "misma-clave", Role.READER)
+            dos = self.store.register("Persona B", "b@example.test", "misma-clave", Role.READER)
+        self.assertRegex(uno.password, r"^pbkdf2_sha256\$600000\$[0-9a-f]{32}\$[0-9a-f]{64}$")
+        self.assertNotEqual(uno.password.split("$")[2], dos.password.split("$")[2])
+
+    def test_registro_guarda_pbkdf2(self):
+        usuario = self.store.register("Persona", "cuenta@example.test", "prueba", Role.READER)
+        self.assertTrue(usuario.password.startswith("pbkdf2_sha256$"))
+
+    def test_login_migra_hash_antiguo(self):
+        self.reader.password = hashlib.sha256(f"{self.reader.email}:1234".encode()).hexdigest()
+        self.store.authenticate(self.reader.email, "1234")
+        migrado = self.reader.password
+        self.assertTrue(migrado.startswith("pbkdf2_sha256$"))
+        self.store.authenticate(self.reader.email, "1234")
+        self.assertEqual(self.reader.password, migrado)
+
+    def test_clave_incorrecta_con_ambos_formatos(self):
+        antiguo = hashlib.sha256(f"{self.reader.email}:1234".encode()).hexdigest()
+        for guardado in (self.reader.password, antiguo):
+            self.reader.password = guardado
+            with self.assertRaises(ValidationError):
+                self.store.authenticate(self.reader.email, "incorrecta")
+            self.assertEqual(self.reader.password, guardado)
+
+    def test_correo_inexistente_calcula_un_hash(self):
+        with patch("models.store.hashlib.pbkdf2_hmac", wraps=hashlib.pbkdf2_hmac) as derivar:
+            with self.assertRaises(ValidationError):
+                self.store.authenticate("ausente@example.test", "prueba")
+            derivar.assert_called_once()
+
+    def test_login_actualiza_coste_anterior(self):
+        with patch.object(modelo, "PBKDF2_ITERATIONS", 900):
+            self.reader.password = modelo.hash_password("1234")
+        self.store.authenticate(self.reader.email, "1234")
+        self.assertTrue(self.reader.password.startswith("pbkdf2_sha256$1000$"))
 
 
 class OfferContactTest(StoreTestCase):

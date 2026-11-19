@@ -16,6 +16,14 @@ sys.path.insert(0, RAIZ)
 import analitica  # noqa: E402
 import simulador  # noqa: E402
 
+import models.store as modelo
+
+
+def setUpModule():
+    # SPEC-012: acelerar las cuentas ficticias y restaurar el coste de la app al terminar.
+    unittest.addModuleCleanup(setattr, modelo, "PBKDF2_ITERATIONS", modelo.PBKDF2_ITERATIONS)
+    modelo.PBKDF2_ITERATIONS = 1_000
+
 PARAMETROS = dict(semilla=7, dias=6, inicio="2026-11-03", lectores=8, vendedores=4)
 
 

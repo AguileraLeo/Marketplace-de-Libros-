@@ -11,6 +11,7 @@ Los argumentos RPC son posicionales del Store, siempre sin el actor.
 import json
 import hmac
 import inspect
+import hashlib
 import os
 import re
 import sys
@@ -34,7 +35,15 @@ from backend.servidor import RAIZ, crear_app, dias_seguidos
 import analitica
 from models.store import Condition, Delivery, OfferStatus, RequestStatus, Role
 from services.books_api import catalog_lookup
-from services.persistence import load_store
+from services.persistence import load_store, save_store
+
+import models.store as modelo
+
+
+def setUpModule():
+    # SPEC-012: acelerar las cuentas ficticias y restaurar el coste de la app al terminar.
+    unittest.addModuleCleanup(setattr, modelo, "PBKDF2_ITERATIONS", modelo.PBKDF2_ITERATIONS)
+    modelo.PBKDF2_ITERATIONS = 1_000
 
 
 def correo_completo(correo):
@@ -59,6 +68,42 @@ class BackendTest(unittest.TestCase):
         self.claves = {self.ADMIN[1]}
         self.sesiones = {}
         self.respuestas = []
+
+    def test_login_persiste_migracion_de_hash_antiguo(self):
+        correo, clave = "historico@example.test", "prueba"
+        store = modelo.Store()
+        usuario = store.add_user("Persona", correo, clave, Role.READER)
+        usuario.password = hashlib.sha256(f"{correo}:{clave}".encode()).hexdigest()
+        save_store(store, self.ruta_datos)
+        with TestClient(crear_app(self.ruta_datos)) as cliente:
+            respuesta = cliente.post("/api/sesion", json={"correo": correo, "clave": clave})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertTrue(load_store(self.ruta_datos).user(usuario.id).password.startswith("pbkdf2_sha256$"))
+
+    def test_historico_reabre_solicitudes_al_retirar_ofertas_demo(self):
+        store = modelo.Store()
+        lector = store.add_user("Persona", "lector@example.test", "prueba", Role.READER)
+        vendedor = store.add_user("Librería", "tienda@example.test", "prueba", Role.SELLER)
+        demo = store.add_user(*next(fila for fila in modelo.DEMO_USERS if fila[3] == Role.SELLER))
+        libro = store.upsert_book(catalog_lookup("demo-quijote"))
+        mixta, sola, abierta = [
+            store.create_request(lector, libro.id, location="Temuco") for _ in range(3)
+        ]
+        for solicitud in (mixta, sola, abierta):
+            oferta = store.create_offer(demo, solicitud.id, 1000, Condition.USED, address="Feria")
+            if solicitud == mixta:
+                espera = store.create_offer(vendedor, mixta.id, 1200, Condition.USED, address="Plaza")
+            if solicitud != abierta:
+                store.accept_offer(lector, oferta.id)
+        self.assertEqual(espera.status, OfferStatus.ON_HOLD)
+        save_store(store, self.ruta_datos)
+        crear_app(self.ruta_datos)
+        cargado = load_store(self.ruta_datos)
+        self.assertEqual(cargado.requests[mixta.id].status, RequestStatus.WITH_OFFERS)
+        self.assertEqual(cargado.offers[espera.id].status, OfferStatus.PUBLISHED)
+        for solicitud in (sola, abierta):
+            self.assertEqual(cargado.requests[solicitud.id].status, RequestStatus.PUBLISHED)
+            self.assertEqual(cargado.active_offer_count(solicitud.id), 0)
 
     def assert_privacidad(self, response, correos_visibles=(), contacto=False):
         """Inspeccionar el JSON crudo y su versión decodificada, incluso errores."""
