@@ -156,20 +156,20 @@ Mi mayor aprendizaje fue que usar IA bien no es "que te resuelva todo", sino ten
 
 ### E3
 
-La IA me sirvió principalmente para configurar los servicios y entender cómo funcionan: dónde se guarda el JSON, qué dispara la notificación y de dónde sale el valor remoto.
+La IA nos sirvió principalmente para configurar los servicios y entender cómo funcionan: dónde se guarda el JSON, qué dispara la notificación y de dónde sale el valor remoto.
 
-Me preocupa no haber podido configurar todo como hubiera querido, desde mi servidor Z40 con dominio propio. También me preocupa entender código escrito a última hora, pero no es una limitante: se entiende la lógica detrás de cada acción.
+Nos preocupa no haber podido configurar todo como hubiera querido, desde mi servidor para esta etapa. También nos preocupa entender código escrito a última hora, pero no es una limitante: se entiende la lógica detrás de cada acción.
 
 Aprendí a compilar para Android. Antes lo había hecho para iOS en una aplicación personal, y entender ambos sistemas me aporta al progreso general.
 
 ### E4
 
-En esta etapa cambió mi forma de usar la IA. Ya no fue pedirle código a una sola herramienta: trabajé con dos a la vez. Codex implementaba y Claude Code orquestaba y revisaba. Aprendí que una IA puede afirmar algo con total seguridad y estar equivocada, así que la regla fue no hacer commit de nada sin revisar los cambios, correr las pruebas y mirar el resultado en pantalla.
+En esta etapa la Ia se encargó de unificar distintas tareas para luego auditarlas y que todo funcione como debería, existe registro de ello en nuestra forma de trabajar.
 
-Por fin monté el servidor propio que quería desde la E3, y eso me mostró su costo real. Una solución propia da control y privacidad, pero exige mantenimiento. La misma mañana de la presentación el Z40 se reinició, el sitio estuvo caído unos minutos y hubo que volver a programar los agentes. Es lo que vimos en el RA3 al comparar una analítica construida por nosotros con una herramienta de la industria.
+Matías montó su servidor local nuevamente, y en conjunto a la IA se logró montar una landing page y una pagina de metricas en un tiempo bastante acotado. La misma mañana de la presentación el Z40 se reinició, el sitio estuvo caído unos minutos y hubo que volver a programar los agentes. 
 
-Lo más delicado fue la honestidad con los datos. La IA puede generar usuarios y actividad que parecen reales, y justamente por eso decidí que todo lo simulado se vea como simulado. También entendí que publicar en internet cambia la responsabilidad. No había pensado mucho en la seguridad hasta la auditoría, que mostró que cualquiera con acceso al repositorio podía entrar como un agente.
+Lo más delicado fue la honestidad con los datos. La IA puede generar usuarios y actividad que parecen reales, y justamente por eso decidimos que todo lo simulado se vea como simulado. 
 
-Me preocupa la cantidad de código que se escribió en pocos días. Para poder defenderlo revisé cada cambio antes de subirlo, desplegamos solo con las pruebas automáticas en verde (121 al final) y tengo claro qué quedó pendiente y por qué. Mi aprendizaje es que la IA acelera mucho el trabajo, pero las decisiones siguen siendo nuestras: qué medir, qué mostrar y qué no prometer.
+Me preocupa la cantidad de código generado en pocos días. Para poder defenderlo habia que revisar cada cambio antes de subirlo, desplegamos solo con las pruebas automáticas en verde (121 al final). Mi aprendizaje es que la IA acelera mucho el trabajo, pero las decisiones siguen siendo nuestras: qué medir, qué mostrar y qué no prometer.
 
 
