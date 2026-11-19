@@ -110,9 +110,6 @@ class DemoLibrosApp(MDApp):
             data_dir = self.user_data_dir if platform == "android" else os.path.join(BASE_DIR, "data", "user")
             os.makedirs(data_dir, exist_ok=True)
             self.data_file = os.path.join(data_dir, "data.json")
-            if platform != "android":
-                legacy_data_file = os.path.join(BASE_DIR, "data.json")
-                persistence.migrate_legacy_data_file(legacy_data_file, self.data_file)
             self.store = persistence.load_store(self.data_file) or build_demo_store(catalog_lookup)
             self.save()
         self.history: list[str] = []
@@ -224,14 +221,13 @@ class DemoLibrosApp(MDApp):
         self.root.transition.direction = "left"
         self.root.current = self.HOME_BY_ROLE[user.role]
         if user.role == Role.READER:
-            n = sum(self.store.active_offer_count(r.id) for r in self.store.reader_requests(user)
-                    if r.status in RequestStatus.OPEN)
+            n = self.root.get_screen("reader_home").pending_offers  # lo calculó on_pre_enter al cambiar de pantalla
             if n:
                 notifications.send(tr('Tienes ofertas por revisar'), tr('{v0} oferta(s) activa(s) en tus solicitudes.', v0=n))
 
     def logout(self):
         if self.remoto:
-            self.remoto.token = None
+            self.remoto.cerrar_sesion()
         self.user = None
         self.user_name = ""
         self.history = []
@@ -253,6 +249,14 @@ class DemoLibrosApp(MDApp):
             self.notify(tr('No se pudieron guardar los cambios.'))
             return None
         return True if result is None else result
+
+    def read(self, fn, *args):
+        """Consulta: muestra el error de negocio sin cerrar la app. No guarda, porque leer no cambia nada."""
+        try:
+            return fn(*args)
+        except DomainError as exc:
+            self.aviso_remoto(exc)
+            return None
 
     def aviso_remoto(self, exc):
         """Muestra un error de negocio; si la sesión del servidor venció, vuelve al login."""
@@ -297,8 +301,8 @@ class DemoLibrosApp(MDApp):
         dialog.open()
 
     # ---------------------------------------------------- helpers de vista
-    def request_card(self, req, on_open, for_seller=False):
-        """Tarjeta de solicitud compartida por las listas del lector y vendedor."""
+    def request_card(self, req, on_open, for_seller=False, offers=None):
+        """Tarjeta de solicitud compartida por las listas del lector y vendedor (offers: conteo ya calculado)."""
         book = self.store.book(req.book_id)
         if for_seller:
             detail = proximity_label(self.user.location, req.location)
@@ -307,7 +311,7 @@ class DemoLibrosApp(MDApp):
             else:
                 detail = tr(detail)
         elif req.status in RequestStatus.OPEN:
-            n = self.store.active_offer_count(req.id)
+            n = self.store.active_offer_count(req.id) if offers is None else offers
             detail = tr('Sin ofertas todavía') if n == 0 else tr('{v0} oferta', v0=n) + (tr('s') if n > 1 else "") + tr(' por revisar')
         else:
             detail = ""

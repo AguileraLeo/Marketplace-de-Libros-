@@ -10,7 +10,8 @@ del código (pantallas, dominio, servicios, pruebas) está en [`docs/04-architec
 |---|---|
 | Registro de eventos (`Store._log` en `models/store.py` → `data.json`) | Implementado |
 | Cálculo de KPIs y gráfico (`analitica.py`) | Implementado y verificado con pruebas automáticas (`tests/test_analitica.py`) usando datos de prueba |
-| **Datos reales de uso** | **Todavía no hay.** Al 17-11-2026 no hay eventos de usuarios reales: se completan en la sección 7.4 después del periodo de recolección. |
+| Metas de KPIs | Definidas el 19-11-2026 para el próximo ciclo de evaluación de 14 días; criterios y alcance en la sección 4.1. |
+| **Datos reales de uso** | **Prueba en vivo mínima** el 18-11-2026: 4 cuentas que no son del equipo publicaron 3 solicitudes en el servidor compartido. No alcanza para evaluar los KPIs (sección 7.4). |
 | **Datos simulados** (autorizados por el docente) | Generados con `simulador.py` (SPEC-003): 14 días, 24 lectores y 10 vendedores ficticios. Resultados en la sección 7.1, siempre rotulados como simulados. |
 
 ## 2. Del problema (RA1) a los KPIs: método MJV App
@@ -22,7 +23,7 @@ KPIs miden si la app responde a esas tres hipótesis.
 
 | Paso | En BookWho? |
 |---|---|
-| **Medir** | Los 3 KPIs de la sección 4, definidos a partir de la encuesta, y los eventos que los alimentan (sección 3). Las metas se fijan **antes** de recolectar, para no ajustarlas a los resultados. |
+| **Medir** | Los 3 KPIs de la sección 4, definidos a partir de la encuesta, y los eventos que los alimentan (sección 3). Las metas de la sección 4.1 se fijan antes de la próxima recolección. La simulación histórica se generó cuando aún no había metas documentadas. |
 | **Jugar** | Periodo **simulado** del 3 al 16 de noviembre de 2026: 24 lectores y 10 vendedores ficticios (`simulador.py`, semilla 42). Periodo de uso real: **por definir por el equipo** (fechas, participantes y dispositivos). |
 | **Validar** | Comparar cada KPI con su meta y decidir: mantener, ajustar la app y volver a medir (es un ciclo). |
 
@@ -38,8 +39,8 @@ KPIs miden si la app responde a esas tres hipótesis.
 
 | Evento (`action`) | Cuándo | `detail` |
 |---|---|---|
-| `login` | Inicio de sesión | `<correo> inició sesión` |
-| `registro` | Cuenta nueva | `Nuevo lector: <correo>` / `Nuevo vendedor: <correo>` |
+| `login` | Inicio de sesión | `El usuario inició sesión` |
+| `registro` | Cuenta nueva | `Nuevo lector registrado` / `Nuevo vendedor registrado` |
 | `solicitud_publicada` | El lector publica | `Solicitud #N · <título>` |
 | `solicitud_cancelada` | Cancela el lector o modera el admin | `Solicitud #N cancelada (lector)` |
 | `oferta_publicada` | El vendedor oferta | `Oferta #M para solicitud #N · $precio` |
@@ -49,7 +50,7 @@ KPIs miden si la app responde a esas tres hipótesis.
 | `trato_desistido` | Lector o vendedor desiste | `Coordinación de oferta #M cancelada · solicitud #N reactivada` |
 | `usuario_suspendido` / `usuario_reactivado` | Moderación del admin | `<correo> suspendido` |
 
-**Privacidad:** `login`, `registro` y `usuario_*` guardan correos en `detail`. Por eso `data.json`
+**Privacidad:** En los eventos nuevos, solo `usuario_suspendido` y `usuario_reactivado` guardan el correo en `detail`. Los históricos pueden conservar correos de versiones anteriores. Por eso `data.json`
 no se comparte ni se sube; para el informe solo se usan los conteos que imprime `analitica.py`,
 que nunca muestra el detalle de los eventos.
 
@@ -76,6 +77,108 @@ Reglas de cálculo:
 - Solo cuentan las ofertas de vendedores reales, y un trato concretado con una cuenta excluida no
   cuenta como resuelto.
 - Si no hay solicitudes, los KPI 1 y 2 valen 0 % (no se divide por cero) y el KPI 3 queda vacío.
+
+### 4.1 Metas del próximo ciclo de evaluación
+
+**Fecha de definición: 19-11-2026.** Estas metas iniciales se establecen para el próximo ciclo
+de **14 días consecutivos**. Sus fechas de inicio y cierre, participantes y fuente de datos
+deben registrarse antes de comenzar. Las metas son objetivos de evaluación del MVP; no son
+compromisos de servicio ni resultados obtenidos.
+
+| KPI | Meta al cierre del ciclo | Criterio de elección |
+|---|---|---|
+| **1. Tasa de resolución** | **≥ 50 %** de las solicitudes publicadas | Que al menos la mitad termine con un trato confirmado por el lector, para evaluar si el circuito aporta una solución a la necesidad. |
+| **2. Tasa de respuesta** | **≥ 80 %** de las solicitudes publicadas | Que al menos cuatro de cada cinco solicitudes reciban una oferta; permite detectar demanda sin atención de vendedores. |
+| **3. Horas hasta la primera oferta** | **≤ 24 h** de mediana, entre solicitudes con oferta | Buscar una primera respuesta dentro de un día para la solicitud típica que recibe oferta, sin exigir atención inmediata a pequeños vendedores. |
+
+Se conservan las fórmulas y exclusiones existentes: las solicitudes canceladas siguen en el
+denominador y cada solicitud cuenta una vez. La mediana de espera se interpreta junto con la
+tasa de respuesta; no garantiza respuesta para todas las solicitudes ni demuestra una mejora
+frente a los 15 minutos de búsqueda manual de la encuesta, que miden otra actividad.
+
+Al cierre se informa para cada KPI su valor, numerador y denominador (o cantidad de solicitudes
+con oferta para la mediana), meta y resultado de la comparación. Si no hay solicitudes, se
+declara **sin datos para evaluar**, aunque el script imprima tasas de 0 %. Si no hay ofertas,
+la mediana queda **sin datos**. No se modifican los umbrales durante el ciclo; los ajustes se
+documentan para un ciclo posterior. Los datos reales y simulados se evalúan por separado,
+con las cuentas demo y del equipo excluidas del análisis real.
+
+La simulación del 3 al 16 de noviembre precede a estas metas. Como referencia retrospectiva,
+31,1 % de resolución queda bajo 50 %, 62,2 % de respuesta queda bajo 80 % y 2,4 h de mediana
+queda dentro de 24 h. **Esta comparación no acredita cumplimiento de metas previas ni
+validación con usuarios reales.** Se conservan intactos sus datos y el gráfico histórico.
+
+### 4.2 Estimación de lanzamiento y proyección mensual
+
+**Escenario de planificación elaborado el 19-11-2026, sin datos reales de lanzamiento.**
+Se estima el primer mes y los tres meses posteriores. Como no hay una fecha de lanzamiento
+documentada, «mes» representa un bloque de 30 días desde el inicio: M1 = días 1–30,
+M2 = 31–60, M3 = 61–90 y M4 = 91–120. Cada columna corresponde a ese mes, sin acumular
+los resultados de meses anteriores.
+
+Las cifras son **supuestos orientativos**, no una predicción estadística ni resultados de una
+nueva simulación. La encuesta acredita interés declarado en una muestra pequeña; no permite
+estimar captación, retención o conversiones reales. Los resultados simulados de la sección 7.1
+sirven para comprobar el instrumento y tampoco calibran esta proyección.
+
+#### Supuestos del escenario base
+
+- Lanzamiento acotado a una comunidad inicial, con lectores y vendedores capaces de usar el
+  backend compartido. No se supone cobertura nacional ni nuevas funciones fuera del MVP.
+- Lectores activos por mes: **25, 50, 75 y 100**; cada uno publica en promedio **dos solicitudes
+  mensuales**. La captación neta de 25 lectores activos adicionales por mes es un supuesto de
+  planificación, sin campaña ni tasa de retención demostradas.
+- Vendedores activos por mes: **5, 8, 12 y 15**. «Activo» en este escenario significa que
+  publica al menos una oferta durante el mes; registrarse por sí solo no basta.
+- La disponibilidad de títulos y la revisión del feed mejoran conforme crece la participación
+  de vendedores. Se supone un aumento de respuesta de 10 puntos porcentuales mensuales hasta
+  M3 y de 5 puntos en M4; entre las solicitudes con oferta, la proporción que se concreta pasa
+  de 50 % a aproximadamente 65 %. Son hipótesis, no efectos demostrados del crecimiento.
+- La espera mediana se supone de **24, 18, 12 y 8 horas**. No se deduce de las tasas ni de los
+  conteos; depende de que los vendedores revisen y atiendan solicitudes con mayor frecuencia.
+
+| Indicador mensual estimado | M1 · lanzamiento | M2 | M3 | M4 |
+|---|---|---|---|---|
+| Lectores activos (supuesto) | 25 | 50 | 75 | 100 |
+| Vendedores activos (supuesto) | 5 | 8 | 12 | 15 |
+| Solicitudes publicadas (supuesto) | 50 | 100 | 150 | 200 |
+| Solicitudes con al menos una oferta | 30 | 70 | 120 | 170 |
+| Solicitudes con trato confirmado por el lector | 15 | 40 | 75 | 110 |
+| **KPI 1 · Tasa de resolución esperada** | **30 %** | **40 %** | **50 %** | **55 %** |
+| **KPI 2 · Tasa de respuesta esperada** | **60 %** | **70 %** | **80 %** | **85 %** |
+| **KPI 3 · Mediana hasta la primera oferta** | **24 h** | **18 h** | **12 h** | **8 h** |
+
+Por ejemplo, en M1 se esperan **15 solicitudes resueltas y 30 con oferta de un total de 50**,
+si se cumplen los supuestos. Los conteos muestran la coherencia de las tasas; no son ventas
+verificadas ni cantidades garantizadas. Con una muestra inicial pequeña, unas pocas solicitudes
+pueden cambiar mucho los porcentajes.
+
+#### Relación con las metas y seguimiento
+
+Las metas del piloto de 14 días (sección 4.1) siguen siendo **objetivos aspiracionales**;
+esta tabla expresa una **expectativa condicionada** para el lanzamiento. En el escenario base,
+M1 quedaría bajo las metas de resolución y respuesta. M3 alcanzaría sus umbrales de 50 % y
+80 %, y la mediana cumpliría el umbral de 24 h desde M1. Alcanzar un umbral en un mes no
+acredita haberlo cumplido durante el piloto, porque son periodos distintos.
+
+Al cierre de cada bloque se evalúan las solicitudes publicadas dentro de ese bloque y las
+ofertas y confirmaciones asociadas registradas hasta ese mismo cierre. Las canceladas permanecen
+en el denominador y una solicitud con varias ofertas cuenta una vez como respondida. Las
+resoluciones posteriores pueden informarse como seguimiento de su cohorte, sin sumarlas como
+resoluciones de solicitudes nuevas del mes siguiente. El corte perjudica a las solicitudes
+recientes; se debe declarar esa limitación al comparar meses.
+
+Para esta evaluación se separan personas, cuentas demo/equipo y agentes simulados. Se usa una
+fuente compartida o se analiza cada archivo local por separado; no se suman identificadores de
+dispositivos distintos. **`analitica.py` calcula sobre todo el archivo recibido y no genera esta
+proyección ni separa automáticamente cohortes mensuales.** La automatización de ese seguimiento
+requerirá una especificación propia; esta actualización es solo documental.
+
+Al terminar M1 se contrastarán participación, solicitudes, tasas y espera observadas con los
+supuestos. Si no se incorporan vendedores con los títulos demandados o no revisan el feed,
+las tasas pueden estancarse o bajar y la espera aumentar. El crecimiento no asegura mejora.
+Se conservará esta versión y se fecharán las revisiones futuras del escenario, sin alterar
+los resultados históricos ni presentar estos valores como observaciones.
 
 ## 5. Cómo calcularlos: `analitica.py`
 
@@ -142,8 +245,9 @@ python analitica.py data/simulacion/simulacion.json    # KPIs rotulados como DAT
    a recibir respuesta, lo que hace bajar los KPI 1 y 2.
 3. **El KPI 3 no incluye las solicitudes sin ofertas:** hay que leerlo junto al KPI 2.
 4. **"Trato concretado" lo declara el lector:** la app no verifica que la entrega ocurrió.
-5. **Un archivo por dispositivo:** cada teléfono numera sus solicitudes desde 1. Se analiza cada
-   `data.json` por separado; no se juntan ni se suman.
+5. **Un archivo por dispositivo (modo local):** cada teléfono numera sus solicitudes desde 1. Se analiza cada
+   `data.json` por separado; no se juntan ni se suman. En modo servidor (SPEC-005) todos los teléfonos
+   escriben en un mismo archivo y esta limitación no aplica a esos datos.
 6. **Hora local del dispositivo, sin zona horaria:** las diferencias de tiempo son válidas dentro
    de un mismo teléfono.
 7. **Datos demo vs. reales:** la semilla de demo no genera eventos (`build_demo_store` vacía el
@@ -171,9 +275,9 @@ python analitica.py data/simulacion/simulacion.json    # KPIs rotulados como DAT
 | Usuarios simulados activos | 34 (24 lectores y 10 vendedores) |
 | Eventos | 705, de ellos 513 inicios de sesión |
 | Solicitudes publicadas | 45 |
-| KPI 1 · Tasa de resolución (meta: —) | **31,1 %** (14 de 45) |
-| KPI 2 · Tasa de respuesta (meta: —) | **62,2 %** (28 de 45) |
-| KPI 3 · Horas hasta la primera oferta (meta: —) | **2,4 h** (mediana) |
+| KPI 1 · Tasa de resolución (sin meta previa en esta simulación) | **31,1 %** (14 de 45) |
+| KPI 2 · Tasa de respuesta (sin meta previa en esta simulación) | **62,2 %** (28 de 45) |
+| KPI 3 · Horas hasta la primera oferta (sin meta previa en esta simulación) | **2,4 h** (mediana) |
 
 ![KPIs con datos simulados](docs/resultados/kpis_simulados.png)
 
@@ -214,7 +318,7 @@ Ordenadas por impacto esperado y esfuerzo:
 
 | # | Mejora | Se apoya en | Impacto | Esfuerzo |
 |---|---|---|---|---|
-| 1 | **Backend compartido** en el servidor del equipo: hoy cada teléfono guarda sus datos y lectores y vendedores en teléfonos distintos no se ven | Limitación 5. La simulación pone a todos en un mismo archivo, que es lo que haría el backend | Alto | Alto |
+| 1 | **Backend compartido** en el servidor del equipo — **implementado en prueba** el 17-11-2026 (SPEC-005): antes cada teléfono guardaba sus datos y lectores y vendedores en teléfonos distintos no se veían | Limitación 5. La simulación pone a todos en un mismo archivo, que es lo que haría el backend | Alto | Alto |
 | 2 | Al elegir entrega "Presencial", avisar que aceptar envío aumenta las ofertas | 43,8 % frente a 69,2 % (simulado) | Medio | Bajo |
 | 3 | Avisar al lector cuando no hay vendedores en su región y sugerir envío | Los Lagos: 20 % (simulado) | Medio | Bajo |
 | 4 | Notificar a los vendedores cuando aparece una solicitud de un libro que suelen ofrecer | El KPI 3 depende de cada cuánto revisan su feed | Medio | Medio |
@@ -223,7 +327,26 @@ Ordenadas por impacto esperado y esfuerzo:
 Las propuestas 2 a 4 deben validarse con datos reales antes de implementarse, porque en la
 simulación esas diferencias salen de los supuestos.
 
-### 7.4 Datos reales
+### 7.4 Datos reales: prueba en vivo del 18-11-2026
 
-**Pendiente:** completar con el periodo de uso real, con la misma tabla de la sección 7.1 y
-analizando cada `data.json` por separado.
+> Datos del servidor compartido (`~/bookwho/datos/bookwho.json` en el Z40), analizados el 19-11-2026
+> con `analitica.calcular()`. Se excluyen los agentes simulados (`@bookwho.test`), la administración,
+> las cuentas demo y las dos cuentas del equipo que usa el guion. No se imprimieron correos ni nombres.
+
+| Dato | Valor |
+|---|---|
+| Periodo | 18-11-2026, entre las 01:52 y las 11:56 (un solo día) |
+| Cuentas de personas en el servidor | 6 (4 lectores y 2 vendedores); 2 son del equipo |
+| Analizadas, sin el equipo | 4 cuentas activas (3 lectores y 1 vendedor), 23 eventos |
+| Solicitudes publicadas | 3 |
+| KPI 1 · Tasa de resolución | 0 % (0 de 3) |
+| KPI 2 · Tasa de respuesta | 33,3 % (1 de 3) |
+| KPI 3 · Horas hasta la primera oferta | 0,0 h (una sola solicitud con oferta) |
+
+**Lectura:** no es el ciclo de 14 días de la sección 4.1 y la muestra es mínima, así que **no se
+compara con las metas ni permite conclusiones**. Limitaciones de esta prueba:
+
+- no se puede verificar que las 4 cuentas restantes sean externas al equipo;
+- las ofertas de los agentes simulados no cuentan como respuesta de vendedores reales, aunque
+  aparecían en el feed de las personas;
+- la app no registra el dispositivo usado (APK o escritorio).

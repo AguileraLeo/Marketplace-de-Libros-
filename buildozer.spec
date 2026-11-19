@@ -5,9 +5,10 @@ package.domain = cl.uct
 source.dir = .
 source.include_exts = py,kv,ttf,png,jpg,json
 source.exclude_dirs = .venv,tests,assets/screenshots,docs,.cache,bin,.buildozer,data/user,data/simulacion,panel,backend,sitio,__pycache__
-# analitica.py y simulador.py se ejecutan en el PC (RA3): la app no los usa
-source.exclude_patterns = data.json,data.json.tmp,data.json.corrupto,analitica.py,simulador.py
-version = 1.0
+# analitica.py y simulador.py se ejecutan en el PC (RA3): la app no los usa.
+# data_*.json: exportaciones de teléfonos (DOCUMENTATION.md §5) con datos de participantes; nunca al APK.
+source.exclude_patterns = data.json,data.json.tmp,data.json.corrupto,data_*.json,analitica.py,simulador.py
+version = 1.1
 icon.filename = %(source.dir)s/assets/icon.png
 presplash.filename = %(source.dir)s/assets/presplash.png
 android.presplash_color = #F5F7FC

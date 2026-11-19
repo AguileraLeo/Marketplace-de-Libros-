@@ -2,7 +2,8 @@
 
 ## Estado
 
-Propuesta del 17-11-2026, pendiente de aprobación del equipo (CLAUDE.md, regla 6).
+Aceptado el 19-11-2026: el backend está desplegado en el Z40 y lo usaron agentes y personas en la E4.
+Propuesto el 17-11-2026 (CLAUDE.md, regla 6).
 Especificación: [SPEC-005](../05-specs/SPEC-005-backend-compartido.md).
 
 ## Contexto

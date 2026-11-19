@@ -27,6 +27,14 @@ import simulador  # noqa: E402
 from backend.agentes import Demo  # noqa: E402
 from services.persistence import load_store  # noqa: E402
 
+import models.store as modelo
+
+
+def setUpModule():
+    # SPEC-012: acelerar las cuentas ficticias y restaurar el coste de la app al terminar.
+    unittest.addModuleCleanup(setattr, modelo, "PBKDF2_ITERATIONS", modelo.PBKDF2_ITERATIONS)
+    modelo.PBKDF2_ITERATIONS = 1_000
+
 
 def levantar(app):
     """Servidor uvicorn real en un puerto libre; devuelve (url, servidor)."""
@@ -96,6 +104,26 @@ class AgentesTest(unittest.TestCase):
         respuesta = conexion.getresponse()
         self.assertEqual(respuesta.getheader("location"), "/en-vivo/")
         conexion.close()
+
+
+class SesionRemotaTest(unittest.TestCase):
+    """Auditoría H07: «Salir» revoca el token en el servidor, no solo lo olvida en el teléfono."""
+
+    def test_cerrar_sesion_revoca_el_token_en_el_servidor(self):
+        from services.remoto import RemoteStore, SesionVencida
+        with tempfile.TemporaryDirectory() as carpeta:
+            url, servidor = levantar(crear_app(os.path.join(carpeta, "datos.json")))
+            self.addCleanup(setattr, servidor, "should_exit", True)
+            app = RemoteStore(url)
+            app.register("Persona Prueba", "salir@prueba.cl", "clave1234", "lector")
+            token = app.token
+            app.cerrar_sesion()
+            self.assertIsNone(app.token)
+            copia = RemoteStore(url)
+            copia.token = token  # alguien que guardó el token antes de salir
+            with self.assertRaises(SesionVencida):
+                copia.reader_requests(None)
+            RemoteStore("http://127.0.0.1:9").cerrar_sesion()  # sin servidor: no falla
 
 
 class CatalogoTest(unittest.TestCase):

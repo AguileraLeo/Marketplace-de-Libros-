@@ -8,7 +8,7 @@
 
 ## Resumen ejecutivo
 
-BookWho? aborda la búsqueda de libros mediante solicitudes de lectores y ofertas de vendedores. El diagnóstico utiliza una encuesta real; la evaluación técnica emplea datos simulados autorizados por el docente. El MVP incorpora búsqueda externa, roles, persistencia local, contacto externo y administración mediante MVC. La medición sigue MJV App: resolución, respuesta y espera hasta la primera oferta. Los resultados simulados no demuestran adopción ni impacto social. Se propone un backend compartido y validación real. Fuentes: [README.md](README.md) y [DOCUMENTATION.md](DOCUMENTATION.md).
+BookWho? aborda la búsqueda de libros mediante solicitudes de lectores y ofertas de vendedores. El diagnóstico utiliza una encuesta real; la evaluación técnica emplea datos simulados autorizados por el docente. El MVP incorpora búsqueda externa, roles, persistencia local, contacto externo y administración mediante MVC. La medición sigue MJV App: resolución, respuesta y espera hasta la primera oferta. Los resultados simulados no demuestran adopción ni impacto social. El backend compartido se implementó en prueba (SPEC-005); falta la validación con usuarios reales. Fuentes: [README.md](README.md) y [DOCUMENTATION.md](DOCUMENTATION.md).
 
 ## 1. Problema resuelto (RA1)
 
@@ -63,13 +63,13 @@ Ejemplos documentados de programación orientada a objetos: `User`, `Book`, `Boo
 
 La persistencia serializa entidades y fechas en JSON. Guarda tras acciones exitosas, al pausar y al cerrar; escribe primero un temporal y después reemplaza el destino. Si falla el guardado, informa al usuario y recupera el último estado persistido; los archivos corruptos se respaldan. En escritorio utiliza `data/user/data.json`; Android conserva los datos en el directorio privado de la aplicación. Fuentes: [README.md](README.md) y [ADR-002](docs/04-architecture/ADR-002-estructura-del-repositorio.md).
 
-La autenticación valida registro e inicio de sesión, bloquea cuentas suspendidas y almacena contraseñas mediante SHA-256. La recuperación de contraseña no está disponible en esta versión, y el login lo indica. Aceptar para coordinar deja la oferta `POR_CONCRETAR` y la solicitud `EN_COORDINACION`; confirmar el trato produce `ACEPTADA` y `RESUELTA`. Son estados declarados por usuarios, no comprobantes de transacciones verificadas. Fuente: [README.md](README.md).
+La autenticación valida registro e inicio de sesión, bloquea cuentas suspendidas y almacena contraseñas mediante PBKDF2-HMAC-SHA256. La recuperación de contraseña no está disponible en esta versión, y el login lo indica. Aceptar para coordinar deja la oferta `POR_CONCRETAR` y la solicitud `EN_COORDINACION`; confirmar el trato produce `ACEPTADA` y `RESUELTA`. Son estados declarados por usuarios, no comprobantes de transacciones verificadas. Fuente: [README.md](README.md).
 
-Las notificaciones de plyer son locales: se generan al publicar una oferta y al entrar un lector con ofertas pendientes. La configuración remota obtiene el banner desde GitHub de forma asíncrona, valida la respuesta y usa valores predeterminados si falla. La búsqueda combina Google Books, Open Library y respaldo local, con caché de portadas. El APK se distribuye mediante Releases y se compila con Buildozer/Docker; requiere **Android 7.0 o superior, de 64 bits** según [README.md](README.md). Estas integraciones no equivalen a un backend compartido.
+Las notificaciones de plyer son locales: se generan al publicar una oferta y al entrar un lector con ofertas pendientes. La configuración remota obtiene el banner del servidor del equipo (o de GitHub si no hay servidor) de forma asíncrona, valida la respuesta y usa valores predeterminados si falla. La búsqueda combina Google Books, Open Library y respaldo local, con caché de portadas. El APK se distribuye mediante Releases y se compila con Buildozer/Docker; requiere **Android 7.0 o superior, de 64 bits** según [README.md](README.md). El backend compartido (SPEC-005, ADR-004) está en prueba en el servidor del equipo: con internet, los teléfonos comparten datos; sin internet, la app vuelve al modo local.
 
 ## 3. Metodología de medición (RA3)
 
-Se aplica MJV App como ciclo **Medir, Jugar y Validar**. Medir define indicadores vinculados al diagnóstico; Jugar ejecuta los recorridos durante un periodo declarado; Validar compara resultados con metas y decide ajustes. Las metas no están acordadas: no corresponde declarar cumplimiento ni fijarlas retrospectivamente. Fuente: [DOCUMENTATION.md, apartado 2](DOCUMENTATION.md).
+Se aplica MJV App como ciclo **Medir, Jugar y Validar**. Medir define indicadores vinculados al diagnóstico; Jugar ejecuta los recorridos durante un periodo declarado; Validar compara resultados con metas y decide ajustes. Las metas iniciales se documentaron el **19-11-2026**, después de la simulación y de la fecha original de este borrador, para el **próximo ciclo de 14 días**. No se presentan como metas previas de la simulación histórica. Fuente: [DOCUMENTATION.md, apartados 2 y 4.1](DOCUMENTATION.md).
 
 `Store._log()` registra los cambios aceptados mediante `ActivityEntry`: fecha local `at`, identificador `actor_id`, tipo `action` y contexto `detail`. Los eventos incluyen registro, login, publicación y cancelación de solicitudes/ofertas, aceptación para coordinar, confirmación, desistimiento y suspensión/reactivación. No se registran pantallas vistas ni errores de validación. Fuente: [DOCUMENTATION.md, apartados 3 y 6](DOCUMENTATION.md).
 
@@ -77,17 +77,36 @@ Los **tres KPIs**, sus fórmulas y reglas provienen de [DOCUMENTATION.md, aparta
 
 | KPI | Fórmula | Justificación | Meta |
 |---|---|---|---|
-| Tasa de resolución | Solicitudes con `trato_concretado` ÷ solicitudes publicadas × 100 | Aproxima si la necesidad termina resuelta, según declaración del lector. | [COMPLETAR: meta acordada por el equipo] |
-| Tasa de respuesta | Solicitudes con al menos una `oferta_publicada` ÷ solicitudes publicadas × 100 | Examina si los vendedores responden al mecanismo de demanda. | [COMPLETAR: meta acordada por el equipo] |
-| Horas hasta la primera oferta | Mediana de las horas entre publicación y primera oferta, solo entre solicitudes con oferta | Describe la espera inicial; debe leerse junto a la cobertura de respuesta. | [COMPLETAR: meta acordada por el equipo] |
+| Tasa de resolución | Solicitudes con `trato_concretado` ÷ solicitudes publicadas × 100 | Aproxima si la necesidad termina resuelta, según declaración del lector. | **≥ 50 %** al cierre del próximo ciclo de 14 días |
+| Tasa de respuesta | Solicitudes con al menos una `oferta_publicada` ÷ solicitudes publicadas × 100 | Examina si los vendedores responden al mecanismo de demanda. | **≥ 80 %** al cierre del próximo ciclo de 14 días |
+| Horas hasta la primera oferta | Mediana de las horas entre publicación y primera oferta, solo entre solicitudes con oferta | Describe la espera inicial; debe leerse junto a la cobertura de respuesta. | **≤ 24 h** de mediana al cierre del próximo ciclo de 14 días |
 
 Se priorizan porque miden respuesta, resolución y espera. Contar sesiones no acredita utilidad. El tiempo hasta una oferta tampoco equivale a conseguir el libro ni permite comparar directamente con búsquedas manuales.
+
+Las metas buscan que al menos la mitad de las solicitudes se resuelva, cuatro de cada cinco reciban respuesta y la mediana de espera no supere un día. El protocolo de comparación, el tratamiento de datos insuficientes y la separación entre población real y simulada se documentan en [DOCUMENTATION.md, apartado 4.1](DOCUMENTATION.md). Las fechas y participantes del próximo ciclo se registrarán antes de iniciarlo.
 
 La unidad es la solicitud; las canceladas permanecen en el denominador. Una oferta cuenta como respuesta aunque luego se retire. Para uso real se excluyen cuentas demo y del equipo, incluidas sus intervenciones en ofertas o tratos. Sin solicitudes, las tasas quedan en **0 %** y la mediana vacía, según [DOCUMENTATION.md, apartados 4–5](DOCUMENTATION.md).
 
 `analitica.py` interpreta eventos, informa exclusiones y registros ilegibles, calcula indicadores y genera gráficos si dispone de matplotlib. `simulador.py` utiliza los métodos públicos del dominio, un reloj ficticio y perfiles reproducibles; verifica contactos e intenta acciones inválidas. No mide interfaz ni red. Fuente: [DOCUMENTATION.md, apartado 5](DOCUMENTATION.md) y [SPEC-003-simulador-de-uso.md](docs/05-specs/SPEC-003-simulador-de-uso.md).
 
-El periodo **simulado** abarca del **3 al 16 de noviembre de 2026**, con **14 días simulados**, **24 lectores y 10 vendedores ficticios**, y semilla **42**. Fuente: [DOCUMENTATION.md, apartados 2 y 7.1](DOCUMENTATION.md). Para uso real quedan pendientes [COMPLETAR: periodo, participantes y dispositivos de la recolección real] y [COMPLETAR: resultados de uso real].
+El periodo **simulado** abarca del **3 al 16 de noviembre de 2026**, con **14 días simulados**, **24 lectores y 10 vendedores ficticios**, y semilla **42**. Fuente: [DOCUMENTATION.md, apartados 2 y 7.1](DOCUMENTATION.md). Uso real: hubo una **prueba en vivo el 18-11-2026** en el servidor compartido, a través de la app (la app no registra si fue el APK o el escritorio). Participaron 6 cuentas de personas, además de 42 agentes simulados. Dos son cuentas del equipo (`demo@demo.cl` y `fredo@vendedor.cl`), y las otras 4 no se pudieron verificar como externas. Sin las cuentas del equipo hubo 3 solicitudes, con una tasa de respuesta de 33,3 % (1 de 3), 0 % de resolución y la primera oferta a las 0,0 h (una sola). Con 3 solicitudes en un día no se compara con las metas del ciclo de 14 días ni se sacan conclusiones. Detalle en [DOCUMENTATION.md, apartado 7.4](DOCUMENTATION.md).
+
+### 3.1 Expectativa del primer mes y proyección a tres meses posteriores
+
+El 19-11-2026 se incorporó un **escenario de planificación** para el lanzamiento y los tres meses siguientes. Cada mes representa 30 días desde una fecha de lanzamiento aún no definida; los valores corresponden a cada mes, no al acumulado. No son resultados medidos, una predicción estadística ni una nueva ejecución del simulador.
+
+| Indicador estimado | M1 · lanzamiento | M2 | M3 | M4 |
+|---|---|---|---|---|
+| Solicitudes publicadas | 50 | 100 | 150 | 200 |
+| Solicitudes con oferta | 30 | 70 | 120 | 170 |
+| Solicitudes con trato confirmado | 15 | 40 | 75 | 110 |
+| **Tasa de resolución esperada** | **30 %** | **40 %** | **50 %** | **55 %** |
+| **Tasa de respuesta esperada** | **60 %** | **70 %** | **80 %** | **85 %** |
+| **Mediana hasta la primera oferta** | **24 h** | **18 h** | **12 h** | **8 h** |
+
+Se supone una comunidad de 25 lectores activos y 5 vendedores activos en M1, que crece hasta 100 lectores y 15 vendedores en M4, con dos solicitudes mensuales por lector. La mejora de tasas y espera depende de la disponibilidad de títulos y de que los vendedores atiendan las solicitudes con mayor frecuencia; no está demostrada por la encuesta ni por la simulación. Los supuestos y las reglas de seguimiento constan en [DOCUMENTATION.md, apartado 4.2](DOCUMENTATION.md).
+
+Las metas del piloto de 14 días siguen siendo objetivos aspiracionales. Esta expectativa mensual alcanzaría los umbrales de resolución y respuesta en M3 y el de espera en M1, sin demostrar cumplimiento durante el piloto. Al cierre de M1 se revisará el escenario con datos reales, conservando el registro de esta proyección inicial. El analizador actual no separa automáticamente cohortes mensuales.
 
 ## 4. Resultados y propuesta de mejora
 
@@ -102,9 +121,11 @@ Las tablas siguientes se reproducen sin alterar sus cifras desde [DOCUMENTATION.
 | Usuarios simulados activos | 34 (24 lectores y 10 vendedores) |
 | Eventos | 705, de ellos 513 inicios de sesión |
 | Solicitudes publicadas | 45 |
-| KPI 1 · Tasa de resolución (meta: —) | **31,1 %** (14 de 45) |
-| KPI 2 · Tasa de respuesta (meta: —) | **62,2 %** (28 de 45) |
-| KPI 3 · Horas hasta la primera oferta (meta: —) | **2,4 h** (mediana) |
+| KPI 1 · Tasa de resolución (sin meta previa en esta simulación) | **31,1 %** (14 de 45) |
+| KPI 2 · Tasa de respuesta (sin meta previa en esta simulación) | **62,2 %** (28 de 45) |
+| KPI 3 · Horas hasta la primera oferta (sin meta previa en esta simulación) | **2,4 h** (mediana) |
+
+Como referencia retrospectiva frente a las metas definidas el 19-11-2026, resolución y respuesta quedan bajo sus umbrales y la mediana queda dentro de 24 h. Esto no acredita cumplimiento de metas previas ni validación real; los resultados dependen de los supuestos del simulador.
 
 ![KPIs simulados](docs/resultados/kpis_simulados.png)
 
@@ -150,7 +171,7 @@ Tabla reproducida de [DOCUMENTATION.md, apartado 7.3](DOCUMENTATION.md). Toda co
 
 | # | Mejora | Se apoya en | Impacto | Esfuerzo |
 |---|---|---|---|---|
-| 1 | **Backend compartido** en el servidor del equipo: hoy cada teléfono guarda sus datos y lectores y vendedores en teléfonos distintos no se ven | Limitación 5. La simulación pone a todos en un mismo archivo, que es lo que haría el backend | Alto | Alto |
+| 1 | **Backend compartido** en el servidor del equipo — **implementado en prueba** el 17-11-2026 (SPEC-005): antes cada teléfono guardaba sus datos y lectores y vendedores en teléfonos distintos no se veían | Limitación 5. La simulación pone a todos en un mismo archivo, que es lo que haría el backend | Alto | Alto |
 | 2 | Al elegir entrega "Presencial", avisar que aceptar envío aumenta las ofertas | 43,8 % frente a 69,2 % (simulado) | Medio | Bajo |
 | 3 | Avisar al lector cuando no hay vendedores en su región y sugerir envío | Los Lagos: 20 % (simulado) | Medio | Bajo |
 | 4 | Notificar a los vendedores cuando aparece una solicitud de un libro que suelen ofrecer | El KPI 3 depende de cada cuánto revisan su feed | Medio | Medio |
@@ -162,9 +183,11 @@ El backend aborda una restricción funcional comprobada. Las demás hipótesis r
 
 La contribución demostrada es un MVP instrumentado y un diagnóstico documentado. La mejora efectiva del acceso a libros requiere evaluación real.
 
+Salvaguardas visibles en el código, agregadas tras la auditoría del 19-11-2026: el contacto que ve el lector es el que el vendedor escribió en esa oferta ([SPEC-011](docs/05-specs/SPEC-011-contacto-por-oferta.md)); el panel público no muestra ubicaciones escritas a mano; de otra persona la API entrega solo el nombre; suspender una cuenta la saca del mercado sin borrar los datos de los demás ([SPEC-010](docs/05-specs/SPEC-010-suspension-saca-del-mercado.md)); y el APK excluye las exportaciones de teléfonos.
+
 La app conserva nombre, correo, hash de contraseña, rol, estado y ubicación de cuentas; solicitudes con presupuesto, entrega y notas; ofertas; contactos del vendedor y actividad fechada. Los contactos pueden incluir teléfono, correo y dirección o punto de encuentro. Fuente: [DOCUMENTACION.md, apartado 3.1](docs/04-architecture/DOCUMENTACION.md). Los permisos se verifican en el modelo y el contacto se revela al lector autorizado al coordinar. La cercanía usa comuna/región, sin coordenadas exactas.
 
-Los archivos personales y exportaciones se excluyen del repositorio y del APK; el informe usa agregados. Algunos eventos contienen correos, por lo que no deben publicarse los registros crudos. El almacenamiento local no equivale a cifrado: las fuentes no documentan cifrado del JSON. El hash utiliza el correo como sal y no un algoritmo lento; las cuentas demo persisten aunque se oculte su panel. Estas limitaciones impiden presentar la autenticación como seguridad de producción. Fuentes: [README.md](README.md), [DOCUMENTATION.md](DOCUMENTATION.md) y [ADR-003](docs/04-architecture/ADR-003-integracion-e4.md).
+Los archivos personales y exportaciones se excluyen del repositorio y del APK; el informe usa agregados. Algunos eventos contienen correos, por lo que no deben publicarse los registros crudos. El almacenamiento local no equivale a cifrado: las fuentes no documentan cifrado del JSON. Desde SPEC-012 se usa PBKDF2-HMAC-SHA256 con sal aleatoria. Las cuentas demo persisten aunque se oculte su panel. Estas limitaciones impiden presentar la autenticación como seguridad de producción. Fuentes: [README.md](README.md), [DOCUMENTATION.md](DOCUMENTATION.md) y [ADR-003](docs/04-architecture/ADR-003-integracion-e4.md).
 
 La accesibilidad considera español claro, jerarquía tipográfica, estados expresados con texto y color y controles de al menos **48 dp**, con botones principales de **52 dp**. Fuente: [FUNDAMENTACION-UX-UI.md, apartado e](docs/01-requirements/FUNDAMENTACION-UX-UI.md). Estas decisiones no sustituyen una evaluación de accesibilidad con usuarios.
 
@@ -172,7 +195,7 @@ La muestra del diagnóstico es acotada; la simulación añade sesgos de perfiles
 
 La declaración [USO_IA.md](docs/06-process/USO_IA.md) documenta Claude Code como apoyo en auditoría, interfaz, correcciones, documentación, servicios y compilación. También describe decisiones humanas sobre nombre, alcance y ubicación, revisión visual y reversión de propuestas. Su aprendizaje central exige comprender y revisar los resultados, sin sustituir evidencia de usuarios por contenido generado.
 
-**Este borrador fue redactado por una IA a partir exclusivamente de las fuentes del repositorio indicadas para la tarea.** No se realizaron nuevas pruebas, mediciones ni entrevistas para redactarlo. La revisión final, las metas y la interpretación académica corresponden al equipo.
+**Este borrador fue redactado por una IA a partir exclusivamente de las fuentes del repositorio indicadas para la tarea.** No se realizaron nuevas mediciones ni entrevistas para redactarlo. Las metas se añadieron el 19-11-2026 a solicitud del equipo, con apoyo de Codex. La revisión final y la interpretación académica corresponden al equipo.
 
 ## Anexo. Limitaciones y reproducción
 

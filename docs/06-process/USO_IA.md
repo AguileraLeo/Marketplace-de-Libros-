@@ -9,7 +9,7 @@
 - **E2:** Claude Sonnet 5; en la sesión de revisión final, Claude Sonnet 5 y Claude Opus 5.5.
 - **E3:** Claude Opus 5.5 (`claude-opus-5-5`).
 
-- **E4:** Claude Opus 5.5 (Claude Code) y GPT-6.1 Sol (Codex en VS Code).
+- **E4:** Claude Opus 5.5 (Claude Code) y GPT-6.1 Sol (Codex en VS Code). En la auditoría posterior (18 y 19-11-2026), Claude Opus 5.5 (Claude Code) y Astra 6.2 con razonamiento máximo como segunda auditoría independiente.
 
 ## 3. Prompts realizados
 
@@ -47,7 +47,7 @@
 26. "Configuremos la configuración remota." / "Dame los comandos." 
 27. "Hagamos lo que falta." (Release del APK, repositorio personal, esta declaración y guía de defensa.)
 
-### E4 (borrador)
+### E4
 
 Prompts principales a Claude Code en la sesión del 17-11-2026 (textuales, abreviados con […]):
 
@@ -59,11 +59,63 @@ Prompts principales a Claude Code en la sesión del 17-11-2026 (textuales, abrev
 6. "meditemos hacer un backend compartido […]" y luego "terminemos con lo que estabas haciendo, despues seguimoms con el backend"
 7. "podrias divir todo lo que queda por hacer y trabajan los dos en paralelo […] gpt no tiene ponytail aunque le puedes dar intrucciones pero lo que sea mas barato"
 
-Los prompts a Codex (borrador del Informe Final; revisión del informe, guion y esta sección) los redactó Claude Code y el equipo los pegó en Codex. [COMPLETAR: prompts E4 de la sesión del 16-11, ver el borrador en CIERRE_E4.md §4]. Alcance de los trabajos:
+Los prompts a Codex (borrador del Informe Final; revisión del informe, guion y esta sección) los redactó Claude Code y el equipo los pegó en Codex.
+
+#### Reconstrucción identificada de los prompts pendientes
+
+**Nota de trazabilidad (19-11-2026):** no se encontró `CIERRE_E4.md` ni la transcripción de
+la sesión atribuida al 16-11-2026 en los archivos o en el historial Git revisado. A solicitud
+del equipo, se completa el registro con la siguiente **reconstrucción de intenciones y alcance**,
+basada en las modificaciones y declaraciones conservadas. Estos textos no son citas literales
+ni prueban la fecha, el orden exacto o la redacción de los prompts originales. Los commits
+citados son del 17-11-2026; acreditan los cambios, no los mensajes que los originaron.
+
+**Claude Code — trabajo de medición y estabilización previo al cierre E4**
+(`e2147a8`, «E4: medición RA3 y correcciones de estabilización»):
+
+1. **Prompt reconstruido:** Revisar la medición RA3 de la app y registrar los eventos de los casos de uso exitosos. Calcular resolución, respuesta y mediana de horas hasta la primera oferta; excluir cuentas demo y del equipo, y documentar fórmulas, reproducción y limitaciones sin inventar uso real.
+2. **Prompt reconstruido:** Revisar el desistimiento de la coordinación por parte del vendedor y la cancelación de la última oferta. Mantener consistentes los estados de solicitud y oferta y verificar los permisos con pruebas.
+3. **Prompt reconstruido:** Corregir el manejo de errores al guardar y de archivos JSON con estructura inesperada, para informar la falla sin continuar como si los datos se hubieran guardado. Añadir pruebas de persistencia.
+4. **Prompt reconstruido:** Ocultar el panel de cuentas demo en Android sin afirmar que eso elimina las cuentas ni constituye una medida de seguridad. Actualizar la documentación del alcance y ejecutar las pruebas.
+
+**Codex — documentación académica de cierre**
+(`962a3a0`, «Informe Final, guion de la presentación y declaración de IA E4 (borradores)»):
+
+5. **Prompt reconstruido:** Leer `AGENTS.md` y las fuentes del repositorio. Redactar el borrador de `INFORME_FINAL.md` siguiendo problema, solución, metodología, resultados y conclusión ética. Citar la evidencia y separar encuesta real, simulación y demo; dejar identificados los datos que el equipo aún no haya proporcionado.
+6. **Prompt reconstruido:** Preparar `docs/presentations/guion-E4.md` para una exposición de nueve minutos, incluida una demo de dos minutos y cuarenta y cinco segundos. Proponer tiempos, acciones por rol, fuentes, alternativas ante fallas y preguntas de defensa sin presentar el ensayo como ejecutado.
+7. **Prompt reconstruido:** Revisar la coherencia entre informe, guion y documentación. Completar la declaración E4 en `USO_IA.md`, diferenciando herramientas, trabajos asistidos, decisiones humanas y limitaciones; no atribuir pruebas o resultados nuevos a una tarea de redacción.
+
+**Codex — actualización documental actual (19-11-2026):** el encargo fue definir las metas de
+los KPIs, completar los prompts de este archivo y completar los datos de cuentas de prueba del
+guion. El equipo autorizó expresamente usar una reconstrucción identificada cuando no se
+encontraron los prompts originales. Se documentaron metas para el próximo ciclo, sin
+atribuirlas retrospectivamente a la simulación histórica, y se reutilizaron los alias locales
+existentes en `DEMO_USERS`.
+
+**Seguimiento del encargo (19-11-2026, prompt textual a Codex):** «con respecto a los kpis,
+estima cuanto se espera el primer mes de lanzamiento y proyecta al menos dos o tres meses
+a futuro». La IA elaboró un escenario condicionado para M1–M4, explicitó sus supuestos de
+participación y actividad y lo separó de las metas del piloto y de los datos simulados.
+
+Alcance de los trabajos originales:
 
 - **Claude Code:** integración del refactor MVC con el trabajo E4 y resolución de conflictos; corrección del cierre al suspender usuarios; organización del repositorio; simulador ficticio (SPEC-003), panel público (SPEC-004), diagnóstico de CGNAT y guía de publicación con Cloudflare Tunnel.
 - **GPT-6.1 Sol (Codex):** redacción del borrador del Informe Final, del guion de presentación y de este borrador de declaración.
 - **Decisiones y ejecución del equipo:** comandos de git y del servidor; uso de datos simulados autorizado por el docente; aprobación de sacar `.agents/` y de postergar el backend hasta después de la presentación.
+
+### E4: auditoría posterior (18 y 19-11-2026, borrador para adaptar)
+
+Prompts a Claude Code (textuales, abreviados con […]):
+
+1. "Actúa como un desarrollador senior que audita Bookwho […] contrastándolo con la rúbrica de evaluación […] Primero audita y presenta un plan; todavía no modifiques archivos […] No publiques, despliegues, cambies configuraciones externas ni hagas pruebas que alteren producción."
+2. "crees que podemos hacer una auditoria con ponytail en version extrrema y ver si esos recordes de codigo son optimos o no? no quiero modificar nada, quiero simular como quedaria el codigo […]"
+3. "antes de tomar acciones mira el reporte de astra 6.2 max pensamiento" (con el informe de Astra pegado).
+4. "usuario suspendido deberia borrarse y en cuanto a lo del contacto que me sugieres?"
+5. "si me parece, tambiem apliquemos los cambios optimos que nos dejo la auditoria de ponytail y tambien con la fusion de las mejoras de la auditoria de astra y la tuya, se puede?"
+6. "podemos implementar los cambios en mi version local y despues yo lo subo al repo, eliminemos esos 11 comit, se puede?"
+7. "si hace la declaracion de ia tambien, despues la adapto"
+
+A Astra 6.2 se le dio el mismo prompt de auditoría (1) (a confirmar por el equipo).
 
 ## 4. Outputs
 
@@ -105,7 +157,21 @@ Antecedentes proporcionados por el equipo para esta declaración; no constituyen
 - **Claude Code — publicación:** diagnosticó CGNAT y guió la publicación con Cloudflare Tunnel.
 - **Pruebas informadas:** pasaron de 50 a 63. Esta evolución se declara según los hechos aportados por el equipo; Codex no ejecutó pruebas durante estas tareas de documentación.
 - **GPT-6.1 Sol (Codex) — redacción:** redactó el borrador del Informe Final, el guion de la presentación y este borrador de la parte E4.
+- **Codex — actualización documental del 19-11-2026:** definió metas iniciales de resolución ≥ 50 %, respuesta ≥ 80 % y mediana hasta la primera oferta ≤ 24 h para el próximo ciclo de 14 días; sincronizó documentación, informe y guion; completó alias y datos ficticios del ensayo; reconstruyó los prompts pendientes con identificación explícita y referencias al historial. Esta tarea no generó nuevos datos de uso ni ejecutó la demo gráfica.
+- **Codex — proyección del lanzamiento:** añadió un escenario M1–M4 en `DOCUMENTATION.md` §4.2 y lo resumió en el informe, el guion y el contexto. Estimó resolución de 30 % a 55 %, respuesta de 60 % a 85 % y mediana de espera de 24 h a 8 h. Son supuestos de planificación solicitados por el equipo; no hay observaciones de lanzamiento ni evidencia de que se cumplirán.
 - **Responsabilidad del equipo:** ejecutó todos los comandos de git y del servidor; decidió usar datos simulados con autorización del docente, aprobó sacar `.agents/` y postergó el backend hasta después de la presentación.
+
+### E4: auditoría posterior (18 y 19-11-2026, borrador para adaptar)
+
+- **Claude Code — auditoría:** contrastó el proyecto con la rúbrica E4. Entre otros hallazgos, detectó que `main` publicaba nombre, edad y género de las 18 personas encuestadas y que todavía no tenía la entrega E4. También vio que una oferta nueva cambiaba el contacto de otra ya aceptada y que la administración hacía una llamada al servidor por fila. Reprodujo los hallazgos en un servidor temporal, sin tocar producción.
+- **Claude Code — simulación ponytail:** aplicó los recortes en una copia aparte. Comprobó que el simulador y las métricas daban exactamente los mismos resultados y separó los recortes convenientes de los que quitaban funcionalidades (el inglés) o seguridad.
+- **Astra 6.2 — auditoría independiente:** 13 hallazgos, entre ellos exportaciones de teléfonos que podían entrar al APK, ubicaciones escritas a mano en el panel público, un guardado fallido que duplicaba solicitudes y un guion que usaba cuentas que el servidor borra. Claude Code los volvió a reproducir y todos los que comprobó resultaron reales. A su vez, Astra no había revisado `main`.
+- **Claude Code — implementación:** escribió SPEC-010 y SPEC-011 y aplicó las correcciones de ambas auditorías y los recortes elegidos. Verificación:
+  - Pruebas: 135, antes 121.
+  - Recorrido de la app real sin ventana: 20/20.
+  - Llamadas al servidor en Administración › Solicitudes: de 92 a 4.
+  - Cifras de la simulación del informe: sin cambios.
+- **Responsabilidad del equipo:** decidió que suspender no borra la cuenta y que el contacto se guarda por oferta. También creó la rama, revisó los cambios e hizo los commits y la subida. [COMPLETAR: despliegue en el Z40 y retiro de los datos de la encuesta de `main`].
 
 ## 5. Ajustes
 
@@ -142,6 +208,13 @@ Antecedentes proporcionados por el equipo para esta declaración; no constituyen
 - Dejé para después de la E4 la validación de correo, el paso a SQLite y un hash de contraseñas más fuerte (PBKDF2). Quedó declarado en `ADR-004` y `SEGURIDAD.md`.
 - Hice yo los commits, el despliegue en el Z40 y la subida del APK. La mañana de la presentación el servidor se reinició y perdió la conexión unos minutos. Al volver reprogramé los agentes, porque el reinicio había borrado su temporizador.
 
+### E4: auditoría posterior (borrador para adaptar)
+
+- Pedí primero una auditoría sin modificar archivos y contrastada con la rúbrica, y después una segunda opinión con otra IA (Astra). Comparé los dos informes antes de decidir qué aplicar.
+- Mi primera idea era borrar a los usuarios suspendidos. La IA mostró que eso dejaba solicitudes de otras personas trabadas, así que decidí que suspender saca la cuenta del mercado sin borrar datos (SPEC-010). También decidí que el contacto se guarde por oferta (SPEC-011).
+- Antes de aceptar los recortes de código pedí simularlos en una copia. Descartamos los que quitaban funciones o seguridad.
+- Pedí recibir los cambios como archivos sin commits, para revisarlos y hacer yo los commits.
+
 ## 6. Reflexión en el uso de IA
 
 ### E2
@@ -156,20 +229,20 @@ Mi mayor aprendizaje fue que usar IA bien no es "que te resuelva todo", sino ten
 
 ### E3
 
-La IA me sirvió principalmente para configurar los servicios y entender cómo funcionan: dónde se guarda el JSON, qué dispara la notificación y de dónde sale el valor remoto.
+La IA nos sirvió principalmente para configurar los servicios y entender cómo funcionan: dónde se guarda el JSON, qué dispara la notificación y de dónde sale el valor remoto.
 
-Me preocupa no haber podido configurar todo como hubiera querido, desde mi servidor Z40 con dominio propio. También me preocupa entender código escrito a última hora, pero no es una limitante: se entiende la lógica detrás de cada acción.
+Nos preocupa no haber podido configurar todo como hubiera querido, desde mi servidor para esta etapa. También nos preocupa entender código escrito a última hora, pero no es una limitante: se entiende la lógica detrás de cada acción.
 
 Aprendí a compilar para Android. Antes lo había hecho para iOS en una aplicación personal, y entender ambos sistemas me aporta al progreso general.
 
 ### E4
 
-En esta etapa cambió mi forma de usar la IA. Ya no fue pedirle código a una sola herramienta: trabajé con dos a la vez. Codex implementaba y Claude Code orquestaba y revisaba. Aprendí que una IA puede afirmar algo con total seguridad y estar equivocada, así que la regla fue no hacer commit de nada sin revisar los cambios, correr las pruebas y mirar el resultado en pantalla.
+En esta etapa la Ia se encargó de unificar distintas tareas para luego auditarlas y que todo funcione como debería, existe registro de ello en nuestra forma de trabajar.
 
-Por fin monté el servidor propio que quería desde la E3, y eso me mostró su costo real. Una solución propia da control y privacidad, pero exige mantenimiento. La misma mañana de la presentación el Z40 se reinició, el sitio estuvo caído unos minutos y hubo que volver a programar los agentes. Es lo que vimos en el RA3 al comparar una analítica construida por nosotros con una herramienta de la industria.
+Matías montó su servidor local nuevamente, y en conjunto a la IA se logró montar una landing page y una pagina de metricas en un tiempo bastante acotado. La misma mañana de la presentación el Z40 se reinició, el sitio estuvo caído unos minutos y hubo que volver a programar los agentes. 
 
-Lo más delicado fue la honestidad con los datos. La IA puede generar usuarios y actividad que parecen reales, y justamente por eso decidí que todo lo simulado se vea como simulado. También entendí que publicar en internet cambia la responsabilidad. No había pensado mucho en la seguridad hasta la auditoría, que mostró que cualquiera con acceso al repositorio podía entrar como un agente.
+Lo más delicado fue la honestidad con los datos. La IA puede generar usuarios y actividad que parecen reales, y justamente por eso decidimos que todo lo simulado se vea como simulado. 
 
-Me preocupa la cantidad de código que se escribió en pocos días. Para poder defenderlo revisé cada cambio antes de subirlo, desplegamos solo con las pruebas automáticas en verde (121 al final) y tengo claro qué quedó pendiente y por qué. Mi aprendizaje es que la IA acelera mucho el trabajo, pero las decisiones siguen siendo nuestras: qué medir, qué mostrar y qué no prometer.
+Me preocupa la cantidad de código generado en pocos días. Para poder defenderlo habia que revisar cada cambio antes de subirlo, desplegamos solo con las pruebas automáticas en verde (121 al final). Mi aprendizaje es que la IA acelera mucho el trabajo, pero las decisiones siguen siendo nuestras: qué medir, qué mostrar y qué no prometer.
 
-
+(Borrador redactado con IA a partir de lo que hicimos en la sesión; reescribirlo con nuestras palabras.) Comparar dos auditorías de IA nos mostró que ninguna era completa. Claude Code encontró los datos personales de la encuesta publicados en `main`; Astra encontró fallas que Claude no había visto, como el guardado que duplicaba solicitudes. Por eso no aplicamos nada sin reproducirlo antes. También confirmamos que las decisiones de negocio son nuestras: la IA propuso opciones, pero nosotros decidimos que suspender no borre datos de otras personas y que el contacto se guarde por oferta. Codex implementó y Claude Code revisó, y los commits los hicimos nosotros después de leer los cambios.

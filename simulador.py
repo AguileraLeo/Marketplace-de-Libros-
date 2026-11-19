@@ -136,10 +136,6 @@ def redondear(monto):
     return max(990, round(monto / 1000) * 1000 - 10)
 
 
-def region(ubicacion):
-    return ubicacion[ubicacion.find("(") + 1:-1] if ubicacion.endswith(")") else ubicacion
-
-
 def guardar_json(ruta, datos):
     """Escritura atómica: quien lea el archivo (el panel) nunca ve uno a medio escribir."""
     with open(ruta + ".tmp", "w", encoding="utf-8") as f:
@@ -150,6 +146,7 @@ def guardar_json(ruta, datos):
 @contextmanager
 def reloj_simulado(sim):
     """La app toma la hora con datetime.now(): durante la simulación responde la hora simulada."""
+    iteraciones, nueva_sal = modelo.PBKDF2_ITERATIONS, modelo._new_salt
     real = modelo.datetime
 
     class _Simulado(real):
@@ -157,11 +154,15 @@ def reloj_simulado(sim):
         def now(cls, tz=None):
             return sim.reloj
 
+    # Cuentas ficticias con clave pública. La app usa 600 000 iteraciones y sales aleatorias.
+    modelo.PBKDF2_ITERATIONS = 1_000
+    modelo._new_salt = random.Random(f"sales-{sim.parametros['semilla']}").randbytes
     modelo.datetime = _Simulado
     try:
         yield
     finally:
         modelo.datetime = real
+        modelo.PBKDF2_ITERATIONS, modelo._new_salt = iteraciones, nueva_sal
 
 
 class Simulacion:
@@ -406,7 +407,7 @@ class Simulacion:
         st = self.store
         self.contacto["verificaciones"] += 1
         visto = self.accion("ver contacto", st.offer_contact, lec.usuario, oferta.id)
-        if visto is None or visto.phone != st.contacts[oferta.seller_id].phone:
+        if visto is None or visto.phone != st.offer_contacts[oferta.id].phone:  # el contacto de ESA oferta (SPEC-011)
             self.contacto["violaciones"].append("el lector no ve el contacto de la oferta que aceptó")
         otros_lectores = [x for x in self.lectores if x.usuario and x is not lec]
         otros_vendedores = [x for x in self.vendedores if x.usuario and x.usuario.id != oferta.seller_id]
@@ -433,24 +434,6 @@ class Simulacion:
         st = self.store
         simulados = {u.id for u in st.users.values() if u.email.endswith("@" + DOMINIO)}
         solicitudes = [r for r in st.requests.values() if r.reader_id in simulados]
-        primera = {}
-        for o in st.offers.values():
-            if o.request_id not in primera or o.created_at < primera[o.request_id]:
-                primera[o.request_id] = o.created_at
-
-        def desglose(clave):
-            grupos = defaultdict(list)
-            for r in solicitudes:
-                grupos[clave(r)].append(r)
-            salida = {}
-            for nombre, reqs in sorted(grupos.items()):
-                horas = [(primera[r.id] - r.created_at).total_seconds() / 3600 for r in reqs if r.id in primera]
-                salida[nombre] = {
-                    "solicitudes": len(reqs),
-                    "con_oferta_pct": round(100 * len(horas) / len(reqs), 1),
-                    "horas_primera_oferta_mediana": round(statistics.median(horas), 1) if horas else None,
-                }
-            return salida
 
         return {
             "simulado": True,
@@ -465,11 +448,7 @@ class Simulacion:
             "fallas_inesperadas": self.fallas,
             "tiempo_por_accion_ms": {n: {"veces": len(t), "mediana": round(statistics.median(t), 3)}
                                      for n, t in sorted(self.tiempos.items())},
-            "desglose": {
-                "region": desglose(lambda r: region(r.location)),
-                "entrega": desglose(lambda r: Delivery.LABELS[r.delivery_preference]),
-                "precio_maximo": desglose(lambda r: "con precio máximo" if r.max_price else "sin precio máximo"),
-            },
+            "desglose": analitica.desglose(solicitudes, [o for o in st.offers.values() if o.seller_id in simulados]),
         }
 
     # ---------------------------------------------------------------- modo en vivo (SPEC-004)

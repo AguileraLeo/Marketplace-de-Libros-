@@ -4,10 +4,12 @@ Ejecutar desde la raíz:  python -m unittest discover -s tests -v
 """
 
 import dataclasses
+import hashlib
 import os
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -24,6 +26,16 @@ from models.store import (  # noqa: E402
     build_demo_store,
 )
 from services.books_api import catalog_lookup  # noqa: E402
+
+import models.store as modelo
+
+ITERACIONES_APP = modelo.PBKDF2_ITERATIONS
+
+
+def setUpModule():
+    # SPEC-012: acelerar las cuentas ficticias y restaurar el coste de la app al terminar.
+    unittest.addModuleCleanup(setattr, modelo, "PBKDF2_ITERATIONS", modelo.PBKDF2_ITERATIONS)
+    modelo.PBKDF2_ITERATIONS = 1_000
 
 
 class StoreTestCase(unittest.TestCase):
@@ -43,6 +55,116 @@ class StoreTestCase(unittest.TestCase):
         )
         data.update(kw)
         return self.store.create_request(self.reader, **data)
+
+
+class PasswordTest(StoreTestCase):
+    def test_coste_de_la_app_y_sales_independientes(self):
+        self.assertGreaterEqual(ITERACIONES_APP, 600_000)
+        with patch.object(modelo, "PBKDF2_ITERATIONS", ITERACIONES_APP):
+            uno = self.store.register("Persona A", "a@example.test", "misma-clave", Role.READER)
+            dos = self.store.register("Persona B", "b@example.test", "misma-clave", Role.READER)
+        self.assertRegex(uno.password, r"^pbkdf2_sha256\$600000\$[0-9a-f]{32}\$[0-9a-f]{64}$")
+        self.assertNotEqual(uno.password.split("$")[2], dos.password.split("$")[2])
+
+    def test_registro_guarda_pbkdf2(self):
+        usuario = self.store.register("Persona", "cuenta@example.test", "prueba", Role.READER)
+        self.assertTrue(usuario.password.startswith("pbkdf2_sha256$"))
+
+    def test_login_migra_hash_antiguo(self):
+        self.reader.password = hashlib.sha256(f"{self.reader.email}:1234".encode()).hexdigest()
+        self.store.authenticate(self.reader.email, "1234")
+        migrado = self.reader.password
+        self.assertTrue(migrado.startswith("pbkdf2_sha256$"))
+        self.store.authenticate(self.reader.email, "1234")
+        self.assertEqual(self.reader.password, migrado)
+
+    def test_clave_incorrecta_con_ambos_formatos(self):
+        antiguo = hashlib.sha256(f"{self.reader.email}:1234".encode()).hexdigest()
+        for guardado in (self.reader.password, antiguo):
+            self.reader.password = guardado
+            with self.assertRaises(ValidationError):
+                self.store.authenticate(self.reader.email, "incorrecta")
+            self.assertEqual(self.reader.password, guardado)
+
+    def test_correo_inexistente_calcula_un_hash(self):
+        with patch("models.store.hashlib.pbkdf2_hmac", wraps=hashlib.pbkdf2_hmac) as derivar:
+            with self.assertRaises(ValidationError):
+                self.store.authenticate("ausente@example.test", "prueba")
+            derivar.assert_called_once()
+
+    def test_login_actualiza_coste_anterior(self):
+        with patch.object(modelo, "PBKDF2_ITERATIONS", 900):
+            self.reader.password = modelo.hash_password("1234")
+        self.store.authenticate(self.reader.email, "1234")
+        self.assertTrue(self.reader.password.startswith("pbkdf2_sha256$1000$"))
+
+
+class OfferContactTest(StoreTestCase):
+    """SPEC-011: el lector ve el contacto de la oferta que aceptó, no el último del vendedor."""
+
+    def test_una_oferta_posterior_no_cambia_el_contacto_de_otra(self):
+        req1 = self.new_request()
+        req2 = self.store.create_request(self.reader2, self.book.id, "", Condition.ANY, "Temuco", Delivery.ANY, "")
+        o1 = self.store.create_offer(self.seller, req1.id, "9000", Condition.USED, phone="+56 9 1111 1111")
+        self.store.accept_offer(self.reader, o1.id)
+        o2 = self.store.create_offer(self.seller, req2.id, "8000", Condition.USED, address="Feria Pinto, Temuco")
+        self.store.accept_offer(self.reader2, o2.id)
+        c1, c2 = self.store.offer_contact(self.reader, o1.id), self.store.offer_contact(self.reader2, o2.id)
+        self.assertEqual((c1.phone, c1.address_or_meeting_point), ("+56 9 1111 1111", ""))
+        self.assertEqual((c2.phone, c2.address_or_meeting_point), ("", "Feria Pinto, Temuco"))
+        self.assertEqual(self.store.seller_contact(self.seller).address_or_meeting_point, "Feria Pinto, Temuco")
+
+    def test_oferta_anterior_sin_copia_muestra_el_contacto_del_perfil(self):
+        offer = next(o for o in self.store.offers.values() if o.seller_id == self.seller.id)
+        del self.store.offer_contacts[offer.id]  # como una oferta creada antes de SPEC-011
+        self.store.accept_offer(self.reader, offer.id)
+        self.assertEqual(self.store.offer_contact(self.reader, offer.id).phone,
+                         self.store.contacts[self.seller.id].phone)
+
+
+class SuspensionTest(StoreTestCase):
+    """SPEC-010: suspender saca del mercado."""
+
+    def test_suspender_vendedor_cancela_sus_ofertas_y_deja_estados_validos(self):
+        req1 = self.new_request()                       # su oferta queda por concretar
+        req2 = self.new_request()                       # su oferta, sola, queda publicada
+        req3 = self.new_request()                       # su oferta en espera, otra en coordinación
+        trato = self.store.create_offer(self.seller, req1.id, "9000", Condition.USED, phone="1")
+        en_espera = self.store.create_offer(self.seller2, req1.id, "9500", Condition.USED, phone="2")
+        sola = self.store.create_offer(self.seller, req2.id, "9000", Condition.USED, phone="1")
+        mia3 = self.store.create_offer(self.seller, req3.id, "9000", Condition.USED, phone="1")
+        otra3 = self.store.create_offer(self.seller2, req3.id, "8000", Condition.USED, phone="2")
+        self.store.accept_offer(self.reader, trato.id)
+        self.store.accept_offer(self.reader, otra3.id)
+
+        self.store.set_user_status(self.admin, self.seller.id, UserStatus.SUSPENDED)
+
+        self.assertEqual({o.status for o in self.store.offers.values() if o.seller_id == self.seller.id},
+                         {OfferStatus.CANCELLED})
+        self.assertEqual(en_espera.status, OfferStatus.PUBLISHED)      # vuelve a estar disponible
+        self.assertEqual(req1.status, RequestStatus.WITH_OFFERS)
+        self.assertEqual(req2.status, RequestStatus.PUBLISHED)
+        self.assertEqual((req3.status, otra3.status), (RequestStatus.IN_DEAL, OfferStatus.IN_DEAL))
+        self.assertEqual(mia3.status, OfferStatus.CANCELLED)
+        self.store.accept_offer(self.reader, en_espera.id)            # el lector puede seguir con otra
+
+    def test_suspender_lector_cancela_sus_solicitudes_y_salen_del_feed(self):
+        req = self.new_request()
+        oferta = self.store.create_offer(self.seller, req.id, "9000", Condition.USED, phone="1")
+        self.store.accept_offer(self.reader, oferta.id)
+        abierta = self.new_request()
+        self.store.set_user_status(self.admin, self.reader.id, UserStatus.SUSPENDED)
+        self.assertEqual((req.status, abierta.status), (RequestStatus.CANCELLED, RequestStatus.CANCELLED))
+        self.assertEqual(req.cancellation_reason, "Cuenta suspendida")
+        self.assertEqual(oferta.status, OfferStatus.CANCELLED)
+        self.assertFalse([r for r in self.store.open_requests(self.seller2) if r.reader_id == self.reader.id])
+
+    def test_reactivar_devuelve_el_acceso_pero_no_reabre_lo_cancelado(self):
+        req = self.new_request()
+        self.store.set_user_status(self.admin, self.reader.id, UserStatus.SUSPENDED)
+        self.store.set_user_status(self.admin, self.reader.id, UserStatus.ACTIVE)
+        self.assertEqual(req.status, RequestStatus.CANCELLED)
+        self.store.authenticate("lector@demo.cl", "1234")
 
 
 class HappyPathTest(StoreTestCase):
@@ -111,6 +233,8 @@ class ValidationTest(StoreTestCase):
             self.new_request(max_price="abc")
         with self.assertRaisesRegex(ValidationError, "mayor que 0"):
             self.new_request(max_price=0)
+        with self.assertRaisesRegex(ValidationError, "número entero"):
+            self.new_request(max_price="²")
 
     def test_offer_needs_contact_and_price_and_allows_any_condition(self):
         req = self.new_request(accepted_condition=Condition.NEW)

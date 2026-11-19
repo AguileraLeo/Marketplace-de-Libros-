@@ -3,6 +3,14 @@ import unittest
 from views.access_texts import ENGLISH, translate, translate_error
 from string import Formatter
 
+import models.store as modelo
+
+
+def setUpModule():
+    # SPEC-012: acelerar las cuentas ficticias y restaurar el coste de la app al terminar.
+    unittest.addModuleCleanup(setattr, modelo, "PBKDF2_ITERATIONS", modelo.PBKDF2_ITERATIONS)
+    modelo.PBKDF2_ITERATIONS = 1_000
+
 
 class AccessTextsTest(unittest.TestCase):
     def test_identidades_y_contenido_externo_se_conservan(self):

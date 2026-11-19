@@ -35,10 +35,10 @@ Admin:     métricas, moderación de solicitudes, suspensión de usuarios y regi
 
 | Servicio | Qué hace | Dónde está |
 |---|---|---|
-| **Autenticación** | Registro con validación (nombre, correo, clave de 4+ caracteres, comuna si es vendedor) y login. La contraseña se guarda como hash SHA-256, nunca en texto plano. Las cuentas suspendidas no pueden entrar. | `models/store.py`: `hash_password()`, `register()`, `authenticate()` · `controllers/screen_controllers.py`: `LoginScreen`, `RegisterScreen` |
+| **Autenticación** | Registro con validación (nombre, correo, clave de 4+ caracteres, comuna si es vendedor) y login. La contraseña se guarda como hash PBKDF2-HMAC-SHA256 con sal aleatoria, nunca en texto plano. Las cuentas suspendidas no pueden entrar. | `models/store.py`: `hash_password()`, `register()`, `authenticate()` · `controllers/screen_controllers.py`: `LoginScreen`, `RegisterScreen` |
 | **Persistencia JSON** | Usuarios, libros, solicitudes, ofertas, contactos y actividad se guardan en `data/user/data.json` (escritorio) o en el directorio privado de la app (Android), y se recuperan al reabrir. Se guarda tras cada acción exitosa, al pausar (Android) y al cerrar, con escritura atómica (`.tmp` + `os.replace`). Si el archivo está corrupto o no tiene la estructura esperada, se respalda como `.corrupto`. Si no se puede escribir, la app avisa y vuelve al último estado guardado. | `services/persistence.py`: `save_store()`, `load_store()` · `controllers/app_controller.py`: `build()`, `save()`, `safe()`, `on_pause()`, `on_stop()` |
 | **Notificaciones locales** (plyer) | Se disparan al publicar una oferta (vendedor) y al iniciar sesión un lector con ofertas activas por revisar. Son locales, sin servidor. En Android 13+ se pide el permiso al iniciar. | `services/notifications.py`: `send()` · `controllers/screen_controllers.py`: `CreateOfferScreen.publish()` · `controllers/app_controller.py`: `login()`, `on_start()` |
-| **Configuración remota** | Al iniciar, descarga [`data/remote_config.json`](data/remote_config.json) desde la rama `main` de GitHub sin bloquear la interfaz (`UrlRequest`). El texto `banner` se muestra en el login. Sin red, o si el JSON viene mal, usa los valores por defecto (`DEFAULTS`). | `services/remote_config.py`: `URL`, `DEFAULTS`, `fetch()` · `controllers/app_controller.py`: `apply_remote_config()` · `views/libros.kv` |
+| **Configuración remota** | Al iniciar, descarga la configuración desde el servidor del equipo (`/config.json`) o, si no hay servidor configurado, [`data/remote_config.json`](data/remote_config.json) desde la rama `main` de GitHub, sin bloquear la interfaz (`UrlRequest`). El texto `banner` se muestra en el login. Sin red, o si el JSON viene mal, usa los valores por defecto (`DEFAULTS`). | `services/remote_config.py`: `URL`, `DEFAULTS`, `fetch()` · `controllers/app_controller.py`: `apply_remote_config()` · `views/libros.kv` |
 | **Búsqueda de libros** | Google Books, luego Open Library y, sin conexión, un catálogo local. Las portadas se guardan en caché en disco. | `services/books_api.py` |
 | **Comunas y cercanía** | Catálogo de las 346 comunas de Chile, búsqueda que ignora tildes y mayúsculas, y cercanía aproximada entre vendedor y solicitud. | `services/locations.py` · `data/comunas.json` |
 | **Registro de eventos** | Cada acción relevante queda registrada con fecha, actor, tipo y detalle; es la fuente de los KPIs (RA3). | `models/store.py`: `_log()`, `ActivityEntry` |
@@ -120,7 +120,7 @@ pip install -r requirements.txt
 python main.py
 ```
 
-Los datos quedan en `data/user/data.json`. Para volver a los datos de demo, cierra la app y borra ese archivo. Si la app encuentra un `data.json` antiguo en la raíz, lo migra a la nueva ubicación sin sobrescribir nada.
+Si el servidor de [`data/servidor.json`](data/servidor.json) responde, la app usa ese servidor (ver «Modo servidor»): para probar sin crear datos en él, usa `BOOKWHO_SERVIDOR=local python main.py`. En modo local los datos quedan en `data/user/data.json`; para volver a los datos de demo, cierra la app y borra ese archivo. Si la app encuentra un `data.json` antiguo en la raíz, lo migra a la nueva ubicación sin sobrescribir nada.
 
 Opcional: define `GOOGLE_BOOKS_API_KEY` para usar Google Books. Sin clave, Google suele responder 429 y la app usa Open Library.
 
@@ -134,7 +134,7 @@ Opcional: define `GOOGLE_BOOKS_API_KEY` para usar Google Books. Sin clave, Googl
 | Vendedor      | pedro@demo.cl      | 1234       |
 | Administrador | admin@demo.cl      | admin      |
 
-También se pueden registrar cuentas nuevas de lector o vendedor. El login ya no muestra este panel, pero en el modo local las cuentas siguen existiendo: ocultarlas no es una medida de seguridad. Por eso, en una prueba con usuarios reales, cada participante registra su propia cuenta.
+Solo existen en el modo local: el servidor las elimina al arrancar. También se pueden registrar cuentas nuevas de lector o vendedor. El login ya no muestra este panel, pero en el modo local las cuentas siguen existiendo: ocultarlas no es una medida de seguridad. Por eso, en una prueba con usuarios reales, cada participante registra su propia cuenta.
 
 ### Pruebas
 
@@ -142,7 +142,7 @@ También se pueden registrar cuentas nuevas de lector o vendedor. El login ya no
 python -m unittest discover -s tests -v
 ```
 
-94 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs, simulador, panel y servidor. Las del servidor necesitan `backend/requirements.txt`; sin esas librerías se omiten.
+143 pruebas automáticas: flujo crítico, máquinas de estado, permisos por rol, persistencia (incluidos archivos corruptos y fallos de disco), comunas, caché de portadas, cálculo de KPIs, simulador, panel y servidor. Las del servidor necesitan `backend/requirements.txt`; sin esas librerías se omiten.
 
 ### Modo servidor: datos compartidos entre teléfonos
 
@@ -227,13 +227,14 @@ CLAUDE.md                Instrucciones para asistentes de IA
 
 ## Privacidad y uso responsable
 
-- Las contraseñas se guardan como hash SHA-256, nunca en texto plano.
-- No hay servidor: los datos quedan en el dispositivo. `data.json` y los archivos exportados de teléfonos no se suben al repositorio (`.gitignore`) ni se incluyen en el APK.
-- Los datos de contacto del vendedor solo se muestran cuando el lector acepta su oferta para coordinar.
+- Las contraseñas se guardan como hash PBKDF2-HMAC-SHA256 con sal aleatoria, nunca en texto plano.
+- En modo local los datos quedan en el dispositivo; en modo servidor, en el archivo privado del servidor del equipo. `data.json` y los archivos exportados de teléfonos (`data_*.json`) no se suben al repositorio (`.gitignore`) ni se incluyen en el APK (`buildozer.spec`).
+- Los datos de contacto del vendedor solo se muestran cuando el lector acepta su oferta para coordinar, y son los que el vendedor escribió en **esa** oferta ([SPEC-011](docs/05-specs/SPEC-011-contacto-por-oferta.md)).
+- El panel público `/en-vivo/` muestra solo agregados: una ubicación escrita a mano que no es una comuna del catálogo aparece como «Sin clasificar», nunca tal cual. De otra persona, la API entrega solo el nombre.
 - `analitica.py` excluye las cuentas demo y del equipo e imprime solo conteos, porque algunos eventos guardan correos.
 - El uso de IA en el desarrollo está declarado en [`docs/06-process/USO_IA.md`](docs/06-process/USO_IA.md).
 
-Limitaciones conocidas: el hash usa el correo como sal y no un algoritmo lento (como PBKDF2), y las cuentas demo se crean en cada instalación nueva.
+Limitaciones conocidas: las cuentas demo se crean en cada instalación nueva.
 
 ## Reglas de negocio del demo
 
@@ -243,7 +244,8 @@ Decisiones pendientes de spec (ver AGENTS.md §19):
 - Cancelar una solicitud cancela sus ofertas activas.
 - Un vendedor solo puede tener una oferta activa por solicitud. Puede ofrecer el libro nuevo o usado aunque no coincida con lo que pidió el lector; el lector lo evalúa al revisar la oferta.
 - Si un vendedor cancela su última oferta activa, la solicitud vuelve a `PUBLICADA`. Una oferta que ya está en coordinación no se cancela como oferta común: el vendedor o el lector desisten del trato.
-- Una cuenta tiene un solo rol. Los usuarios suspendidos no pueden iniciar sesión ni operar.
+- Una cuenta tiene un solo rol. Suspender una cuenta le impide entrar y saca del mercado lo que tenía activo: sus solicitudes y ofertas se cancelan y, si estaba en un trato, las demás ofertas vuelven a estar disponibles. Reactivarla no lo reabre ([SPEC-010](docs/05-specs/SPEC-010-suspension-saca-del-mercado.md)).
+- El contacto se guarda con cada oferta: una oferta posterior del mismo vendedor no cambia lo que ve el lector de otra ([SPEC-011](docs/05-specs/SPEC-011-contacto-por-oferta.md)).
 - La recuperación de contraseña no está disponible en esta versión: el login lo indica.
 
 ## Dificultades y cómo las resolvimos
