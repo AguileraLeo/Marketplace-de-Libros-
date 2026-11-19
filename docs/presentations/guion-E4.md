@@ -68,15 +68,26 @@ Regla de exposición: distinguir **encuesta real**, **resultados simulados** y *
 - El lector acepta para coordinar y entonces accede al contacto autorizado.
 - Cerrar y reabrir permite mostrar persistencia, sin desinstalar ni borrar datos.
 
-**Preparación del equipo:** APK instalado, teléfono cargado y proyección lista. Usar únicamente contactos ficticios. Revisar previamente que el vendedor no tenga una oferta activa para la solicitud del ensayo. No mostrar registros con datos personales. Registrar antes una cuenta de lector y otra de vendedor con correos alias y contactos ficticios, y agregar esos correos a `BOOKWHO_EXCLUIR` en el servidor para que no cuenten en los KPIs: las cuentas `@demo.cl` **no existen en el servidor**. Si el teléfono no tiene internet, la app avisa «Modo sin conexión» y entonces sí funcionan `lector@demo.cl` y `vendedor@demo.cl` (clave `1234`), en un solo teléfono. Ensayar con el modo que se usará. Esta preparación y la demo son instrucciones para el equipo: no se ejecutaron al redactar el guion.
+**Preparación del equipo:** APK instalado, teléfono cargado y proyección lista. Usar únicamente contactos ficticios. Revisar previamente que el vendedor no tenga una oferta activa para la solicitud del ensayo. No mostrar registros con datos personales. Usar las cuentas indicadas por el equipo: `demo@demo.cl` (lector) y `fredo@vendedor.cl` (vendedor). Comprobar sus accesos antes de presentar y agregar ambos correos a `BOOKWHO_EXCLUIR` en el servidor para que no cuenten en los KPIs. Si ya hay otros correos excluidos, conservarlos al añadir estos dos. La configuración del servidor no se ha verificado ni modificado en esta actualización documental.
+
+Las cinco cuentas predefinidas de `DEMO_USERS` se eliminan del servidor por su correo exacto;
+esto no afecta a `demo@demo.cl`, que es una cuenta distinta. Si el teléfono no tiene internet,
+la app avisa «Modo sin conexión» y se pueden usar las cuentas locales `lector@demo.cl` y
+`vendedor@demo.cl` (clave `1234`) en un solo teléfono. Las cuentas del servidor y sus datos
+no se sincronizan con el modo local. Ensayar con el modo que se usará. Esta preparación y la
+demo son instrucciones para el equipo: no se ejecutaron al actualizar el guion.
+
+**Oferta propuesta para el ensayo:** $8.000 CLP; usado; «Buen estado, sin páginas faltantes»;
+correo de contacto ficticio `vendedor@example.test`; teléfono y dirección vacíos. El correo
+de contacto es distinto del correo de acceso del vendedor y no requiere enviar mensajes.
 
 | Tiempo dentro de la demo | Acción en el teléfono | Frase breve / evidencia visible |
 |---|---|---|
-| 00:00–00:15 | Iniciar sesión con la cuenta de lector de prueba. [COMPLETAR: correo alias del lector] | «Esta es una cuenta de prueba del equipo, excluida de los KPIs de uso real». |
+| 00:00–00:15 | Iniciar sesión con `demo@demo.cl` (lector). | «Esta es una cuenta de prueba del equipo, excluida de los KPIs de uso real». Decirlo tras comprobar la exclusión en la preparación. |
 | 00:15–00:40 | Buscar «El Hobbit» y seleccionar el resultado correcto. | «Los metadatos vienen del proveedor externo; existe respaldo local si falla la red». |
 | 00:40–01:05 | Completar ubicación, condición y entrega; publicar solicitud. | Mostrar la confirmación y conservar su identificador. Precio máximo opcional. |
-| 01:05–01:20 | Iniciar sesión como el vendedor de prueba, en otro teléfono o en el mismo tras salir. [COMPLETAR: correo alias del vendedor] | «Los datos están en el servidor del equipo: el vendedor ve la solicitud recién publicada». |
-| 01:20–01:45 | Localizar la solicitud, pulsar «Puedo ofrecerlo» y publicar una oferta con contacto ficticio. | Mostrar precio y condición. [COMPLETAR: valores y contacto ficticios del ensayo]. |
+| 01:05–01:20 | Iniciar sesión con `fredo@vendedor.cl` (vendedor), en otro teléfono o en el mismo tras salir. | «Los datos están en el servidor del equipo: el vendedor ve la solicitud recién publicada». |
+| 01:20–01:45 | Localizar la solicitud, pulsar «Puedo ofrecerlo» y publicar la oferta propuesta con contacto ficticio. | Mostrar $8.000 CLP, usado y contacto `vendedor@example.test`; teléfono y dirección vacíos. |
 | 01:45–02:15 | Volver a la cuenta del lector, abrir la oferta y aceptar para coordinar. | Mostrar el contacto. «Aceptar inicia la coordinación; no acredita una venta ni una entrega». |
 | 02:15–02:45 | Cerrar la aplicación y reabrirla; si pide login, entrar como lector y abrir la misma solicitud. | Mostrar que solicitud, oferta y estado permanecen. No prometer persistencia de la sesión. |
 
