@@ -2,6 +2,7 @@
 
 import os
 import threading
+from collections import Counter
 from datetime import datetime
 
 from kivy.clock import Clock, mainthread
@@ -38,6 +39,21 @@ class BaseScreen(MDScreen):
     def refresh(self):
         pass
 
+    # Sugerencias de comuna (registro y crear solicitud usan ids.location y ids.suggestions_box)
+    def on_location_text(self, text):
+        self.ids.suggestions_box.clear_widgets()
+        query = (text or "").strip()
+        if len(query) < 2:
+            return
+        for loc in search_locations(query, limit=4):
+            btn = MDButton(MDButtonText(text=loc), style="text", size_hint_x=1, height=dp(48))
+            btn.bind(on_release=lambda _b, l=loc: self.select_location(l))
+            self.ids.suggestions_box.add_widget(btn)
+
+    def select_location(self, loc):
+        self.ids.location.text = loc
+        self.ids.suggestions_box.clear_widgets()
+
     @staticmethod
     def fill(container, widgets, empty_text="", empty_icon="book-search-outline"):
         container.clear_widgets()
@@ -71,25 +87,6 @@ class RegisterScreen(BaseScreen):
         self.ids.role.value = Role.READER
         self.ids.suggestions_box.clear_widgets()
 
-    def on_location_text(self, text):
-        self.ids.suggestions_box.clear_widgets()
-        query = (text or "").strip()
-        if len(query) < 2:
-            return
-        for loc in search_locations(query, limit=4):
-            btn = MDButton(
-                MDButtonText(text=loc),
-                style="text",
-                size_hint_x=1,
-                height=dp(48),
-            )
-            btn.bind(on_release=lambda _b, l=loc: self.select_location(l))
-            self.ids.suggestions_box.add_widget(btn)
-
-    def select_location(self, loc):
-        self.ids.location.text = loc
-        self.ids.suggestions_box.clear_widgets()
-
     def do_register(self):
         user = self.app.safe(
             self.app.store.register,
@@ -106,17 +103,21 @@ class RegisterScreen(BaseScreen):
 
 # --------------------------------------------------------------- lector
 class ReaderHomeScreen(BaseScreen):
+    pending_offers = NumericProperty(0)  # también lo usa la notificación al iniciar sesión
+
     def refresh(self):
         app, store = self.app, self.app.store
         requests = store.reader_requests(app.user)
-        active = [r for r in requests if r.status in RequestStatus.OPEN]
-        offers = sum(store.active_offer_count(r.id) for r in active)
+        # «activas» con la misma definición que el filtro de Mis solicitudes (incluye en coordinación)
+        active = [r for r in requests if r.status in RequestStatus.ACTIVE]
+        counts = {r.id: store.active_offer_count(r.id) for r in requests if r.status in RequestStatus.OPEN}
+        self.pending_offers = sum(counts.values())
         self.ids.stat_active.value = str(len(active))
-        self.ids.stat_offers.value = str(offers)
-        self.ids.stat_offers.highlight = offers > 0
+        self.ids.stat_offers.value = str(self.pending_offers)
+        self.ids.stat_offers.highlight = self.pending_offers > 0
         self.fill(
             self.ids.recent_list,
-            [app.request_card(r, app.open_reader_request) for r in requests[:3]],
+            [app.request_card(r, app.open_reader_request, offers=counts.get(r.id)) for r in requests[:3]],
             tr('Aún no tienes solicitudes. Busca un libro para crear la primera.'),
         )
 
@@ -191,8 +192,7 @@ class CreateRequestScreen(BaseScreen):
         self.ids.cover.source = book.cover_url
         self.ids.book_title.text = book.title
         self.ids.book_meta.text = f"{book.authors_text}\n{book.publisher}  ·  ISBN {book.isbn or '—'}"
-        if hasattr(self.ids, "suggestions_box"):
-            self.ids.suggestions_box.clear_widgets()
+        self.ids.suggestions_box.clear_widgets()
 
     def reset_form(self):
         self.ids.max_price.text = ""
@@ -200,31 +200,7 @@ class CreateRequestScreen(BaseScreen):
         self.ids.notes.text = ""
         self.ids.condition.value = Condition.ANY
         self.ids.delivery.value = Delivery.ANY
-        if hasattr(self.ids, "suggestions_box"):
-            self.ids.suggestions_box.clear_widgets()
-
-    def on_location_text(self, text):
-        if not hasattr(self.ids, "suggestions_box"):
-            return
         self.ids.suggestions_box.clear_widgets()
-        query = (text or "").strip()
-        if len(query) < 2:
-            return
-        matches = search_locations(query, limit=4)
-        for loc in matches:
-            btn = MDButton(
-                MDButtonText(text=loc),
-                style="text",
-                size_hint_x=1,
-                height=dp(48),
-            )
-            btn.bind(on_release=lambda _b, l=loc: self.select_location(l))
-            self.ids.suggestions_box.add_widget(btn)
-
-    def select_location(self, loc):
-        self.ids.location.text = loc
-        if hasattr(self.ids, "suggestions_box"):
-            self.ids.suggestions_box.clear_widgets()
 
     def publish(self):
         app = self.app
@@ -269,7 +245,7 @@ class ReaderRequestDetailScreen(BaseScreen):
 
     def refresh(self):
         app, store = self.app, self.app.store
-        req = app.safe(store.get_request, app.user, app.current_request_id)
+        req = app.read(store.get_request, app.user, app.current_request_id)
         if not req:
             return
         book = store.book(req.book_id)
@@ -325,7 +301,7 @@ class OfferDetailScreen(BaseScreen):
 
     def refresh(self):
         app, store = self.app, self.app.store
-        offer = app.safe(store.get_offer, app.user, app.current_offer_id)
+        offer = app.read(store.get_offer, app.user, app.current_offer_id)
         if not offer:
             return
         req = store.requests[offer.request_id]
@@ -407,7 +383,9 @@ class OfferDetailScreen(BaseScreen):
 class OfferAcceptedScreen(BaseScreen):
     def refresh(self):
         app, store = self.app, self.app.store
-        contact = app.safe(store.offer_contact, app.user, app.current_offer_id)
+        self.ids.summary.text = ""
+        self.ids.contact.clear_widgets()  # antes de cargar: un error no deja a la vista el contacto de otra oferta
+        contact = app.read(store.offer_contact, app.user, app.current_offer_id)
         if contact is None:
             return
         offer = store.offers[app.current_offer_id]
@@ -422,7 +400,6 @@ class OfferAcceptedScreen(BaseScreen):
             ("email-outline", tr('Correo'), contact.email),
             ("map-marker-outline", tr('Dirección / punto de entrega'), contact.address_or_meeting_point),
         ]
-        self.ids.contact.clear_widgets()
         for icon, label, value in rows:
             if value:
                 self.ids.contact.add_widget(InfoRow(icon=icon, label=label, value=value))
@@ -432,7 +409,7 @@ class OfferAcceptedScreen(BaseScreen):
 class SellerHomeScreen(BaseScreen):
     def refresh(self):
         app, store = self.app, self.app.store
-        items = app.safe(
+        items = app.read(
             store.open_requests,
             app.user,
             self.ids.text.text,
@@ -462,7 +439,7 @@ class SellerRequestDetailScreen(BaseScreen):
 
     def refresh(self):
         app, store = self.app, self.app.store
-        req = app.safe(store.get_request, app.user, app.current_request_id)
+        req = app.read(store.get_request, app.user, app.current_request_id)
         if not req:
             return
         book = store.book(req.book_id)
@@ -539,7 +516,7 @@ class SellerOffersScreen(BaseScreen):
             elif o.status == OfferStatus.ACCEPTED:
                 meta = tr('¡Trato concretado! Compra finalizada con éxito.')
             elif o.status == OfferStatus.REJECTED:
-                meta = tr('El lector concretó otra oferta.')
+                meta = tr('El lector no siguió con esta oferta.')  # concretó otra o desistió del trato
             else:
                 meta = tr('Solicitud #{v1} · {v3} · máx. {v5}', v1=req.id, v3=req.location, v5=format_price(req.max_price))
             # En coordinación ya no se cancela como oferta común: se desiste del trato (cancel_deal).
@@ -598,14 +575,15 @@ class AdminHomeScreen(BaseScreen):
 class AdminRequestsScreen(BaseScreen):
     def refresh(self):
         app, store = self.app, self.app.store
+        users = {u.id: u for u in store.admin_users(app.user)}  # una consulta por tabla, no una por fila
+        offers = Counter(o.request_id for o in store.admin_offers(app.user))
         cards = []
         for r in store.admin_requests(app.user, self.ids.filter.value):
             book = store.book(r.book_id)
-            reader = store.user(r.reader_id)
             cards.append(ItemCard(
                 title=f"#{r.id} · {book.title}",
-                subtitle=tr('{v0} · {v2} · máx. {v4}', v0=reader.name, v2=r.location, v4=format_price(r.max_price)),
-                meta=tr('{v0} oferta(s) · actualizada {v2}', v0=len(store.offers_for_request(app.user, r.id)), v2=fmt_date(r.updated_at)),
+                subtitle=tr('{v0} · {v2} · máx. {v4}', v0=users[r.reader_id].name, v2=r.location, v4=format_price(r.max_price)),
+                meta=tr('{v0} oferta(s) · actualizada {v2}', v0=offers[r.id], v2=fmt_date(r.updated_at)),
                 status=r.status, kind="request",
                 action_text=tr('Cancelar (moderar)') if r.status in RequestStatus.OPEN else "",
                 action_callback=lambda _c, rid=r.id: self.moderate(rid),
@@ -645,20 +623,32 @@ class AdminUsersScreen(BaseScreen):
         app = self.app
         target = app.store.user(user_id)
         new_status = UserStatus.SUSPENDED if target.status == UserStatus.ACTIVE else UserStatus.ACTIVE
-        if app.safe(app.store.set_user_status, app.user, user_id, new_status):
-            app.notify(f"{target.name}: {tr(STATUS_LABELS['user'][new_status]).lower()}.")
-            self.refresh()
+
+        def do_toggle():
+            if app.safe(app.store.set_user_status, app.user, user_id, new_status):
+                app.notify(f"{target.name}: {tr(STATUS_LABELS['user'][new_status]).lower()}.")
+                self.refresh()
+
+        if new_status == UserStatus.ACTIVE:
+            return do_toggle()
+        app.confirm(  # SPEC-010: suspender cancela lo que tenía activo y no se deshace al reactivar
+            tr('¿Suspender la cuenta?'),
+            tr('No podrá entrar y se cancelarán sus solicitudes y ofertas activas. Reactivarla no las reabre.'),
+            tr('Suspender'), do_toggle,
+        )
 
 
 class AdminOffersScreen(BaseScreen):
     def refresh(self):
         app, store = self.app, self.app.store
+        requests = {r.id: r for r in store.admin_requests(app.user)}  # una consulta por tabla, no una por fila
+        users = {u.id: u for u in store.admin_users(app.user)}
         cards = []
         for o in store.admin_offers(app.user):
-            req = store.requests[o.request_id]
+            req = requests[o.request_id]
             cards.append(ItemCard(
                 title=tr('Oferta #{v1} · {v3}', v1=o.id, v3=store.book(req.book_id).title),
-                subtitle=f"{format_price(o.price)} · {tr(Condition.LABELS[o.book_condition])} · {store.user(o.seller_id).name}",
+                subtitle=f"{format_price(o.price)} · {tr(Condition.LABELS[o.book_condition])} · {users[o.seller_id].name}",
                 meta=tr('Solicitud #{v1} · {v3}', v1=req.id, v3=fmt_date(o.updated_at)),
                 status=o.status, kind="offer",
             ))
@@ -675,9 +665,10 @@ class AdminActivityScreen(BaseScreen):
         if app.user is None or "search" not in self.ids:
             return
         entries = store.admin_activity(app.user, limit=self.limit, text=self.ids.search.text)
+        users = {u.id: u for u in store.admin_users(app.user)}
         cards = []
         for entry in entries:
-            actor = store.users.get(entry.actor_id)
+            actor = users.get(entry.actor_id)
             cards.append(ItemCard(
                 title=entry.detail,
                 subtitle=f"{fmt_date(entry.at)} · {actor.name if actor else tr('sistema')}",

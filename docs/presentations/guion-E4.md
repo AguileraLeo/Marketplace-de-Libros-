@@ -63,19 +63,19 @@ Regla de exposición: distinguir **encuesta real**, **resultados simulados** y *
 
 **02:00–04:45 · 2 minutos y 45 segundos**
 
-- Un mismo teléfono y cuentas de prueba: el almacenamiento no está compartido entre dispositivos.
+- Cuentas de prueba registradas antes en el servidor del equipo: lector y vendedor pueden estar en teléfonos distintos, porque los datos se comparten (SPEC-005).
 - El lector busca y publica; el vendedor responde a esa solicitud.
 - El lector acepta para coordinar y entonces accede al contacto autorizado.
 - Cerrar y reabrir permite mostrar persistencia, sin desinstalar ni borrar datos.
 
-**Preparación del equipo:** APK instalado, teléfono cargado y proyección lista. Usar únicamente contactos ficticios. Revisar previamente que el vendedor no tenga una oferta activa para la solicitud del ensayo. No mostrar registros con datos personales. Esta preparación y la demo son instrucciones para el equipo: no se ejecutaron al redactar el guion.
+**Preparación del equipo:** APK instalado, teléfono cargado y proyección lista. Usar únicamente contactos ficticios. Revisar previamente que el vendedor no tenga una oferta activa para la solicitud del ensayo. No mostrar registros con datos personales. Registrar antes una cuenta de lector y otra de vendedor con correos alias y contactos ficticios, y agregar esos correos a `BOOKWHO_EXCLUIR` en el servidor para que no cuenten en los KPIs: las cuentas `@demo.cl` **no existen en el servidor**. Si el teléfono no tiene internet, la app avisa «Modo sin conexión» y entonces sí funcionan `lector@demo.cl` y `vendedor@demo.cl` (clave `1234`), en un solo teléfono. Ensayar con el modo que se usará. Esta preparación y la demo son instrucciones para el equipo: no se ejecutaron al redactar el guion.
 
 | Tiempo dentro de la demo | Acción en el teléfono | Frase breve / evidencia visible |
 |---|---|---|
-| 00:00–00:15 | Iniciar sesión con `lector@demo.cl`, clave `1234`. | «Esta es una cuenta de prueba, excluida de los KPIs de uso real». |
+| 00:00–00:15 | Iniciar sesión con la cuenta de lector de prueba. [COMPLETAR: correo alias del lector] | «Esta es una cuenta de prueba del equipo, excluida de los KPIs de uso real». |
 | 00:15–00:40 | Buscar «El Hobbit» y seleccionar el resultado correcto. | «Los metadatos vienen del proveedor externo; existe respaldo local si falla la red». |
 | 00:40–01:05 | Completar ubicación, condición y entrega; publicar solicitud. | Mostrar la confirmación y conservar su identificador. Precio máximo opcional. |
-| 01:05–01:20 | Salir e iniciar sesión como `vendedor@demo.cl`, clave `1234`. | «Cambiamos de rol en el mismo dispositivo porque aún no hay backend compartido». |
+| 01:05–01:20 | Iniciar sesión como el vendedor de prueba, en otro teléfono o en el mismo tras salir. [COMPLETAR: correo alias del vendedor] | «Los datos están en el servidor del equipo: el vendedor ve la solicitud recién publicada». |
 | 01:20–01:45 | Localizar la solicitud, pulsar «Puedo ofrecerlo» y publicar una oferta con contacto ficticio. | Mostrar precio y condición. [COMPLETAR: valores y contacto ficticios del ensayo]. |
 | 01:45–02:15 | Volver a la cuenta del lector, abrir la oferta y aceptar para coordinar. | Mostrar el contacto. «Aceptar inicia la coordinación; no acredita una venta ni una entrega». |
 | 02:15–02:45 | Cerrar la aplicación y reabrirla; si pide login, entrar como lector y abrir la misma solicitud. | Mostrar que solicitud, oferta y estado permanecen. No prometer persistencia de la sesión. |
@@ -89,9 +89,9 @@ Regla de exposición: distinguir **encuesta real**, **resultados simulados** y *
 - Persistencia JSON con escritura temporal y reemplazo atómico.
 - Autenticación sin recuperación de contraseña: el login indica que todavía no está disponible.
 - Notificaciones locales y configuración remota con respaldo sin conexión.
-- APK Android; sin pagos, chat, logística ni sincronización entre teléfonos.
+- APK Android; sin pagos, chat ni logística. Con internet los teléfonos comparten datos por el servidor del equipo (SPEC-005); sin internet, la app trabaja en modo local.
 
-**Qué decir:** «Los datos persisten en el dispositivo. Las notificaciones locales y el banner remoto no convierten la aplicación en un servicio multiusuario». No presentar una notificación del mismo teléfono como entrega remota al lector.
+**Qué decir:** «Con internet los datos viven en el servidor del equipo; sin conexión, en el teléfono. Las notificaciones son locales: no avisan a otro teléfono». No presentar una notificación del mismo teléfono como entrega remota al lector.
 
 **Fuente:** [README.md, servicios y reglas del demo](../../README.md).
 
@@ -236,5 +236,5 @@ Solo considera solicitudes con oferta y mide la primera respuesta, no una entreg
 
 ### 8. ¿El panel en vivo muestra lo que acaba de ocurrir en el teléfono?
 
-No: publica agregados de actividad simulada y consulta su archivo cada 5 segundos. La app guarda información local por dispositivo; sin backend compartido no existe esa sincronización.  
-**Fuentes:** [README.md, Panel público y Persistencia](../../README.md); [SPEC-004](../05-specs/SPEC-004-panel-de-metricas.md).
+Depende del panel. `/en-vivo/` muestra agregados del servidor del equipo (agentes simulados y personas, por separado) y se actualiza cada 5 segundos: una acción hecha en un teléfono con internet aparece ahí, sin datos personales. `/simulacion/` muestra solo la simulación del informe.  
+**Fuentes:** [README.md, Modo servidor](../../README.md); [SPEC-004](../05-specs/SPEC-004-panel-de-metricas.md); [SPEC-006](../05-specs/SPEC-006-agentes-en-vivo.md).

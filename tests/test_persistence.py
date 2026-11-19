@@ -7,41 +7,12 @@ from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from services.persistence import load_store, migrate_legacy_data_file, save_store
+from services.persistence import load_store, save_store
 from models.store import build_demo_store
 from services.books_api import catalog_lookup
 
 
 class PersistenceTest(unittest.TestCase):
-    def test_migrate_legacy_data_file(self):
-        with tempfile.TemporaryDirectory() as d:
-            legacy_path = os.path.join(d, "data.json")
-            new_path = os.path.join(d, "data", "user", "data.json")
-            with open(legacy_path, "w", encoding="utf-8") as file:
-                file.write("legacy")
-
-            migrate_legacy_data_file(legacy_path, new_path)
-
-            with open(new_path, encoding="utf-8") as file:
-                self.assertEqual(file.read(), "legacy")
-            self.assertFalse(os.path.exists(legacy_path))
-
-    def test_migration_does_not_overwrite_existing_data(self):
-        with tempfile.TemporaryDirectory() as d:
-            legacy_path = os.path.join(d, "data.json")
-            new_path = os.path.join(d, "data", "user", "data.json")
-            os.makedirs(os.path.dirname(new_path))
-            with open(legacy_path, "w", encoding="utf-8") as file:
-                file.write("legacy")
-            with open(new_path, "w", encoding="utf-8") as file:
-                file.write("current")
-
-            migrate_legacy_data_file(legacy_path, new_path)
-
-            with open(new_path, encoding="utf-8") as file:
-                self.assertEqual(file.read(), "current")
-            self.assertTrue(os.path.exists(legacy_path))
-
     def test_guardar_y_recuperar(self):
         store = build_demo_store(catalog_lookup)
         user = store.register("Ana Ñuñez", "ana@demo.cl", "clave1", "lector")
@@ -93,6 +64,27 @@ class PersistenceTest(unittest.TestCase):
             recargado = load_store(path)
         self.assertIsNone(recargado.find_user_by_email("nueva@demo.cl"))
         self.assertEqual(len(recargado.users), len(store.users) - 1)
+
+    def test_contacto_por_oferta_se_guarda_y_un_json_anterior_carga_igual(self):
+        """SPEC-011: la copia del contacto de cada oferta sobrevive a guardar y cargar; un data.json
+        de antes (sin la tabla offer_contacts) carga y usa el contacto del perfil."""
+        import json
+        store = build_demo_store(catalog_lookup)
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "data.json")
+            save_store(store, path)
+            self.assertEqual(load_store(path).offer_contacts, store.offer_contacts)
+            with open(path, encoding="utf-8") as f:
+                datos = json.load(f)
+            del datos["offer_contacts"]
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(datos, f)
+            anterior = load_store(path)
+        self.assertEqual(anterior.offer_contacts, {})
+        lector = anterior.authenticate("lector@demo.cl", "1234")
+        oferta = next(iter(anterior.offers.values()))
+        anterior.accept_offer(lector, oferta.id)
+        self.assertEqual(anterior.offer_contact(lector, oferta.id).phone, anterior.contacts[oferta.seller_id].phone)
 
 
 if __name__ == "__main__":

@@ -59,24 +59,11 @@ def is_cover_cached(url: str) -> bool:
     return bool(path and os.path.exists(path) and os.path.getsize(path) > 100)
 
 
-def download_and_cache_cover(
-    url: str,
-    on_complete: Optional[Callable[[str, str], None]] = None,
-) -> Optional[str]:
-    """
-    Obtiene la ruta local de la portada. Si ya existe, la retorna de inmediato.
-    Si no, inicia la descarga en segundo plano y llama a on_complete(url, local_path).
-    """
-    if not url or not url.startswith(("http://", "https://")):
-        return None
+def download_and_cache_cover(url: str, on_complete: Optional[Callable[[str, str], None]] = None) -> None:
+    """Descarga la portada en segundo plano y llama a on_complete(url, ruta_local) en el hilo de Kivy."""
+    if not url or not url.startswith(("http://", "https://")) or is_cover_cached(url):
+        return
     cache_path = get_cover_cache_path(url)
-    if not cache_path:
-        return None
-
-    if os.path.exists(cache_path) and os.path.getsize(cache_path) > 100:
-        if on_complete:
-            on_complete(url, cache_path)
-        return cache_path
 
     def _worker():
         try:
@@ -90,16 +77,12 @@ def download_and_cache_cover(
                     with open(cache_path, "wb") as f:
                         f.write(data)
                     if on_complete:
-                        try:
-                            from kivy.clock import Clock
-                            Clock.schedule_once(lambda *_: on_complete(url, cache_path))
-                        except Exception:
-                            on_complete(url, cache_path)
+                        from kivy.clock import Clock  # ponytail: import tardío, el servidor importa este módulo sin Kivy
+                        Clock.schedule_once(lambda *_: on_complete(url, cache_path))
         except Exception:
-            pass
+            pass  # sin red o sin portada: el libro se muestra sin imagen
 
     threading.Thread(target=_worker, daemon=True).start()
-    return cache_path if os.path.exists(cache_path) else None
 
 
 def prefetch_covers(books: list[dict]) -> None:
@@ -290,7 +273,8 @@ def _search_open_library(query: str, mode: str) -> list[dict]:
         book = _normalize_open_library_doc(doc)
         if book:
             if mode == "isbn" and q in (doc.get("isbn") or []):
-                book["isbn"] = q  # la obra agrupa ediciones: conservar la buscada
+                # la obra agrupa ediciones: conservar la buscada, también como identidad del libro
+                book["isbn"], book["external_id"] = q, f"/isbn/{q}"
             results.append(book)
     return results
 
