@@ -47,7 +47,7 @@
 26. "Configuremos la configuración remota." / "Dame los comandos." 
 27. "Hagamos lo que falta." (Release del APK, repositorio personal, esta declaración y guía de defensa.)
 
-### E4 (borrador)
+### E4
 
 Prompts principales a Claude Code en la sesión del 17-11-2026 (textuales, abreviados con […]):
 
@@ -59,7 +59,45 @@ Prompts principales a Claude Code en la sesión del 17-11-2026 (textuales, abrev
 6. "meditemos hacer un backend compartido […]" y luego "terminemos con lo que estabas haciendo, despues seguimoms con el backend"
 7. "podrias divir todo lo que queda por hacer y trabajan los dos en paralelo […] gpt no tiene ponytail aunque le puedes dar intrucciones pero lo que sea mas barato"
 
-Los prompts a Codex (borrador del Informe Final; revisión del informe, guion y esta sección) los redactó Claude Code y el equipo los pegó en Codex. [COMPLETAR: prompts E4 de la sesión del 16-11, ver el borrador en CIERRE_E4.md §4]. Alcance de los trabajos:
+Los prompts a Codex (borrador del Informe Final; revisión del informe, guion y esta sección) los redactó Claude Code y el equipo los pegó en Codex.
+
+#### Reconstrucción identificada de los prompts pendientes
+
+**Nota de trazabilidad (19-11-2026):** no se encontró `CIERRE_E4.md` ni la transcripción de
+la sesión atribuida al 16-11-2026 en los archivos o en el historial Git revisado. A solicitud
+del equipo, se completa el registro con la siguiente **reconstrucción de intenciones y alcance**,
+basada en las modificaciones y declaraciones conservadas. Estos textos no son citas literales
+ni prueban la fecha, el orden exacto o la redacción de los prompts originales. Los commits
+citados son del 17-11-2026; acreditan los cambios, no los mensajes que los originaron.
+
+**Claude Code — trabajo de medición y estabilización previo al cierre E4**
+(`e2147a8`, «E4: medición RA3 y correcciones de estabilización»):
+
+1. **Prompt reconstruido:** Revisar la medición RA3 de la app y registrar los eventos de los casos de uso exitosos. Calcular resolución, respuesta y mediana de horas hasta la primera oferta; excluir cuentas demo y del equipo, y documentar fórmulas, reproducción y limitaciones sin inventar uso real.
+2. **Prompt reconstruido:** Revisar el desistimiento de la coordinación por parte del vendedor y la cancelación de la última oferta. Mantener consistentes los estados de solicitud y oferta y verificar los permisos con pruebas.
+3. **Prompt reconstruido:** Corregir el manejo de errores al guardar y de archivos JSON con estructura inesperada, para informar la falla sin continuar como si los datos se hubieran guardado. Añadir pruebas de persistencia.
+4. **Prompt reconstruido:** Ocultar el panel de cuentas demo en Android sin afirmar que eso elimina las cuentas ni constituye una medida de seguridad. Actualizar la documentación del alcance y ejecutar las pruebas.
+
+**Codex — documentación académica de cierre**
+(`962a3a0`, «Informe Final, guion de la presentación y declaración de IA E4 (borradores)»):
+
+5. **Prompt reconstruido:** Leer `AGENTS.md` y las fuentes del repositorio. Redactar el borrador de `INFORME_FINAL.md` siguiendo problema, solución, metodología, resultados y conclusión ética. Citar la evidencia y separar encuesta real, simulación y demo; dejar identificados los datos que el equipo aún no haya proporcionado.
+6. **Prompt reconstruido:** Preparar `docs/presentations/guion-E4.md` para una exposición de nueve minutos, incluida una demo de dos minutos y cuarenta y cinco segundos. Proponer tiempos, acciones por rol, fuentes, alternativas ante fallas y preguntas de defensa sin presentar el ensayo como ejecutado.
+7. **Prompt reconstruido:** Revisar la coherencia entre informe, guion y documentación. Completar la declaración E4 en `USO_IA.md`, diferenciando herramientas, trabajos asistidos, decisiones humanas y limitaciones; no atribuir pruebas o resultados nuevos a una tarea de redacción.
+
+**Codex — actualización documental actual (19-11-2026):** el encargo fue definir las metas de
+los KPIs, completar los prompts de este archivo y completar los datos de cuentas de prueba del
+guion. El equipo autorizó expresamente usar una reconstrucción identificada cuando no se
+encontraron los prompts originales. Se documentaron metas para el próximo ciclo, sin
+atribuirlas retrospectivamente a la simulación histórica, y se reutilizaron los alias locales
+existentes en `DEMO_USERS`.
+
+**Seguimiento del encargo (19-11-2026, prompt textual a Codex):** «con respecto a los kpis,
+estima cuanto se espera el primer mes de lanzamiento y proyecta al menos dos o tres meses
+a futuro». La IA elaboró un escenario condicionado para M1–M4, explicitó sus supuestos de
+participación y actividad y lo separó de las metas del piloto y de los datos simulados.
+
+Alcance de los trabajos originales:
 
 - **Claude Code:** integración del refactor MVC con el trabajo E4 y resolución de conflictos; corrección del cierre al suspender usuarios; organización del repositorio; simulador ficticio (SPEC-003), panel público (SPEC-004), diagnóstico de CGNAT y guía de publicación con Cloudflare Tunnel.
 - **GPT-6.1 Sol (Codex):** redacción del borrador del Informe Final, del guion de presentación y de este borrador de declaración.
@@ -105,6 +143,8 @@ Antecedentes proporcionados por el equipo para esta declaración; no constituyen
 - **Claude Code — publicación:** diagnosticó CGNAT y guió la publicación con Cloudflare Tunnel.
 - **Pruebas informadas:** pasaron de 50 a 63. Esta evolución se declara según los hechos aportados por el equipo; Codex no ejecutó pruebas durante estas tareas de documentación.
 - **GPT-6.1 Sol (Codex) — redacción:** redactó el borrador del Informe Final, el guion de la presentación y este borrador de la parte E4.
+- **Codex — actualización documental del 19-11-2026:** definió metas iniciales de resolución ≥ 50 %, respuesta ≥ 80 % y mediana hasta la primera oferta ≤ 24 h para el próximo ciclo de 14 días; sincronizó documentación, informe y guion; completó alias y datos ficticios del ensayo; reconstruyó los prompts pendientes con identificación explícita y referencias al historial. Esta tarea no generó nuevos datos de uso ni ejecutó la demo gráfica.
+- **Codex — proyección del lanzamiento:** añadió un escenario M1–M4 en `DOCUMENTATION.md` §4.2 y lo resumió en el informe, el guion y el contexto. Estimó resolución de 30 % a 55 %, respuesta de 60 % a 85 % y mediana de espera de 24 h a 8 h. Son supuestos de planificación solicitados por el equipo; no hay observaciones de lanzamiento ni evidencia de que se cumplirán.
 - **Responsabilidad del equipo:** ejecutó todos los comandos de git y del servidor; decidió usar datos simulados con autorización del docente, aprobó sacar `.agents/` y postergó el backend hasta después de la presentación.
 
 ## 5. Ajustes

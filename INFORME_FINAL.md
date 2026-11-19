@@ -69,7 +69,7 @@ Las notificaciones de plyer son locales: se generan al publicar una oferta y al 
 
 ## 3. Metodología de medición (RA3)
 
-Se aplica MJV App como ciclo **Medir, Jugar y Validar**. Medir define indicadores vinculados al diagnóstico; Jugar ejecuta los recorridos durante un periodo declarado; Validar compara resultados con metas y decide ajustes. Las metas no están acordadas: no corresponde declarar cumplimiento ni fijarlas retrospectivamente. Fuente: [DOCUMENTATION.md, apartado 2](DOCUMENTATION.md).
+Se aplica MJV App como ciclo **Medir, Jugar y Validar**. Medir define indicadores vinculados al diagnóstico; Jugar ejecuta los recorridos durante un periodo declarado; Validar compara resultados con metas y decide ajustes. Las metas iniciales se documentaron el **19-11-2026**, después de la simulación y de la fecha original de este borrador, para el **próximo ciclo de 14 días**. No se presentan como metas previas de la simulación histórica. Fuente: [DOCUMENTATION.md, apartados 2 y 4.1](DOCUMENTATION.md).
 
 `Store._log()` registra los cambios aceptados mediante `ActivityEntry`: fecha local `at`, identificador `actor_id`, tipo `action` y contexto `detail`. Los eventos incluyen registro, login, publicación y cancelación de solicitudes/ofertas, aceptación para coordinar, confirmación, desistimiento y suspensión/reactivación. No se registran pantallas vistas ni errores de validación. Fuente: [DOCUMENTATION.md, apartados 3 y 6](DOCUMENTATION.md).
 
@@ -77,17 +77,36 @@ Los **tres KPIs**, sus fórmulas y reglas provienen de [DOCUMENTATION.md, aparta
 
 | KPI | Fórmula | Justificación | Meta |
 |---|---|---|---|
-| Tasa de resolución | Solicitudes con `trato_concretado` ÷ solicitudes publicadas × 100 | Aproxima si la necesidad termina resuelta, según declaración del lector. | [COMPLETAR: meta acordada por el equipo] |
-| Tasa de respuesta | Solicitudes con al menos una `oferta_publicada` ÷ solicitudes publicadas × 100 | Examina si los vendedores responden al mecanismo de demanda. | [COMPLETAR: meta acordada por el equipo] |
-| Horas hasta la primera oferta | Mediana de las horas entre publicación y primera oferta, solo entre solicitudes con oferta | Describe la espera inicial; debe leerse junto a la cobertura de respuesta. | [COMPLETAR: meta acordada por el equipo] |
+| Tasa de resolución | Solicitudes con `trato_concretado` ÷ solicitudes publicadas × 100 | Aproxima si la necesidad termina resuelta, según declaración del lector. | **≥ 50 %** al cierre del próximo ciclo de 14 días |
+| Tasa de respuesta | Solicitudes con al menos una `oferta_publicada` ÷ solicitudes publicadas × 100 | Examina si los vendedores responden al mecanismo de demanda. | **≥ 80 %** al cierre del próximo ciclo de 14 días |
+| Horas hasta la primera oferta | Mediana de las horas entre publicación y primera oferta, solo entre solicitudes con oferta | Describe la espera inicial; debe leerse junto a la cobertura de respuesta. | **≤ 24 h** de mediana al cierre del próximo ciclo de 14 días |
 
 Se priorizan porque miden respuesta, resolución y espera. Contar sesiones no acredita utilidad. El tiempo hasta una oferta tampoco equivale a conseguir el libro ni permite comparar directamente con búsquedas manuales.
+
+Las metas buscan que al menos la mitad de las solicitudes se resuelva, cuatro de cada cinco reciban respuesta y la mediana de espera no supere un día. El protocolo de comparación, el tratamiento de datos insuficientes y la separación entre población real y simulada se documentan en [DOCUMENTATION.md, apartado 4.1](DOCUMENTATION.md). Las fechas y participantes del próximo ciclo se registrarán antes de iniciarlo.
 
 La unidad es la solicitud; las canceladas permanecen en el denominador. Una oferta cuenta como respuesta aunque luego se retire. Para uso real se excluyen cuentas demo y del equipo, incluidas sus intervenciones en ofertas o tratos. Sin solicitudes, las tasas quedan en **0 %** y la mediana vacía, según [DOCUMENTATION.md, apartados 4–5](DOCUMENTATION.md).
 
 `analitica.py` interpreta eventos, informa exclusiones y registros ilegibles, calcula indicadores y genera gráficos si dispone de matplotlib. `simulador.py` utiliza los métodos públicos del dominio, un reloj ficticio y perfiles reproducibles; verifica contactos e intenta acciones inválidas. No mide interfaz ni red. Fuente: [DOCUMENTATION.md, apartado 5](DOCUMENTATION.md) y [SPEC-003-simulador-de-uso.md](docs/05-specs/SPEC-003-simulador-de-uso.md).
 
 El periodo **simulado** abarca del **3 al 16 de noviembre de 2026**, con **14 días simulados**, **24 lectores y 10 vendedores ficticios**, y semilla **42**. Fuente: [DOCUMENTATION.md, apartados 2 y 7.1](DOCUMENTATION.md). Para uso real quedan pendientes [COMPLETAR: periodo, participantes y dispositivos de la recolección real] y [COMPLETAR: resultados de uso real].
+
+### 3.1 Expectativa del primer mes y proyección a tres meses posteriores
+
+El 19-11-2026 se incorporó un **escenario de planificación** para el lanzamiento y los tres meses siguientes. Cada mes representa 30 días desde una fecha de lanzamiento aún no definida; los valores corresponden a cada mes, no al acumulado. No son resultados medidos, una predicción estadística ni una nueva ejecución del simulador.
+
+| Indicador estimado | M1 · lanzamiento | M2 | M3 | M4 |
+|---|---|---|---|---|
+| Solicitudes publicadas | 50 | 100 | 150 | 200 |
+| Solicitudes con oferta | 30 | 70 | 120 | 170 |
+| Solicitudes con trato confirmado | 15 | 40 | 75 | 110 |
+| **Tasa de resolución esperada** | **30 %** | **40 %** | **50 %** | **55 %** |
+| **Tasa de respuesta esperada** | **60 %** | **70 %** | **80 %** | **85 %** |
+| **Mediana hasta la primera oferta** | **24 h** | **18 h** | **12 h** | **8 h** |
+
+Se supone una comunidad de 25 lectores activos y 5 vendedores activos en M1, que crece hasta 100 lectores y 15 vendedores en M4, con dos solicitudes mensuales por lector. La mejora de tasas y espera depende de la disponibilidad de títulos y de que los vendedores atiendan las solicitudes con mayor frecuencia; no está demostrada por la encuesta ni por la simulación. Los supuestos y las reglas de seguimiento constan en [DOCUMENTATION.md, apartado 4.2](DOCUMENTATION.md).
+
+Las metas del piloto de 14 días siguen siendo objetivos aspiracionales. Esta expectativa mensual alcanzaría los umbrales de resolución y respuesta en M3 y el de espera en M1, sin demostrar cumplimiento durante el piloto. Al cierre de M1 se revisará el escenario con datos reales, conservando el registro de esta proyección inicial. El analizador actual no separa automáticamente cohortes mensuales.
 
 ## 4. Resultados y propuesta de mejora
 
@@ -102,9 +121,11 @@ Las tablas siguientes se reproducen sin alterar sus cifras desde [DOCUMENTATION.
 | Usuarios simulados activos | 34 (24 lectores y 10 vendedores) |
 | Eventos | 705, de ellos 513 inicios de sesión |
 | Solicitudes publicadas | 45 |
-| KPI 1 · Tasa de resolución (meta: —) | **31,1 %** (14 de 45) |
-| KPI 2 · Tasa de respuesta (meta: —) | **62,2 %** (28 de 45) |
-| KPI 3 · Horas hasta la primera oferta (meta: —) | **2,4 h** (mediana) |
+| KPI 1 · Tasa de resolución (sin meta previa en esta simulación) | **31,1 %** (14 de 45) |
+| KPI 2 · Tasa de respuesta (sin meta previa en esta simulación) | **62,2 %** (28 de 45) |
+| KPI 3 · Horas hasta la primera oferta (sin meta previa en esta simulación) | **2,4 h** (mediana) |
+
+Como referencia retrospectiva frente a las metas definidas el 19-11-2026, resolución y respuesta quedan bajo sus umbrales y la mediana queda dentro de 24 h. Esto no acredita cumplimiento de metas previas ni validación real; los resultados dependen de los supuestos del simulador.
 
 ![KPIs simulados](docs/resultados/kpis_simulados.png)
 
@@ -172,7 +193,7 @@ La muestra del diagnóstico es acotada; la simulación añade sesgos de perfiles
 
 La declaración [USO_IA.md](docs/06-process/USO_IA.md) documenta Claude Code como apoyo en auditoría, interfaz, correcciones, documentación, servicios y compilación. También describe decisiones humanas sobre nombre, alcance y ubicación, revisión visual y reversión de propuestas. Su aprendizaje central exige comprender y revisar los resultados, sin sustituir evidencia de usuarios por contenido generado.
 
-**Este borrador fue redactado por una IA a partir exclusivamente de las fuentes del repositorio indicadas para la tarea.** No se realizaron nuevas pruebas, mediciones ni entrevistas para redactarlo. La revisión final, las metas y la interpretación académica corresponden al equipo.
+**Este borrador fue redactado por una IA a partir exclusivamente de las fuentes del repositorio indicadas para la tarea.** No se realizaron nuevas mediciones ni entrevistas para redactarlo. Las metas se añadieron el 19-11-2026 a solicitud del equipo, con apoyo de Codex. La revisión final y la interpretación académica corresponden al equipo.
 
 ## Anexo. Limitaciones y reproducción
 

@@ -39,6 +39,8 @@ Buscar libro -> crear solicitud -> publicar -> vendedor ve solicitud
 | Notificaciones locales (plyer) y configuración remota | Hecho, en `services/` |
 | APK Android (Buildozer) | Hecho, `buildozer.spec` |
 | Registro de eventos y KPIs (RA3) | Hecho: `models/store.py` (`_log`) + `analitica.py`. **Faltan los datos reales** (ver `DOCUMENTATION.md`) |
+| Metas de KPIs | Definidas el 19-11-2026 para el próximo ciclo de 14 días: resolución ≥ 50 %, respuesta ≥ 80 % y mediana hasta la primera oferta ≤ 24 h. Protocolo en `DOCUMENTATION.md` §4.1; sin atribuir metas previas a la simulación histórica. |
+| Proyección del lanzamiento | Escenario condicionado, sin datos reales: M1 estima 30 % de resolución, 60 % de respuesta y 24 h de mediana; M2: 40 %, 70 %, 18 h; M3: 50 %, 80 %, 12 h; M4: 55 %, 85 %, 8 h. Meses de 30 días, no acumulados. Supuestos y seguimiento en `DOCUMENTATION.md` §4.2; distinto de las metas del piloto. |
 | Datos simulados para RA3 (autorizados por el docente) | Hecho: `simulador.py` (SPEC-003); resultados en `DOCUMENTATION.md` §7.1 |
 | Panel público de métricas | Hecho: `panel/index.html` + `simulador.py --panel` (SPEC-004), con modo en vivo |
 | Backend compartido | En prueba: `backend/servidor.py` + `services/remoto.py` (SPEC-005, ADR-004 pendiente de aprobación); la app vuelve al modo local si no hay servidor |
