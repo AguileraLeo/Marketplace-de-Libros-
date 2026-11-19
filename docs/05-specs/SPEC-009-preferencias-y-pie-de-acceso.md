@@ -40,4 +40,4 @@ apariencia clara anterior. Mostrar `soporte@quadcorestore.com` sin configurar co
 
 ## Pendiente para publicación de condiciones definitivas
 
-[COMPLETAR: responsable del servicio y aprobación del texto por el equipo].
+Responsable propuesto: Matías Mcintire, que administra el servidor y el dominio `quadcorestore.com` (a confirmar por el equipo). La aprobación del texto de las condiciones queda pendiente del equipo.

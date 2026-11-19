@@ -15,7 +15,7 @@ import os
 import secrets
 import threading
 import time
-from collections import Counter, deque
+from collections import Counter, defaultdict, deque
 from datetime import date, datetime, timedelta
 from typing import Optional
 
@@ -26,7 +26,7 @@ from fastapi.staticfiles import StaticFiles
 
 import analitica
 from models.store import (
-    DomainError, InvalidTransition, NotFound, PermissionDenied, RequestStatus, Role, Store, User, UserStatus,
+    DomainError, InvalidTransition, NotFound, OfferStatus, PermissionDenied, RequestStatus, Role, Store, User, UserStatus,
     ValidationError,
 )
 from services import persistence, remoto
@@ -110,6 +110,22 @@ def quitar_cuentas_demo(store: Store) -> int:
     store.activity = [e for e in store.activity if e.actor_id not in demo
                       and analitica.numero(analitica.OFERTA, {"detail": e.detail}) not in ofertas
                       and analitica.numero(analitica.SOLICITUD, {"detail": e.detail}) not in solicitudes]
+    vivas = defaultdict(list)
+    for oferta in store.offers.values():
+        if oferta.status in OfferStatus.ACTIVE:
+            vivas[oferta.request_id].append(oferta)
+    for solicitud in store.requests.values():
+        activas = vivas.get(solicitud.id, [])
+        if solicitud.status == RequestStatus.IN_DEAL:
+            if any(o.status == OfferStatus.IN_DEAL for o in activas):
+                continue
+            for oferta in activas:
+                if oferta.status == OfferStatus.ON_HOLD:
+                    store._transition(oferta, OfferStatus.PUBLISHED, OfferStatus.TRANSITIONS)
+            destino = RequestStatus.WITH_OFFERS if activas else RequestStatus.PUBLISHED
+            store._transition(solicitud, destino, RequestStatus.TRANSITIONS)
+        elif solicitud.status == RequestStatus.WITH_OFFERS and not activas:
+            store._transition(solicitud, RequestStatus.PUBLISHED, RequestStatus.TRANSITIONS)
     return len(demo)
 
 

@@ -7,7 +7,7 @@ Toda regla de negocio y de autorización vive aquí, NO en la interfaz:
 la UI solo oculta/deshabilita acciones, pero cada método del Store vuelve
 a validar el rol, la propiedad del recurso y el estado (AGENTS.md §18.7).
 
-La contraseña se guarda como hash SHA-256 (nunca en texto plano).
+La contraseña se guarda con PBKDF2-HMAC-SHA256 y sal aleatoria.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ import hmac
 import itertools
 import os
 import re
+import secrets
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Callable, Iterable, Optional
@@ -145,7 +146,7 @@ class User:
     id: int
     name: str
     email: str
-    password: str  # hash SHA-256 (ver hash_password)
+    password: str  # hash versionado; las cuentas antiguas se migran al entrar
     role: str
     status: str = UserStatus.ACTIVE
     location: str = ""
@@ -255,9 +256,37 @@ def _parse_price(value, *, required: bool, field_name: str) -> Optional[int]:
     return price
 
 
-def hash_password(email: str, password: str) -> str:
-    """El correo actúa como 'sal': dos usuarios con la misma clave tienen hashes distintos."""
-    return hashlib.sha256(f"{email.lower()}:{password}".encode("utf-8")).hexdigest()
+PBKDF2_ITERATIONS = 600_000  # SPEC-012, OWASP 2023; las pruebas y el simulador lo bajan a 1 000
+_new_salt = secrets.token_bytes  # el simulador la reemplaza: la misma semilla debe dar el mismo archivo
+
+
+def hash_password(password: str) -> str:
+    salt = _new_salt(16)
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, PBKDF2_ITERATIONS)
+    return f"pbkdf2_sha256${PBKDF2_ITERATIONS}${salt.hex()}${digest.hex()}"
+
+
+def verify_password(stored: str, email: str, password: str) -> bool:
+    if not isinstance(stored, str):
+        return False
+    if re.fullmatch(r"[0-9a-f]{64}", stored):
+        legacy = hashlib.sha256(f"{email.lower()}:{password}".encode()).hexdigest()
+        return hmac.compare_digest(legacy, stored)
+    parts = stored.split("$")
+    if len(parts) != 4 or parts[0] != "pbkdf2_sha256":
+        return False
+    _, iterations, salt, digest = parts
+    if not re.fullmatch(r"[0-9a-f]{32}", salt) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+        return False
+    try:
+        candidate = hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), int(iterations))
+    except (ValueError, OverflowError):
+        return False
+    return hmac.compare_digest(candidate.hex(), digest)
+
+
+def needs_rehash(stored: str) -> bool:
+    return not stored.startswith(f"pbkdf2_sha256${PBKDF2_ITERATIONS}$")
 
 
 def format_price(value: Optional[int]) -> str:
@@ -311,11 +340,11 @@ class Store:
             raise PermissionDenied("No tienes permisos para esta acción.")
         return user
 
-    def _get(self, table: dict, obj_id: int, label: str):
+    def _get(self, table: dict, obj_id: int, message: str):
         try:
             return table[obj_id]
         except KeyError:
-            raise NotFound(f"{label} no encontrada.") from None
+            raise NotFound(message) from None
 
     @staticmethod
     def _transition(obj, new_status: str, transitions: dict) -> None:
@@ -327,16 +356,16 @@ class Store:
         obj.updated_at = datetime.now()
 
     def user(self, user_id: int) -> User:
-        return self._get(self.users, user_id, "Usuario")
+        return self._get(self.users, user_id, "Usuario no encontrado.")
 
     def book(self, book_id: int) -> Book:
-        return self._get(self.books, book_id, "Libro")
+        return self._get(self.books, book_id, "Libro no encontrado.")
 
     # --------------------------------------------------------------- auth
     def add_user(self, name, email, password, role, location="") -> User:
         """Alta interna (seed/hardcode). Permite cualquier rol, incluido admin."""
         user = User(
-            self._next_id("user"), name, email.lower(), hash_password(email, password), role, location=location
+            self._next_id("user"), name, email.lower(), hash_password(password), role, location=location
         )
         self.users[user.id] = user
         if role == Role.SELLER:
@@ -349,10 +378,15 @@ class Store:
 
     def authenticate(self, email: str, password: str) -> User:
         user = self.find_user_by_email(email)
-        if user is None or not hmac.compare_digest(user.password, hash_password(user.email, password)):
+        if user is None:
+            hash_password(password)  # Igualar el coste del caso habitual de credenciales incorrectas.
+            raise ValidationError("Correo o contraseña incorrectos.")
+        if not verify_password(user.password, user.email, password):
             raise ValidationError("Correo o contraseña incorrectos.")
         if user.status != UserStatus.ACTIVE:
             raise PermissionDenied("Tu cuenta está suspendida. Contacta a soporte.")
+        if needs_rehash(user.password):
+            user.password = hash_password(password)
         self._log(user, "login", "El usuario inició sesión")
         return user
 
@@ -457,7 +491,7 @@ class Store:
 
     def get_request(self, actor: User, request_id: int) -> BookRequest:
         user = self._require_active(actor)
-        req = self._get(self.requests, request_id, "Solicitud")
+        req = self._get(self.requests, request_id, "Solicitud no encontrada.")
         if user.role == Role.ADMIN:
             return req
         if user.role == Role.READER and req.reader_id == user.id:
@@ -471,7 +505,7 @@ class Store:
 
     def cancel_request(self, actor: User, request_id: int, reason: str = "") -> BookRequest:
         user = self._require_role(actor, Role.READER, Role.ADMIN)
-        req = self._get(self.requests, request_id, "Solicitud")
+        req = self._get(self.requests, request_id, "Solicitud no encontrada.")
         if user.role == Role.READER and req.reader_id != user.id:
             raise PermissionDenied("Solo puedes cancelar tus propias solicitudes.")
         self._transition(req, RequestStatus.CANCELLED, RequestStatus.TRANSITIONS)
@@ -548,7 +582,7 @@ class Store:
         address: str = "",
     ) -> Offer:
         seller = self._require_role(actor, Role.SELLER)
-        req = self._get(self.requests, request_id, "Solicitud")
+        req = self._get(self.requests, request_id, "Solicitud no encontrada.")
         if req.status not in RequestStatus.OPEN:
             raise ValidationError("La solicitud ya no recibe ofertas.")
         if self.seller_active_offer(seller, req.id):
@@ -595,7 +629,7 @@ class Store:
 
     def get_offer(self, actor: User, offer_id: int) -> Offer:
         user = self._require_active(actor)
-        offer = self._get(self.offers, offer_id, "Oferta")
+        offer = self._get(self.offers, offer_id, "Oferta no encontrada.")
         req = self.requests[offer.request_id]
         if (
             user.role == Role.ADMIN
@@ -619,7 +653,7 @@ class Store:
     def accept_offer(self, actor: User, offer_id: int) -> Offer:
         """El lector acepta preliminarmente la oferta para coordinar entrega/compra."""
         reader = self._require_role(actor, Role.READER)
-        offer = self._get(self.offers, offer_id, "Oferta")
+        offer = self._get(self.offers, offer_id, "Oferta no encontrada.")
         req = self.requests[offer.request_id]
         if req.reader_id != reader.id:
             raise PermissionDenied("Solo puedes aceptar ofertas de tus solicitudes.")
@@ -641,7 +675,7 @@ class Store:
     def confirm_deal(self, actor: User, offer_id: int) -> Offer:
         """El lector confirma que el trato se cerró exitosamente."""
         reader = self._require_role(actor, Role.READER)
-        offer = self._get(self.offers, offer_id, "Oferta")
+        offer = self._get(self.offers, offer_id, "Oferta no encontrada.")
         req = self.requests[offer.request_id]
         if req.reader_id != reader.id:
             raise PermissionDenied("Solo puedes confirmar tratos de tus solicitudes.")
@@ -662,7 +696,7 @@ class Store:
     def cancel_deal(self, actor: User, offer_id: int, reason: str = "") -> Offer:
         """El lector o vendedor desiste de la coordinación en curso."""
         user = self._require_role(actor, Role.READER, Role.SELLER, Role.ADMIN)
-        offer = self._get(self.offers, offer_id, "Oferta")
+        offer = self._get(self.offers, offer_id, "Oferta no encontrada.")
         req = self.requests[offer.request_id]
         if user.role == Role.READER and req.reader_id != user.id:
             raise PermissionDenied("No puedes desistir de este trato.")
@@ -689,7 +723,7 @@ class Store:
 
     def cancel_offer(self, actor: User, offer_id: int) -> Offer:
         seller = self._require_role(actor, Role.SELLER)
-        offer = self._get(self.offers, offer_id, "Oferta")
+        offer = self._get(self.offers, offer_id, "Oferta no encontrada.")
         if offer.seller_id != seller.id:
             raise PermissionDenied("Solo puedes cancelar tus propias ofertas.")
         if offer.status == OfferStatus.IN_DEAL:

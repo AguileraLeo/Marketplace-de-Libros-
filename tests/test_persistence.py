@@ -11,6 +11,14 @@ from services.persistence import load_store, save_store
 from models.store import build_demo_store
 from services.books_api import catalog_lookup
 
+import models.store as modelo
+
+
+def setUpModule():
+    # SPEC-012: acelerar las cuentas ficticias y restaurar el coste de la app al terminar.
+    unittest.addModuleCleanup(setattr, modelo, "PBKDF2_ITERATIONS", modelo.PBKDF2_ITERATIONS)
+    modelo.PBKDF2_ITERATIONS = 1_000
+
 
 class PersistenceTest(unittest.TestCase):
     def test_guardar_y_recuperar(self):

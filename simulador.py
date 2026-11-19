@@ -146,6 +146,7 @@ def guardar_json(ruta, datos):
 @contextmanager
 def reloj_simulado(sim):
     """La app toma la hora con datetime.now(): durante la simulación responde la hora simulada."""
+    iteraciones, nueva_sal = modelo.PBKDF2_ITERATIONS, modelo._new_salt
     real = modelo.datetime
 
     class _Simulado(real):
@@ -153,11 +154,15 @@ def reloj_simulado(sim):
         def now(cls, tz=None):
             return sim.reloj
 
+    # Cuentas ficticias con clave pública. La app usa 600 000 iteraciones y sales aleatorias.
+    modelo.PBKDF2_ITERATIONS = 1_000
+    modelo._new_salt = random.Random(f"sales-{sim.parametros['semilla']}").randbytes
     modelo.datetime = _Simulado
     try:
         yield
     finally:
         modelo.datetime = real
+        modelo.PBKDF2_ITERATIONS, modelo._new_salt = iteraciones, nueva_sal
 
 
 class Simulacion:

@@ -8,12 +8,14 @@ Regla de exposición: distinguir **encuesta real**, **resultados simulados** y *
 
 | Sección de la rúbrica | Intervalo | Duración | Diapositivas | Presenta |
 |---|---|---|---|---|
-| 1. Problema resuelto (RA1) | 00:00–01:15 | 01:15 | 1–2 | [COMPLETAR: integrante] |
-| 2. Solución desarrollada (RA2), incluida demo | 01:15–05:15 | 04:00 | 3–5 | [COMPLETAR: integrante] |
-| 3. Metodología de medición (RA3) | 05:15–06:35 | 01:20 | 6–7 | [COMPLETAR: integrante] |
-| 4. Resultados y propuesta de mejora | 06:35–08:10 | 01:35 | 8–10 | [COMPLETAR: integrante] |
-| 5. Conclusión social y ética | 08:10–09:00 | 00:50 | 11 | [COMPLETAR: integrante] |
+| 1. Problema resuelto (RA1) | 00:00–01:15 | 01:15 | 1–2 | Bryam Beltrán |
+| 2. Solución desarrollada (RA2), incluida demo | 01:15–05:15 | 04:00 | 3–5 | Alfredo San Juan (en la demo opera el vendedor; Matías Mcintire, el lector) |
+| 3. Metodología de medición (RA3) | 05:15–06:35 | 01:20 | 6–7 | Matías Mcintire |
+| 4. Resultados y propuesta de mejora | 06:35–08:10 | 01:35 | 8–10 | Leonardo Aguilera |
+| 5. Conclusión social y ética | 08:10–09:00 | 00:50 | 11 | Bryam Beltrán |
 | **Total** | **00:00–09:00** | **09:00** | | |
+
+Reparto propuesto el 19-11-2026 según lo que cada integrante aportó (encuesta, refactor MVC, simulador y analítica, informe); confirmarlo en el ensayo. Cada integrante debe poder responder al menos una pregunta del docente.
 
 ## 1. Problema resuelto (RA1)
 
@@ -211,7 +213,7 @@ de contacto es distinto del correo de acceso del vendedor y no requiere enviar m
 
 Aplicar dentro del bloque de demo previsto, sin sumar otra demostración completa:
 
-- **Falla el teléfono o la proyección:** mostrar un video local del mismo recorrido. [COMPLETAR: grabar y ubicar el video local de respaldo]. No se encontró un video de ese recorrido en los recursos revisados; no se presenta como existente. Hay GIF de búsqueda, oferta y aceptación en `docs/presentations/pitch/gif/`, como apoyo parcial.
+- **Falla el teléfono o la proyección:** mostrar un video local del mismo recorrido. Antes de presentar, grabar el ensayo con la grabación de pantalla de Android y guardar el video en el teléfono y en el PC de proyección. El único video existente, `sitio/demo/app.mp4` (20 s, el de la landing), no muestra el recorrido completo. Hay GIF de búsqueda, oferta y aceptación en `docs/presentations/pitch/gif/`, como apoyo parcial.
 - **Alternativa de escritorio:** iniciar la app desde la raíz en modo local y repetir el recorrido con las mismas cuentas de prueba. En PowerShell:
 
   ```powershell

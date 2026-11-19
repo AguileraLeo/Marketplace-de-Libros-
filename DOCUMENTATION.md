@@ -11,7 +11,7 @@ del código (pantallas, dominio, servicios, pruebas) está en [`docs/04-architec
 | Registro de eventos (`Store._log` en `models/store.py` → `data.json`) | Implementado |
 | Cálculo de KPIs y gráfico (`analitica.py`) | Implementado y verificado con pruebas automáticas (`tests/test_analitica.py`) usando datos de prueba |
 | Metas de KPIs | Definidas el 19-11-2026 para el próximo ciclo de evaluación de 14 días; criterios y alcance en la sección 4.1. |
-| **Datos reales de uso** | **Todavía no hay.** Al 17-11-2026 no hay eventos de usuarios reales: se completan en la sección 7.4 después del periodo de recolección. |
+| **Datos reales de uso** | **Prueba en vivo mínima** el 18-11-2026: 4 cuentas que no son del equipo publicaron 3 solicitudes en el servidor compartido. No alcanza para evaluar los KPIs (sección 7.4). |
 | **Datos simulados** (autorizados por el docente) | Generados con `simulador.py` (SPEC-003): 14 días, 24 lectores y 10 vendedores ficticios. Resultados en la sección 7.1, siempre rotulados como simulados. |
 
 ## 2. Del problema (RA1) a los KPIs: método MJV App
@@ -39,8 +39,8 @@ KPIs miden si la app responde a esas tres hipótesis.
 
 | Evento (`action`) | Cuándo | `detail` |
 |---|---|---|
-| `login` | Inicio de sesión | `<correo> inició sesión` |
-| `registro` | Cuenta nueva | `Nuevo lector: <correo>` / `Nuevo vendedor: <correo>` |
+| `login` | Inicio de sesión | `El usuario inició sesión` |
+| `registro` | Cuenta nueva | `Nuevo lector registrado` / `Nuevo vendedor registrado` |
 | `solicitud_publicada` | El lector publica | `Solicitud #N · <título>` |
 | `solicitud_cancelada` | Cancela el lector o modera el admin | `Solicitud #N cancelada (lector)` |
 | `oferta_publicada` | El vendedor oferta | `Oferta #M para solicitud #N · $precio` |
@@ -50,7 +50,7 @@ KPIs miden si la app responde a esas tres hipótesis.
 | `trato_desistido` | Lector o vendedor desiste | `Coordinación de oferta #M cancelada · solicitud #N reactivada` |
 | `usuario_suspendido` / `usuario_reactivado` | Moderación del admin | `<correo> suspendido` |
 
-**Privacidad:** `login`, `registro` y `usuario_*` guardan correos en `detail`. Por eso `data.json`
+**Privacidad:** En los eventos nuevos, solo `usuario_suspendido` y `usuario_reactivado` guardan el correo en `detail`. Los históricos pueden conservar correos de versiones anteriores. Por eso `data.json`
 no se comparte ni se sube; para el informe solo se usan los conteos que imprime `analitica.py`,
 que nunca muestra el detalle de los eventos.
 
@@ -327,7 +327,26 @@ Ordenadas por impacto esperado y esfuerzo:
 Las propuestas 2 a 4 deben validarse con datos reales antes de implementarse, porque en la
 simulación esas diferencias salen de los supuestos.
 
-### 7.4 Datos reales
+### 7.4 Datos reales: prueba en vivo del 18-11-2026
 
-**Pendiente:** completar con el periodo de uso real, con la misma tabla de la sección 7.1 y
-analizando cada `data.json` por separado.
+> Datos del servidor compartido (`~/bookwho/datos/bookwho.json` en el Z40), analizados el 19-11-2026
+> con `analitica.calcular()`. Se excluyen los agentes simulados (`@bookwho.test`), la administración,
+> las cuentas demo y las dos cuentas del equipo que usa el guion. No se imprimieron correos ni nombres.
+
+| Dato | Valor |
+|---|---|
+| Periodo | 18-11-2026, entre las 01:52 y las 11:56 (un solo día) |
+| Cuentas de personas en el servidor | 6 (4 lectores y 2 vendedores); 2 son del equipo |
+| Analizadas, sin el equipo | 4 cuentas activas (3 lectores y 1 vendedor), 23 eventos |
+| Solicitudes publicadas | 3 |
+| KPI 1 · Tasa de resolución | 0 % (0 de 3) |
+| KPI 2 · Tasa de respuesta | 33,3 % (1 de 3) |
+| KPI 3 · Horas hasta la primera oferta | 0,0 h (una sola solicitud con oferta) |
+
+**Lectura:** no es el ciclo de 14 días de la sección 4.1 y la muestra es mínima, así que **no se
+compara con las metas ni permite conclusiones**. Limitaciones de esta prueba:
+
+- no se puede verificar que las 4 cuentas restantes sean externas al equipo;
+- las ofertas de los agentes simulados no cuentan como respuesta de vendedores reales, aunque
+  aparecían en el feed de las personas;
+- la app no registra el dispositivo usado (APK o escritorio).

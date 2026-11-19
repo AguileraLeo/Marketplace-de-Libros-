@@ -115,7 +115,7 @@ Prompts a Claude Code (textuales, abreviados con […]):
 6. "podemos implementar los cambios en mi version local y despues yo lo subo al repo, eliminemos esos 11 comit, se puede?"
 7. "si hace la declaracion de ia tambien, despues la adapto"
 
-A Astra 6.2 se le dio el mismo prompt de auditoría (1). [COMPLETAR: confirmar el prompt usado con Astra].
+A Astra 6.2 se le dio el mismo prompt de auditoría (1) (a confirmar por el equipo).
 
 ## 4. Outputs
 
@@ -245,4 +245,4 @@ Lo más delicado fue la honestidad con los datos. La IA puede generar usuarios y
 
 Me preocupa la cantidad de código generado en pocos días. Para poder defenderlo habia que revisar cada cambio antes de subirlo, desplegamos solo con las pruebas automáticas en verde (121 al final). Mi aprendizaje es que la IA acelera mucho el trabajo, pero las decisiones siguen siendo nuestras: qué medir, qué mostrar y qué no prometer.
 
-[COMPLETAR: reflexión sobre la auditoría posterior: qué aprendí al comparar dos auditorías de IA y decidir qué aplicar.]
+(Borrador redactado con IA a partir de lo que hicimos en la sesión; reescribirlo con nuestras palabras.) Comparar dos auditorías de IA nos mostró que ninguna era completa. Claude Code encontró los datos personales de la encuesta publicados en `main`; Astra encontró fallas que Claude no había visto, como el guardado que duplicaba solicitudes. Por eso no aplicamos nada sin reproducirlo antes. También confirmamos que las decisiones de negocio son nuestras: la IA propuso opciones, pero nosotros decidimos que suspender no borre datos de otras personas y que el contacto se guarde por oferta. Codex implementó y Claude Code revisó, y los commits los hicimos nosotros después de leer los cambios.
